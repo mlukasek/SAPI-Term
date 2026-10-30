@@ -1,8 +1,10 @@
 ; SAPI-Term - terminal for internet BBS (telnet) for the Tesla SAPI-1, set V, as a CP/M program SAPITERM.COM.
 ; Copyright (C) 2026 Martin Lukasek, GPLv3. Assembler pasmo 0.5.3 (build.cmd), docs in docs/.
 ;
-; Phase 2: the terminal screen. Text 80x25 on the CGA-1V (own font 4x8, pairs of colours) or 64x20 on the
-; AND-1V, the status on the other card, a test screen and typing on the keyboard (a local typewriter).
+; Phase 3: the ANSI terminal (ANSI-BBS and VT100) on the screen: text 80x25 on the CGA-1V (own font 4x8, pairs
+; of colours per domain) or 64x20 on the AND-1V, the status on the other card. "SAPITERM FILE.ANS" shows an ANSI
+; file (iCE colours from its SAUCE record); without a file a test screen. Then typing on the keyboard (a local
+; typewriter) until Ctrl+].
 ;
 ; Memory: the program, its data and the stack stay below C000h (MAP_CGA hides the RAM and CP/M above it). The
 ; whole program runs with interrupts disabled (an interrupt acknowledged with PC in the window of a video card
@@ -13,7 +15,7 @@
         org 0100h
 
         jp start
-        defb 0Dh,0Ah,'SAPI-Term 0.2',0Dh,0Ah,1Ah
+        defb 0Dh,0Ah,'SAPI-Term 0.3',0Dh,0Ah,1Ah
 
 start:
         ld (cpm_sp),sp
@@ -63,8 +65,18 @@ st_screens:
         ld (cur_att),a
         ld a,(term_dev)
         call scr_init
+        call ansi_reset
+        ld a,(CMD_TAIL)
+        or a
+        jr z,st_test
+        call stat_screen
+        call view_file
+        call stat_screen
+        jr st_main
+st_test:
         call test_screen
         call stat_screen
+st_main:
         call cur_restart
 
 main_loop:
@@ -80,17 +92,184 @@ main_loop:
 ml_idle:
         call tick_poll
         call nz,cur_tick
-        ld hl,(pal_dirty)       ; new pairs of colours go to the palette in the next VBI
-        ld a,h
-        or l
+        call pal_pending        ; new pairs of colours go to the palette in the next VBI
         jr z,main_loop
-        ld a,MAP_CGA
-        out (MAPREG),a
-        call pal_flush
-        ld a,MAP_CPM
-        out (MAPREG),a
+        call scr_flush
         call stat_update
         jr main_loop
+
+; pal_pending: NZ when some pairs of colours wait for the palette. Changes A, B, HL.
+pal_pending:
+        ld hl,pal_dirty
+        ld b,DOMAINS*2
+        xor a
+pp_loop:
+        or (hl)
+        inc hl
+        djnz pp_loop
+        or a
+        ret
+
+; view_file: the file named on the command line (FCB 005Ch from the CCP) through the ANSI terminal, up to its
+; end or 1Ah (SAUCE follows); a key stops it, Ctrl+] ends the program. The SAUCE record (in the last two
+; records of 128 bytes) switches the iCE colours on. Records are read at random by number. Changes all.
+view_file:
+        ld de,rec_buf
+        ld c,B_SETDMA
+        call BDOS
+        ld de,FCB
+        ld c,B_OPEN
+        call BDOS
+        inc a
+        jr nz,vf_open
+        ld a,2                  ; no such file
+        ld (view_state),a
+        ret
+vf_open:
+        ld de,FCB
+        ld c,B_SIZE
+        call BDOS
+        ld hl,(FCB+FCB_R0)
+        ld (vf_size),hl
+        call view_sauce
+        ld hl,0
+        ld (vf_rec),hl
+        ld a,1                  ; the input is buffered: jump scroll can look ahead
+        ld (js_enable),a
+vf_fill:                        ; up to IN_RECORDS records into in_buf
+        ld hl,in_buf
+        ld (in_ptr),hl
+        ld (in_end),hl
+        ld a,IN_RECORDS
+        ld (vf_count),a
+vf_read:
+        ld hl,(vf_rec)
+        ld de,(vf_size)
+        or a
+        sbc hl,de
+        jr nc,vf_feed
+        ld de,(in_end)
+        call read_record
+        jr nz,vf_feed
+        ld hl,(in_end)
+        ld de,128
+        add hl,de
+        ld (in_end),hl
+        ld hl,(vf_rec)
+        inc hl
+        ld (vf_rec),hl
+        ld a,(vf_count)
+        dec a
+        ld (vf_count),a
+        jr nz,vf_read
+vf_feed:
+        ld hl,(in_ptr)
+        ld de,(in_end)
+        ld a,l
+        cp e
+        jr nz,vf_byte
+        ld a,h
+        cp d
+        jr z,vf_more
+vf_byte:
+        ld a,(hl)
+        cp 1Ah
+        jr z,vf_end
+        inc hl
+        ld (in_ptr),hl
+        call ansi_putc
+        jr vf_feed
+vf_more:
+        ld hl,in_buf            ; nothing read: the end of the file
+        or a
+        sbc hl,de
+        jr z,vf_end
+        call scr_flush
+        call kbd_get
+        jr nc,vf_fill
+        ld (last_key),a
+        cp K_MENU
+        jp z,quit
+vf_end:
+        xor a
+        ld (js_enable),a
+        call scr_flush
+        ld a,1                  ; shown
+        ld (view_state),a
+        ret
+
+; read_record: record vf_rec of the file to DE (128 bytes). NZ when it cannot be read. Changes all.
+read_record:
+        ld c,B_SETDMA
+        call BDOS
+        ld hl,(vf_rec)
+        ld (FCB+FCB_R0),hl
+        xor a
+        ld (FCB+FCB_R0+2),a
+        ld de,FCB
+        ld c,B_READRAND
+        call BDOS
+        or a
+        ret
+
+; view_sauce: ice_mode = 1 when the SAUCE record at the end of the file has the iCE flag (TFlags bit 0).
+; Changes all.
+view_sauce:
+        xor a
+        ld (ice_mode),a
+        ld hl,(vf_size)
+        ld a,h
+        or a
+        jr nz,vs_two
+        ld a,l
+        cp 2
+        ret c                   ; under 2 records: no room for SAUCE after the art
+vs_two:
+        dec hl
+        dec hl
+        ld (vf_rec),hl
+        ld de,sauce_buf
+        call read_record
+        ret nz
+        ld hl,(vf_rec)
+        inc hl
+        ld (vf_rec),hl
+        ld de,sauce_buf+128
+        call read_record
+        ret nz
+        ld hl,sauce_buf         ; "SAUCE00" at 0 .. 128 (the record ends at the end of the file)
+        ld b,129
+vs_find:
+        push bc
+        push hl
+        ld de,txt_sauce
+        ld b,7
+vs_cmp:
+        ld a,(de)
+        cp (hl)
+        jr nz,vs_no
+        inc de
+        inc hl
+        djnz vs_cmp
+        pop hl
+        pop bc
+        ld de,105               ; TFlags
+        add hl,de
+        ld a,(hl)
+        and 1
+        ld (ice_mode),a
+        ld a,1
+        ld (has_sauce),a
+        ret
+vs_no:
+        pop hl
+        pop bc
+        inc hl
+        djnz vs_find
+        ret
+
+txt_sauce:
+        defb 'SAUCE00'
 
 ; quit: cards to a quiet state, MAP_CPM, the console cleared, interrupts as they were, warm boot.
 quit:
@@ -347,8 +526,6 @@ ts_cp_row:
         call ts_hex
         ld a,' '
         call scr_putc
-        ld a,0Eh
-        ld (cur_att),a
         pop bc
         push bc
         ld a,b
@@ -392,7 +569,8 @@ ts_fg_att:
         ld a,c
         cp 16
         jr nz,ts_fg
-        ld a,07h                ; backgrounds 0-F with white (black on the bright ones)
+        ld a,07h                ; backgrounds 0-F with white (black on the bright ones); every domain
+                                ; of the test screen has at most 16 pairs
         ld de,4*256+37
         ld hl,t_test_bg
         call ts_text
@@ -401,15 +579,19 @@ ts_fg_att:
         ld c,0
 ts_bg:
         ld a,c
-        rlca
-        rlca
-        rlca
-        rlca
+        or a
+        ld b,07h                ; 0 grey on black (the blank cells have it too: 16 pairs per domain)
+        jr z,ts_bg_att
         ld b,0Fh
         bit 3,c
         jr z,ts_bg_att
         ld b,00h
 ts_bg_att:
+        ld a,c
+        rlca
+        rlca
+        rlca
+        rlca
         or b
         ld (cur_att),a
         ld a,c
@@ -579,28 +761,63 @@ sst_term:
         ld a,(dpi_minor)
         call stat_dec8
 sst_keys:
-        ld de,10*256+0
+        ld a,(CMD_TAIL)
+        or a
+        jr z,sst_pairs
+        ld de,10*256+0          ; the file: name, iCE, state
+        ld hl,t_file
+        call ss_text
+        ld hl,FCB+1
+        ld b,8
+        call ss_name
+        ld a,'.'
+        call stat_putc
+        ld b,3
+        call ss_name
+        ld hl,t_ice
+        call stat_puts
+        ld hl,t_yes
+        ld a,(ice_mode)
+        or a
+        jr nz,sst_ice
+        ld hl,t_no
+sst_ice:
+        call stat_puts
+        ld de,9*256+0
+        call stat_at
+        ld hl,t_viewing
+        ld a,(view_state)
+        or a
+        jr z,sst_view
+        ld hl,t_shown
+        dec a
+        jr z,sst_view
+        ld hl,t_not_found
+sst_view:
+        call stat_puts
+sst_pairs:
+        ld de,11*256+0
         ld hl,t_pairs
         call ss_text
-        ld de,11*256+0
+        ld de,12*256+0
         ld hl,t_last_key
         call ss_text
-        ld de,13*256+0
+        ld de,14*256+0
         ld hl,t_keys
         call ss_text
-        ld de,14*256+2
+        ld de,15*256+2
         ld hl,t_key1
         call ss_text
-        ld de,15*256+2
+        ld de,16*256+2
         ld hl,t_key2
         call ss_text
-        ld de,16*256+2
+        ld de,17*256+2
         ld hl,t_key3
         call ss_text
-        ld de,17*256+2
+        ld de,18*256+2
         ld hl,t_key4
         call ss_text
-        ld de,18*256+2
+        ld de,19*256+2
         ld hl,t_key5
         call ss_text
 ; stat_update: the changing values: pairs of colours in use, the last key.
@@ -608,7 +825,7 @@ stat_update:
         ld a,(stat_dev)
         or a
         ret z
-        ld de,10*256+23
+        ld de,11*256+23
         call stat_at
         ld a,(term_dev)
         cp DEV_CGA
@@ -617,7 +834,7 @@ stat_update:
         call stat_dec8
         ld hl,txt_of16
         call stat_puts
-        ld de,11*256+23
+        ld de,12*256+23
         call stat_at
         ld a,(last_key)
         jp stat_hex8
@@ -625,6 +842,16 @@ stat_update:
 ss_text:
         call stat_at
         jp stat_puts
+
+; ss_name: B characters of a CP/M name at HL without the spaces (bit 7 cleared). Changes A, B, HL.
+ss_name:
+        ld a,(hl)
+        inc hl
+        and 7Fh
+        cp ' '
+        call nz,stat_putc
+        djnz ss_name
+        ret
 
 ; ss_card: name HL at D, E, then "ano" when A <> 0, else "není".
 ss_card:
@@ -736,6 +963,7 @@ bdos_puts:
         include "cga.asm"
         include "cgatext.asm"
         include "screen.asm"
+        include "ansi.asm"
         include "mph.asm"
         include "dpi.asm"
 
@@ -842,12 +1070,81 @@ ss_chr:         defb 0          ; scr_set, scr_draw_cell
 ss_att:         defb 0
 ss_ext:         defb 0
 ss_old:         defb 0
-sl_off:         defw 0          ; scr_scroll, scr_shift
+sl_off:         defw 0          ; scr_region_up/down, scr_shift
 sh_count:       defb 0          ; scr_shift
+reg_top:        defb 0          ; scroll region
+reg_bot:        defb SCR_ROWS-1
+rg_top:         defb 0          ; scr_region_up/down
+rg_bot:         defb 0
+wrap_off:       defb 0          ; ?7l: no wrap at the last column
+cur_off:        defb 0          ; ?25l: no cursor
+sb_off:         defw 0          ; scr_blank
+sb_n:           defb 0
+sc_dom:         defb 0          ; cga_cls_att
+sc_slot:        defb 0
+sc_att:         defb 0
+nr_row:         defb 0          ; new_row, scr_erase
+nr_slot:        defb 0
+er_n:           defb 0          ; scr_erase
+ic_n:           defb 0          ; scr_insert_chars, scr_delete_chars
+ic_len:         defb 0
+ic_from:        defb 0
+ic_to:          defb 0
+cm_count:       defb 0          ; cga_move_cells
+cm_src:         defb 0
+cm_dst:         defb 0
+cm_lines:       defb 0
+pair_dom:       defb 0          ; pairs: the domain and its tables
+pd_page:        defb 0
+pd_satt:        defw 0
+pd_sref:        defw 0
+pm_from:        defb 0          ; pair_move_row
+pm_to:          defb 0
+pm_changed:     defb 0
+pm_att:         defb 0
+pm_n:           defb 0
+pm_old:         defb 0
+pm_new:         defb 0
+pm_left:        defb 0
+pm_ptr:         defw 0
+pm_dst:         defw 0
+ans_state:      defb 0          ; ANSI parser
+ans_np:         defb 0
+ans_priv:       defb 0
+ans_inter:      defb 0
+ans_par:        defs ANS_PARAMS
+sgr_fg:         defb 7          ; SGR state: ANSI colours, flags (SGR_SIZE bytes)
+sgr_bg:         defb 0
+sgr_bold:       defb 0
+sgr_blink:      defb 0
+sgr_rev:        defb 0
+sgr_bghi:       defb 0
+SGR_SIZE        equ 6
+sv_row:         defb 0          ; saved cursor (ESC 7, CSI s)
+sv_col:         defb 0
+sv_sgr:         defs SGR_SIZE
+ice_mode:       defb 0          ; blink = bright background
+reply_hook:     defw 0          ; where answers to the BBS go (0 = nowhere)
+ans_reply:      defs 20
+view_state:     defb 0          ; 0 being shown, 1 shown, 2 no such file
+has_sauce:      defb 0
+vf_size:        defw 0          ; view_file: records of the file
+vf_rec:         defw 0
+vf_count:       defb 0
+in_ptr:         defw 0          ; input buffer: next byte, end
+in_end:         defw 0
+js_enable:      defb 0          ; jump scroll: the input is in in_buf
+js_pending:     defb 0          ; rows of a jump scroll the cursor did not enter yet
+js_att:         defb 0          ; the attribute they were blanked with
+rg_k:           defb 1          ; scr_region_upk: rows
+ru_left:        defb 0
+ru_lastrow:     defb 0
+pm_col:         defb 0          ; pair_move_row
+pf_budget:      defb 0          ; pal_flush: pairs left in this VBI
 ar_ptr:         defw 0          ; and_render
 cf_byte:        defb 0          ; cga_fill_rows, cga_scroll
 cf_count:       defb 0
-pal_dirty:      defw 0          ; slots whose pair must go to the palette
+pal_dirty:      defs 2*DOMAINS  ; per domain: slots whose pair must go to the palette
 pn_best:        defw 0          ; pair_nearest
 pn_slot:        defb 0
 ps_rgb:         defs 6          ; pal_slot
@@ -859,17 +1156,23 @@ ps_rgb:         defs 6          ; pal_slot
 
 PROGRAM_END:
 
-; buffers after the program (not in the .COM)
+; buffers after the program (not in the .COM). Every EQU here may use only symbols defined above it: pasmo
+; gives the code before it the value of its first pass otherwise (docs/vyvoj.md, tools/check_build.py).
+IN_RECORDS      equ 16                          ; input buffer: records of 128 bytes
 BSS             equ (PROGRAM_END + 0FFh) & 0FF00h
-att_slot        equ BSS                         ; 256: slot of each attribute (FFh = none), page aligned
-scr_chr         equ att_slot + 256              ; shadow: characters
+att_slot        equ BSS                         ; 7 pages: slot of each attribute per domain (FFh = none)
+att_pref        equ att_slot + 256*DOMAINS      ; page: the preferred slot of each attribute
+scr_chr         equ att_pref + 256              ; shadow: characters
 scr_att         equ scr_chr + SCR_COLS*SCR_ROWS ; attributes
 scr_ext         equ scr_att + SCR_COLS*SCR_ROWS ; flags
 row_off         equ scr_ext + SCR_COLS*SCR_ROWS ; 25 words: offset of each screen row
 kb_ring         equ row_off + 2*SCR_ROWS        ; 16 keys
-slot_att        equ kb_ring + 16                ; 16: attribute of each slot
-slot_ref        equ slot_att + 16               ; 16 words: cells using each slot
-STACK_TOP       equ slot_ref + 32 + 256
+slot_att        equ kb_ring + 16                ; 7 x 16: attribute of each slot
+slot_ref        equ slot_att + 16*DOMAINS       ; 7 x 16 words: cells using each slot
+rec_buf         equ slot_ref + 32*DOMAINS       ; 128: a record of the file
+in_buf          equ rec_buf + 128               ; IN_RECORDS * 128: input (file, later the BBS)
+sauce_buf       equ in_buf + 128*IN_RECORDS     ; 256: the last two records (SAUCE)
+STACK_TOP       equ sauce_buf + 256 + 256
 BSS_END         equ STACK_TOP
 
         end start

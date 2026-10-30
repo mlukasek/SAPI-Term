@@ -24,6 +24,13 @@ def main():
     # everything must stay below C000h: MAP_CGA puts the CGA-1V there
     if s['BSS_END'] > 0xC000:
         errors.append(f'buffers and stack up to {s["BSS_END"]:04X}h, over C000h')
+    # pasmo: an EQU using a symbol defined after it gives the code before it the value of the first pass;
+    # the first LD SP,nn of the program must be STACK_TOP
+    com = open(os.path.join(ROOT, 'build', 'sapiterm.com'), 'rb').read()
+    i = com.find(b'1')
+    if i < 0 or com[i + 1] | com[i + 2] << 8 != s['STACK_TOP']:
+        errors.append('LD SP in the code is not STACK_TOP %04Xh (an EQU uses a symbol defined after it)'
+                      % s['STACK_TOP'])
     # tables indexed by the low byte of the address
     for name in ('font_cp437', 'font_koi', 'and_map_cp437', 'col_dist', 'cga_rows', 'att_slot'):
         if name in s and s[name] & 0xFF:

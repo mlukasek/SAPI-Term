@@ -85,3 +85,38 @@ Nové rozhodnutí dopsat s datem a důvodem.
 - **Kurzor:** na CGA-1V podtržení (XOR posledního řádku buňky), na AND-1V znak 7Fh. Bliká po 20 tikách (1/3 s).
   Tik 60 Hz dává MPH-1V, bez ní VBI CGA-1V, bez obou počítání průchodů smyčkou.
 - **Testovací obrazovka se vejde do 64×20**, aby šla na obě karty.
+
+## 2026-10-30: fáze 3, terminál ANSI
+
+- **Chování podle ANSI-BBS, kde se liší od VT100:**
+  - ESC [ 2 J smaže a dá kurzor domů (ANSI.SYS);
+  - FF (0Ch) smaže obrazovku;
+  - ostatní řídicí znaky kromě CR, LF, BS, TAB, BEL, ESC a 00h se zobrazí jako znaky CP437 (☺, ♥ …).
+  - ESC [ M je mazání řádků, ne ANSI hudba.
+- **Referenční model `tools/ansiref.py` je specifikace.** Parser a obrazovka v asm dělají přesně totéž a testy to
+  porovnávají buňku po buňce a bod po bodu. Každá změna chování se dělá v obou.
+- **SGR:**
+  - tučné = jasné popředí;
+  - 90–97 jasné popředí, 100–107 jasné pozadí;
+  - blikání dá jasné pozadí jen v režimu iCE (podle SAUCE), jinak se zatím neukazuje;
+  - inverze prohodí vypočtené barvy;
+  - 38/48 (256 barev, RGB) se přeskočí i s parametry.
+- **Parametry nad 255 se ořežou na 255**, nejvýš 8 parametrů. Sekvence s mezilehlým bajtem nebo s `=`, `<`, `>`
+  se spolknou (rozšíření SyncTERM). Z `?` jen 7 a 25.
+- **Dvojice barev po doménách:**
+  - každá doména (4 řádky) má svých 16 slotů a vlastní počty buněk;
+  - atribut dostane v každé doméně přednostně stejné číslo slotu (`att_pref`);
+  - řádek, který rolováním přejde do jiné domény, si číslo slotu nechá, když je tam volné (`pair_get_hint`).
+    Ve VRAM se přepíšou (nibble atributu) jen úseky, které ho změnit musí.
+- **Skokové rolování:**
+  - při LF na konci oblasti se spočítá, kolik dalších LF čeká ve vstupním bufferu, než přijde něco jiného než
+    text, CR, BS, TAB, BEL a CSI…m;
+  - odroluje se o všechny najednou (nejvýš výška oblasti − 1);
+  - řádek, do kterého kurzor vstoupí, se znovu smaže, když se mezitím změnil atribut (barva pozadí nového řádku).
+  - Mezi započtenými LF není žádné absolutní umístění kurzoru, výsledek je proto stejný jako při rolování po
+    řádku. SCROLL.ANS je 2,7× rychlejší.
+- **Vstupní buffer 2 KB** (`in_buf`, `in_ptr`, `in_end`). Prohlížeč do něj čte 16 záznamů najednou, ve fázi 4 do
+  něj půjde příjem z TCP.
+- **Paleta po dávkách:** nejvýš 16 dvojic na jedno VBI, zbytek v dalších. Zápis dvojice jedné domény trvá asi
+  460 T, VBI 4 ms = 8000 T při 2 MHz. Emulátor (`palette_writes_visible`) ukázal zápisy mimo VBI, když se paleta
+  psala celá najednou.

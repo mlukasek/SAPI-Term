@@ -1,10 +1,15 @@
-; SAPI-Term - text 80x25 on the CGA-1V: font 4x8 in the EGA mode, pairs of colours, scrolling, cursor.
+; SAPI-Term - text 80x25 on the CGA-1V: font 4x8 in the EGA mode, pairs of colours per domain, scrolling,
+; cursor.
 ;
 ; A character = 1 byte on each of its 8 lines: 4 dots from the font in D7..D4, the number of its pair of colours
-; (slot 0-15) in D3..D0. A slot is a pair background / foreground; the same 16 slots in all 7 domains of the
-; palette (docs/technika.md). Slots are given to the attributes (bg << 4 | fg, CGA colours) as the screen
-; needs them, with a count of the cells that use each; when all 16 are used, the nearest pair is taken.
-; Routines that touch the VRAM need MAP_CGA (marked); the pair bookkeeping does not.
+; (slot 0-15) in D3..D0. Colour index = domain << 5 | slot << 1 | dot with domain = line >> 5 = text row >> 2:
+; each domain (4 text rows, the 7th only row 24) has its own 16 slots, each a pair background / foreground
+; (docs/technika.md). Slots are given to the attributes (bg << 4 | fg) as the cells need them, with a count of
+; the cells per slot; when all 16 of a domain are used, the nearest pair is taken. An attribute tries to get the
+; same slot number in every domain (att_pref), so a row that scrolls into the next domain mostly keeps its bytes.
+; The pair routines work on the domain chosen by pair_setdom. Routines that touch the VRAM need MAP_CGA.
+
+DOMAINS         equ 7
 
 ; glyph_addr: A = character, B = flags (EXT_KOI: KOI-8cs2 C0-FF from font_koi, else CP437) -> HL = glyph.
 ; Changes A.
@@ -107,27 +112,104 @@ cfr_row:
         jr nz,cfr_row
         ret
 
-; cga_scroll: text rows 1 to A - 1 move up by one row, the last row (A - 1) is filled with the slot C.
-; 80-byte pieces with unrolled LDI, the keyboard polled after each (0.4 ms at 4 MHz). MAP_CGA.
+; cga_fill_cells: B cells from D = row, E = column filled with the byte A (all 8 lines). MAP_CGA.
 ; Changes A, BC, DE, HL.
-cga_scroll:
-        push bc
-        ld d,a
-        dec d                   ; D = last row
-        push de
-        ld a,d
+cga_fill_cells:
+        ld (cf_byte),a
+        ld a,b
         or a
-        jp z,csc_fill           ; one row only
-        ld e,a                  ; pieces = (rows - 1) * 8
-        ld a,0
-csc_mul:
-        add a,8
-        dec e
-        jr nz,csc_mul
+        ret z
         ld (cf_count),a
-        ld hl,CGA_VRAM+640
-        ld de,CGA_VRAM
-csc_piece:
+        call cga_cell_addr
+        ld c,8
+cfc_line:
+        push hl
+        ld a,(cf_count)
+        ld b,a
+        ld a,(cf_byte)
+cfc_byte:
+        ld (hl),a
+        inc hl
+        djnz cfc_byte
+        pop hl
+        ld de,80
+        add hl,de
+        dec c
+        jr nz,cfc_line
+        ret
+
+; cga_move_cells: in row D, B cells from column C move to column E (all 8 lines; to the right from the end).
+; MAP_CGA. Changes all.
+cga_move_cells:
+        ld a,b
+        or a
+        ret z
+        ld (cm_count),a
+        ld a,c
+        ld (cm_src),a
+        ld a,e
+        ld (cm_dst),a
+        ld e,0
+        call cga_cell_addr      ; HL = start of the row
+        ld a,8
+        ld (cm_lines),a
+cm_line:
+        push hl
+        ld a,(cm_dst)
+        ld e,a
+        ld d,0
+        push hl
+        add hl,de
+        ex de,hl                ; DE = destination
+        pop hl
+        ld a,(cm_src)
+        ld c,a
+        ld b,0
+        add hl,bc               ; HL = source
+        ld a,(cm_count)
+        ld c,a                  ; BC = count
+        ld a,(cm_dst)
+        ld b,a
+        ld a,(cm_src)
+        cp b
+        ld b,0
+        jr c,cm_right           ; source left of destination: copy from the end
+        ldir
+        jr cm_next
+cm_right:
+        dec bc
+        add hl,bc
+        ex de,hl
+        add hl,bc
+        ex de,hl
+        inc bc
+        lddr
+cm_next:
+        pop hl
+        ld de,80
+        add hl,de
+        ld a,(cm_lines)
+        dec a
+        ld (cm_lines),a
+        jr nz,cm_line
+        ret
+
+; cga_copy_row: text row D copied to text row E (640 bytes in pieces of 80 with unrolled LDI, the keyboard
+; polled after each piece: 0.4 ms at 4 MHz). MAP_CGA. Changes all.
+cga_copy_row:
+        push de
+        ld e,0
+        call cga_cell_addr      ; source
+        pop de
+        push hl
+        ld d,e
+        ld e,0
+        call cga_cell_addr      ; destination
+        ex de,hl
+        pop hl
+        ld a,8
+        ld (cf_count),a
+ccr_piece:
         rept 80
         ldi
         endm
@@ -135,50 +217,156 @@ csc_piece:
         ld a,(cf_count)
         dec a
         ld (cf_count),a
-        jp nz,csc_piece
-csc_fill:
-        pop de                  ; D = last row
-        pop bc
-        ld a,c
-        ld e,1
-        jp cga_fill_rows
+        jp nz,ccr_piece
+        ret
+
+; cga_fix_cells: B cells of row D from column E get slot C (the dots stay). MAP_CGA. Changes A, B, E, HL.
+cga_fix_cells:
+        ld a,b
+        or a
+        ret z
+        ld (cf_count),a
+        call cga_cell_addr
+        ld e,8
+cfx_line:
+        push hl
+        ld a,(cf_count)
+        ld b,a
+cfx_cell:
+        ld a,(hl)
+        and 0F0h
+        or c
+        ld (hl),a
+        inc hl
+        djnz cfx_cell
+        pop hl
+        ld a,l
+        add a,80
+        ld l,a
+        jr nc,cfx_next
+        inc h
+cfx_next:
+        dec e
+        jr nz,cfx_line
+        ret
 
 ; --- pairs of colours ---
 
-; pair_init: no attribute has a slot, all counts 0, nothing to write to the palette. Changes A, B, HL.
+; pair_init: no attribute has a slot in any domain, all counts 0, nothing to write to the palette, domain 0.
+; Changes A, BC, DE, HL.
 pair_init:
         ld hl,att_slot
-        ld b,0
-pi_att:
-        ld (hl),0FFh
-        inc l
-        djnz pi_att
+        ld bc,DOMAINS*256
+        ld a,0FFh
+        call fill
+        ld hl,att_pref
+        ld bc,256
+        ld a,0FFh
+        call fill
         ld hl,slot_ref
-        ld b,32
-pi_ref:
-        ld (hl),0
-        inc hl
-        djnz pi_ref
-        ld hl,0
-        ld (pal_dirty),hl
+        ld bc,DOMAINS*32
+        xor a
+        call fill
+        ld hl,pal_dirty
+        ld bc,DOMAINS*2
+        xor a
+        call fill
+        ld a,0FFh               ; no domain chosen yet
+        ld (pair_dom),a
+        xor a
+; pair_setdom: domain A (0-6) for the pair routines (nothing to do when it is chosen already). Changes A.
+pair_setdom:
+        push hl
+        ld hl,pair_dom
+        cp (hl)
+        pop hl
+        ret z
+        ld (pair_dom),a
+        push de
+        push hl
+        ld e,a
+        add a,high att_slot
+        ld (pd_page),a
+        ld a,e
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        ld l,a
+        ld h,0
+        ld de,slot_att
+        add hl,de
+        ld (pd_satt),hl
+        ld a,(pair_dom)
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        ld l,a
+        ld h,0
+        ld de,slot_ref
+        add hl,de
+        ld (pd_sref),hl
+        pop hl
+        pop de
         ret
 
-; pair_get: A = attribute -> A = its slot, the count of the slot + 1. A free slot (count 0) is given to a new
-; attribute and marked for the palette; with none free the nearest used pair is taken. Changes BC, DE, HL.
-pair_get:
+; pair_row_dom: the domain of row A (A >> 2) for the pair routines. Changes A.
+pair_row_dom:
+        rrca
+        rrca
+        and 3Fh
+        jr pair_setdom
+
+; slot_count: HL = address of the count of slot B in the domain, Z when the count is 0. Changes A.
+slot_count:
+        ld hl,(pd_sref)
+        ld a,b
+        add a,a
+        add a,l
         ld l,a
-        ld h,high att_slot
+        jr nc,sct_load
+        inc h
+sct_load:
+        ld a,(hl)
+        inc hl
+        or (hl)
+        dec hl
+        ret
+
+; pair_get: A = attribute -> A = its slot in the domain, the count of the slot + 1. A free slot (count 0) is
+; given to a new attribute, its preferred slot number first, and marked for the palette; with none free the
+; nearest used pair is taken. pair_get_hint: a free slot B is taken before the preferred one (a row that
+; scrolled into the domain keeps its slot numbers when it can). Changes BC, DE, HL.
+pair_get:
+        ld b,0FFh
+pair_get_hint:
+        ld l,a
+        ld a,(pd_page)
+        ld h,a
         ld a,(hl)
         cp 16
         jr c,pair_ref           ; it has a slot (exact or nearest)
         ld c,l                  ; C = attribute
-        ld hl,slot_ref
+        ld a,b
+        cp 16
+        jr nc,pg_pref
+        call slot_count
+        jr z,pg_free            ; the hint is free here
+pg_pref:
+        ld h,high att_pref
+        ld l,c
+        ld a,(hl)
+        cp 16
+        jr nc,pg_scan
+        ld b,a
+        call slot_count
+        jr z,pg_free            ; the preferred slot is free here
+pg_scan:
         ld b,0
 pg_find:
-        ld a,(hl)
-        inc hl
-        or (hl)
-        inc hl
+        call slot_count
         jr z,pg_free
         inc b
         ld a,b
@@ -186,14 +374,17 @@ pg_find:
         jr nz,pg_find
         ld a,c                  ; all used: the nearest pair
         call pair_nearest
+        ld b,a
+        ld a,(pd_page)
+        ld h,a
         ld l,c
-        ld h,high att_slot
-        ld (hl),a
+        ld (hl),b
+        ld a,b
         jr pair_ref
 pg_free:                        ; B = free slot, C = attribute
         ld a,b
         call pair_unmap
-        ld hl,slot_att
+        ld hl,(pd_satt)
         ld a,l
         add a,b
         ld l,a
@@ -201,37 +392,37 @@ pg_free:                        ; B = free slot, C = attribute
         inc h
 pg_set:
         ld (hl),c
+        ld a,(pd_page)
+        ld h,a
         ld l,c
-        ld h,high att_slot
         ld (hl),b
+        ld h,high att_pref      ; the first slot of an attribute becomes its preferred one
+        ld a,(hl)
+        cp 16
+        jr c,pg_mark
+        ld (hl),b
+pg_mark:
         ld a,b
         call pal_mark
         ld a,b
-; pair_ref: the count of slot A + 1; A stays. Changes DE, HL.
+; pair_ref: the count of slot A in the domain + 1; A stays. Changes B, HL.
 pair_ref:
-        push af
-        add a,a
-        ld e,a
-        ld d,0
-        ld hl,slot_ref
-        add hl,de
+        ld b,a
+        call slot_count
         inc (hl)
         jr nz,prf_done
         inc hl
         inc (hl)
 prf_done:
-        pop af
+        ld a,b
         ret
 
-; pair_add: the count of slot A + DE. Changes A, DE, HL.
+; pair_add: the count of slot A in the domain + DE. Changes A, HL.
 pair_add:
-        push de
-        add a,a
-        ld e,a
-        ld d,0
-        ld hl,slot_ref
-        add hl,de
-        pop de
+        push bc
+        ld b,a
+        call slot_count
+        pop bc
         ld a,(hl)
         add a,e
         ld (hl),a
@@ -241,29 +432,36 @@ pair_add:
         ld (hl),a
         ret
 
-; pair_unref: the count of the slot of attribute A - 1. Changes A, DE, HL.
+; pair_unref: the count of the slot of attribute A in the domain - 1. pair_sub: - DE. Changes A, DE, HL.
 pair_unref:
+        ld de,1
+pair_sub:
         ld l,a
-        ld h,high att_slot
+        ld a,(pd_page)
+        ld h,a
         ld a,(hl)
         cp 16
         ret nc                  ; no slot (cannot happen for a cell on the CGA-1V)
-        add a,a
-        ld e,a
-        ld d,0
-        ld hl,slot_ref
-        add hl,de
+        push bc
+        ld b,a
+        call slot_count
+        pop bc
         ld a,(hl)
-        sub 1
+        sub e
         ld (hl),a
-        ret nc
         inc hl
-        dec (hl)
+        ld a,(hl)
+        sbc a,d
+        ld (hl),a
         ret
 
-; pair_unmap: attributes that have slot A lose it. Changes HL.
+; pair_unmap: attributes that have slot A in the domain lose it. Changes HL.
 pair_unmap:
-        ld hl,att_slot
+        push af
+        ld a,(pd_page)
+        ld h,a
+        pop af
+        ld l,0
 pu_loop:
         cp (hl)
         jr nz,pu_next
@@ -273,8 +471,8 @@ pu_next:
         jr nz,pu_loop
         ret
 
-; pair_nearest: A = attribute -> A = the slot whose pair is the nearest (colour distance of the foreground
-; + 2 x of the background). Changes BC, DE, HL.
+; pair_nearest: A = attribute -> A = the slot of the domain whose pair is the nearest (colour distance of the
+; foreground + 2 x of the background). Changes BC, DE, HL.
 pair_nearest:
         ld c,a
         ld hl,0FFFFh
@@ -283,7 +481,7 @@ pair_nearest:
         ld (pn_slot),a
         ld b,15
 pn_loop:
-        ld hl,slot_att
+        ld hl,(pd_satt)
         ld a,l
         add a,b
         ld l,a
@@ -335,9 +533,12 @@ pn_next:
         ld a,(pn_slot)
         ret
 
-; pair_used: A = the number of slots with a count above 0. Changes BC, HL.
+; pair_used: A = the most slots in use in one domain. Changes BC, DE, HL.
 pair_used:
         ld hl,slot_ref
+        ld d,DOMAINS
+        ld e,0
+pus_dom:
         ld b,16
         ld c,0
 pus_loop:
@@ -350,65 +551,212 @@ pus_loop:
 pus_next:
         djnz pus_loop
         ld a,c
+        cp e
+        jr c,pus_less
+        ld e,a
+pus_less:
+        dec d
+        jr nz,pus_dom
+        ld a,e
         ret
 
-; pal_mark: slot A must get its colours in the palette. Changes A, HL.
+; pair_move_row: the cells of row D came from domain A (the row scrolled into another domain). Their counts
+; move from domain A to the domain of row D, each run of one attribute at once; a run that has to change its
+; slot number gets the new one in the VRAM. Changes all except D.
+pair_move_row:
+        push de
+        ld (pm_from),a
+        ld a,d
+        rrca
+        rrca
+        and 3Fh
+        ld (pm_to),a
+        xor a
+        ld (pm_col),a
+        ld e,0
+        call scr_offset
+        ld bc,scr_att
+        add hl,bc
+        ld b,SCR_COLS
+pm_run:
+        ld a,(hl)
+        ld (pm_att),a
+        ld c,0
+pm_len:
+        inc c
+        inc hl
+        dec b
+        jr z,pm_end
+        cp (hl)
+        jr z,pm_len
+pm_end:
+        ld (pm_ptr),hl
+        ld a,b
+        ld (pm_left),a
+        ld a,c
+        ld (pm_n),a
+        ld a,(pm_from)
+        call pair_setdom
+        ld a,(pm_att)
+        ld l,a
+        ld a,(pd_page)
+        ld h,a
+        ld a,(hl)
+        ld (pm_old),a
+        ld a,(pm_n)
+        ld e,a
+        ld d,0
+        ld a,(pm_att)
+        call pair_sub
+        ld a,(pm_to)
+        call pair_setdom
+        ld a,(pm_old)
+        ld b,a
+        ld a,(pm_att)
+        call pair_get_hint
+        ld (pm_new),a
+        ld a,(pm_n)
+        dec a
+        ld e,a
+        ld d,0
+        ld a,(pm_new)
+        call pair_add
+        ld a,(pm_new)
+        ld hl,pm_old
+        cp (hl)
+        jr z,pm_same
+        pop de                  ; another slot number: the cells of the run in the VRAM
+        push de
+        ld a,(pm_col)
+        ld e,a
+        ld a,(pm_n)
+        ld b,a
+        ld a,(pm_new)
+        ld c,a
+        ld a,MAP_CGA
+        out (MAPREG),a
+        call cga_fix_cells
+        ld a,MAP_CPM
+        out (MAPREG),a
+pm_same:
+        ld a,(pm_col)
+        ld hl,pm_n
+        add a,(hl)
+        ld (pm_col),a
+        ld hl,(pm_ptr)
+        ld a,(pm_left)
+        ld b,a
+        or a
+        jp nz,pm_run
+        pop de
+        ret
+
+; pal_mark: slot A of the domain must get its colours in the palette. Changes A, HL.
 pal_mark:
         push bc
+        push de
         ld hl,1
         or a
-        jr z,pm_set
+        jr z,pmk_set
         ld b,a
-pm_shift:
+pmk_shift:
         add hl,hl
-        djnz pm_shift
-pm_set:
-        ld a,(pal_dirty)
-        or l
-        ld (pal_dirty),a
-        ld a,(pal_dirty+1)
-        or h
-        ld (pal_dirty+1),a
+        djnz pmk_shift
+pmk_set:
+        ex de,hl
+        ld a,(pair_dom)
+        add a,a
+        ld l,a
+        ld h,0
+        ld bc,pal_dirty
+        add hl,bc
+        ld a,(hl)
+        or e
+        ld (hl),a
+        inc hl
+        ld a,(hl)
+        or d
+        ld (hl),a
+        pop de
         pop bc
         ret
 
 ; pal_flush: when some slots got new pairs, wait for the VBI (the keyboard is polled) and write their
-; colours to all 7 domains. MAP_CGA. Changes A, BC, DE, HL.
+; colours to the palette of their domains, at most PAL_PER_VBI pairs in one VBI (a pair of a domain takes about
+; 460 T; the VBI is 4 ms, 8000 T at 2 MHz), then the next VBI. MAP_CGA. Changes A, BC, DE, HL.
+PAL_PER_VBI     equ 16
 pal_flush:
-        ld hl,(pal_dirty)
-        ld a,h
-        or l
+        ld hl,pal_dirty
+        ld b,DOMAINS*2
+        xor a
+pf_any:
+        or (hl)
+        inc hl
+        djnz pf_any
+        or a
         ret z
         call cga_wait_vbi
-        ld hl,(pal_dirty)
+        ld a,PAL_PER_VBI
+        ld (pf_budget),a
+        ld c,0
+pf_dom:
+        ld a,c
+        add a,a
+        ld l,a
+        ld h,0
+        ld de,pal_dirty
+        add hl,de
+        ld e,(hl)
+        ld (hl),0
+        inc hl
+        ld d,(hl)
+        ld (hl),0
+        ex de,hl                ; HL = slots of domain C to write
         ld b,0
-pf_loop:
+pf_slot:
+        ld a,h
+        or l
+        jr z,pf_next
         srl h
         rr l
-        jr nc,pf_next
+        jr nc,pf_skip
         push hl
+        push bc
+        ld a,(pf_budget)        ; this VBI is used up: wait for the next one
+        dec a
+        jr nz,pf_write
+        call cga_wait_vbi
+        ld a,PAL_PER_VBI
+pf_write:
+        ld (pf_budget),a
+        pop bc
         push bc
         call pal_slot
         pop bc
         pop hl
-pf_next:
+pf_skip:
         inc b
-        ld a,h
-        or l
-        jr nz,pf_loop
-        ld (pal_dirty),hl
+        jr pf_slot
+pf_next:
+        inc c
+        ld a,c
+        cp DOMAINS
+        jr nz,pf_dom
         ret
 
-; pal_slot: palette entries d * 32 + 2 * B (background) and + 1 (foreground) for the domains d = 0-6, from the
-; pair of slot B. MAP_CGA. Changes A, BC, DE, HL.
+; pal_slot: palette entries 32 * C + 2 * B (background) and + 1 (foreground) from the pair of slot B in
+; domain C. MAP_CGA. Changes A, DE, HL.
 pal_slot:
-        ld hl,slot_att
-        ld a,l
+        ld a,c
+        add a,a
+        add a,a
+        add a,a
+        add a,a
         add a,b
-        ld l,a
-        jr nc,ps_att
-        inc h
-ps_att:
+        ld e,a
+        ld d,0
+        ld hl,slot_att
+        add hl,de
         ld a,(hl)
         push af
         rrca
@@ -419,12 +767,14 @@ ps_att:
         call ps_copy            ; background
         pop af
         call ps_copy            ; foreground
-        ld a,b
-        add a,a
-        ld c,a                  ; C = entry in domain 0
-        ld b,7
-ps_domain:
         ld a,c
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        add a,b
+        add a,b
         ld (CGA_PAL_ADR),a
         ld hl,ps_rgb
         ld a,(hl)
@@ -444,10 +794,6 @@ ps_domain:
         inc hl
         ld a,(hl)
         ld (CGA_PAL_DAT),a
-        ld a,c
-        add a,32
-        ld c,a
-        djnz ps_domain
         ret
 ps_copy:                        ; colour A & 0Fh -> 3 bytes at DE
         and 0Fh

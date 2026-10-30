@@ -114,13 +114,19 @@ ar_put:
         djnz ar_row
         ret
 
-; and_scroll: after the shadow scrolled. A window at 0,0 over 20 rows moves its VRAM up and gets a row of
-; spaces, anything else is drawn again. Changes all.
+; and_scroll: after the region rg_top..rg_bot of the shadow scrolled up. The whole screen of 20 rows in a
+; window at 0,0 moves its VRAM up and gets a row of spaces, anything else is drawn again. Changes all.
 and_scroll:
         ld a,(view_y)
         ld b,a
         ld a,(view_x)
         or b
+        ld b,a
+        ld a,(rg_top)
+        or b
+        jr nz,and_render
+        ld a,(rg_bot)
+        cp AND_ROWS-1
         jr nz,and_render
         ld a,(term_rows)
         cp AND_ROWS

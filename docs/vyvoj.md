@@ -16,11 +16,13 @@
    - `tools\fontgen.py`: font z `fonts\sapiterm4x8.txt` → `font4x8.inc` (`--preview SOUBOR.png` uloží náhled);
    - `tools\tables.py`: převod CP437 → AND-1V, vzdálenosti barev, adresy řádků CGA → `tables.inc`;
    - `tools\texts.py`: texty UI z `src\texts.txt` (UTF-8) v KOI-8čs2 → `texts.inc`;
+   - `tools\mkart.py`: testovací soubory ANSI → `build\art\*.ANS` (každá doména nejvýš 16 dvojic, hlídá
+     `tools\ansiref.py`);
 2. pasmo → `build\sapiterm.com`, `.sym` a `.hex` (Intel HEX od 0100h);
 3. `tools\check_build.py`: rozložení paměti (vše pod C000h, tabulky zarovnané na stránku), vypíše
    `SAVE n SAPITERM.COM`;
 4. `tools\cpmdisk.py` (převzatý z SAPI-Bad-Apple): `build\ramdisk.bin` = RAM disk CP/M sestavy V
-   se `SAPITERM.COM`.
+   se `SAPITERM.COM` a testovacími soubory `*.ANS`.
 
 ## Emulátor
 
@@ -45,6 +47,7 @@
 | Skript | Co dělá |
 |---|---|
 | `phase2.py [--consul]` | fáze 2: SAPITERM z disku, stavová obrazovka, stínová obrazovka v paměti (titulek, tabulka CP437), psaní a rolování, Tab na AND-1V a zpět, Ctrl+L, Ctrl+T, Ctrl+] a `DIR` po návratu; snímky `build/preview/f2_*.png` |
+| `phase3.py [JMÉNO...]` | fáze 3: každý testovací soubor `SAPITERM JMÉNO.ANS`, stínová obrazovka a kurzor proti `tools/ansiref.py`, snímek CGA-1V proti modelu vykreslenému fontem (bod po bodu), žádný zápis palety mimo VBI; snímky `build/preview/f3_*.png` |
 | `emu.py` | společné: sestava, kontrolní bod CP/M, příkaz CP/M, čtení paměti, symboly, snímek obrazovky |
 | `sapimcp.py` | klient MCP (`python tools\emu\sapimcp.py NÁSTROJ "{json}"`) |
 | `sapiemu.cmd [consul\|gui]` | spustí release emulátor s MCP |
@@ -56,7 +59,12 @@
   - operand začínající závorkou je adresa: `ld a,(X+3) & 0FFh` nejde, použít `low`/`high` nebo `0+(…)`;
   - ALIGN není: `defs (256 - ($ & 0FFh)) & 0FFh`;
   - návěští `.x` jsou globální, `DEFL` v `REPT` nefunguje.
-- **`jr` přes rozvinutou smyčku** (`rept 80 / ldi`) nedosáhne, pasmo hlásí „Relative jump out of range“.
+- **pasmo a `equ` s pozdějším symbolem:** `equ`, jehož výraz používá symbol definovaný až za ním (i jiný `equ`),
+  dá kódu před sebou hodnotu z prvního průchodu, kde ten symbol ještě není (0). `.sym` přitom ukazuje správnou
+  hodnotu. Tak skončil `ld sp,STACK_TOP` uvnitř vstupního bufferu (`IN_RECORDS` bylo až za `sauce_buf`).
+  Konstanty definovat před prvním použitím ve výrazu `equ`. `check_build.py` hlídá aspoň `LD SP`.
+- **`jr` přes rozvinutou smyčku** (`rept 80 / ldi`) nedosáhne, pasmo hlásí „Relative jump out of range“. Rychlá
+  oprava: smyčka v Bashi, která pasmo pustí a nahlášený řádek změní z `jr` na `jp`.
 - **Rutiny, které mění A** (`and_at`, `and_putc`…): před voláním si příznak v A uložit. Na tom se spálila první
   verze `show_yes_no`.
 - **MCP:**
@@ -68,7 +76,12 @@
   - Výpis `screen_text` obsahuje znaky mimo cp1252 (kurzor ▒, čeština). `python -I` proměnnou
     `PYTHONIOENCODING` ignoruje, skripty proto volají `sys.stdout.reconfigure(encoding='utf-8')`.
   - Kodek `cp437` v Pythonu dává pro 00–1F řídicí znaky, ne ☺☻. Testy porovnávají kódy znaků.
+  - Emulátor kreslí CGA-1V s paprskem: paleta zapsaná ve VBI se ve snímku obrazovky projeví až v dalším snímku
+    obrazu. Před `screenshot` nechat běžet aspoň 20 ms.
+  - `machine_info` u CGA-1V hlásí `palette_writes_visible` (zápisy palety mimo VBI, na monitoru sníh).
 - **ECMON bez DSM-1V** přepne konzoli na sériovou linku a visí na portu 11h. Sestavy proto DSM-1V mají.
 - **Konce řádků:** soubory v gitu s LF, `.cmd` s CRLF (`.gitattributes`). Python na Windows píše v textovém
   režimu CRLF, proto `newline='\n'`. Cesty s `\` v řetězcích Pythonu psát jako `r'...'`, jinak z `\f` a `\t`
   vzniknou řídicí znaky (tak se rozbil `build.cmd`).
+- **Bash nástroj a dlouhý heredoc** občas skončí chybou „unexpected EOF“ a neprovede nic. Delší úpravy psát jako
+  skript do scratchpadu a spustit ho.

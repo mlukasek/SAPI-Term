@@ -65,12 +65,22 @@ nenapodobí (`docs/rozhodnuti.md`).
 - **Font:**
   - `font_cp437` (2 KB) a `font_koi` (KOI-8čs2 C0–FF, 512 B), 8 bajtů na znak, zarovnané na stránku;
   - `tools/fontgen.py` je vyrobí z `fonts/sapiterm4x8.txt`, `--preview` uloží náhled PNG.
-- **Dvojice barev:**
-  - `att_slot[256]`: slot atributu (FFh nemá), `slot_att[16]`, `slot_ref[16]`: počet buněk;
-  - `pal_dirty`: sloty, jejichž barvy čekají na zápis do palety;
-  - `pal_flush` počká na VBI a zapíše položky `d*32 + 2*slot` (pozadí) a `+1` (popředí) pro domény d = 0–6.
-- **Rolování:** kopie řádků 1–24 o 640 B výš po kusech 80 B rozvinutým `LDI`, mezi kusy se čte klávesnice. Nový
-  řádek se vyplní slotem atributu (body 0).
+- **Dvojice barev po doménách** (doména = 4 textové řádky = 32 řádků obrazu, sedmá jen řádek 24):
+  - `att_slot` (7 stránek): slot atributu v doméně (FFh nemá);
+  - `slot_att[7][16]`, `slot_ref[7][16]`: atribut a počet buněk slotu;
+  - `att_pref[256]`: preferované číslo slotu atributu (první, které dostal);
+  - `pal_dirty[7]`: sloty, jejichž barvy čekají na zápis.
+  - `pair_setdom` vybere doménu, pak `pair_get` (`pair_get_hint`), `pair_sub`, `pair_add`.
+  - `pal_flush` počká na VBI a zapíše položky `d*32 + 2*slot` (pozadí) a `+1` (popředí), nejvýš 16 dvojic na jedno
+    VBI.
+- **Rolování:**
+  - oblast `reg_top`..`reg_bot` o k řádků (`scr_region_upk`), dolů o jeden (`scr_region_down`);
+  - kopie řádků po 640 B po kusech 80 B rozvinutým `LDI`, mezi kusy se čte klávesnice (83 ms za celou obrazovku
+    při 4 MHz);
+  - řádky, které přejdou do jiné domény, převezme `pair_move_row` po úsecích jednoho atributu a změněné sloty
+    přepíše `cga_fix_cells`;
+  - nové řádky vyplní `new_row` slotem atributu (body 0).
+- **Vkládání a mazání znaků:** `cga_move_cells` posune bajty buněk ve všech 8 řádcích (1 bajt = 1 znak).
 - **Kurzor:** XOR F0h na posledním řádku buňky.
 
 ## Stínová obrazovka (`src/screen.asm`)
@@ -79,8 +89,20 @@ nenapodobí (`docs/rozhodnuti.md`).
   posouvá jen tabulku `row_off`.
 - `term_dev` = karta terminálu (1 CGA-1V, 2 AND-1V), `term_cols` × `term_rows` = 80×25 nebo 64×20. `stat_dev` =
   karta stavové obrazovky.
-- `scr_putc` píše znak `cur_att`/`cur_ext` na kurzor s odloženým zalomením (`wrap_pend`). `scr_lf` dole roluje.
+- `scr_putc` píše znak `cur_att`/`cur_ext` na kurzor s odloženým zalomením (`wrap_pend`, `?7l` vypne zalomení).
   `scr_set` zapíše buňku do stínu i na kartu. `scr_redraw` překreslí vše po výměně karty.
+- `scr_lf` dole v oblasti roluje, se vstupem v bufferu skokově (`js_count`, `js_pending`, `js_att`).
+  `scr_erase`, `scr_insert_chars`, `scr_delete_chars`, `scr_region_down` slouží parseru ANSI.
+
+## Parser ANSI (`src/ansi.asm`) a vstup
+
+- Stavy: normální, ESC, CSI (parametry `ans_par[8]`, `ans_priv`, `ans_inter`), přeskočit jeden bajt.
+- Stav SGR: `sgr_fg`, `sgr_bg` (barvy ANSI), `sgr_bold`, `sgr_blink`, `sgr_rev`, `sgr_bghi`. Z něj `sgr_apply`
+  spočítá `cur_att` (barvy CGA). Převod ANSI → CGA: 0 4 2 6 1 5 3 7.
+- Odpovědi (CPR, DA) jsou v `ans_reply` a jdou přes `reply_hook` (zatím 0 = nikam).
+- **Vstupní buffer:** `in_buf` (16 záznamů = 2 KB), `in_ptr`, `in_end`. Prohlížeč souborů ho plní záznamy přes
+  BDOS (náhodné čtení podle čísla záznamu). `js_enable` povolí skokové rolování.
+- **SAUCE:** posledních 256 B souboru (dva záznamy) se prohledá na `SAUCE00`. TFlags (posun 105) bit 0 = iCE.
 - **AND-1V jako terminál:** okno 64×20 od `view_x`, `view_y` (zatím vždy 0, 0). Znak CP437 jde přes
   `and_map_cp437`: dvojité rámečky jako jednoduché, bloky jako semigrafika 2×3, akcentovaná písmena jako
   KOI-8čs2, jinak podobný znak ASCII.

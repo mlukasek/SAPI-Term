@@ -3,7 +3,14 @@
 ; CP/M 2.2 with ECMON IDE-1 (TPA 0100-D5FF, BDOS D606, BIOS E400)
 WBOOT           equ 0000h
 BDOS            equ 0005h
-B_CONOUT        equ 2           ; BDOS function: console output (E = character)
+B_CONOUT        equ 2           ; BDOS functions: console output (E = character)
+B_OPEN          equ 15          ; open file (DE = FCB), A = FFh not found
+B_SETDMA        equ 26          ; DMA address = DE
+B_READRAND      equ 33          ; read record r0..r2 of the FCB, A = 0 OK
+B_SIZE          equ 35          ; r0..r2 = size in records
+FCB             equ 005Ch       ; FCB of the first argument (from the CCP)
+FCB_R0          equ 33          ; random record number in the FCB (3 bytes)
+CMD_TAIL        equ 0080h       ; length of the command line arguments, then the text
 
 ; JPR-1V port P0/P1: parallel keyboard (EKL-1, Consul 262.3) on connector K2
 KB_STAT         equ 01h         ; in: bit 0 = 0 while STROBE is active (a key is ready)
