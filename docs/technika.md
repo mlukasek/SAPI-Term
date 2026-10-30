@@ -288,7 +288,8 @@ nenapodobí (`docs/rozhodnuti.md`).
 - `cs_type` = CS_PETSCII (7). `pet_enter` / `pet_leave` přepnou `term_putc` (skok v RAM: `jp ansi_putc` nebo
   `jp pet_putc`), `ice_mode` = 1 (bit 7 atributu je barva pozadí 8–15), `rgb_tab` (`pet_palette`), velikost
   (`term_size`) a smažou obrazovku.
-- Buňka: znak = kód obrazovky C64 | `pet_lower` (80h), `cur_ext` = EXT_8X8 (02h), `cur_att` = barva textu
+- Buňka: znak = kód obrazovky C64 | `pet_lower` (80h, na začátku sada malých písmen), `cur_ext` = EXT_8X8 (02h),
+  `cur_att` = barva textu
   (`pet_fg`), při reverzu ×16 (`pet_att`).
 - PETSCII → kód obrazovky: 20–3F stejně, 40–5F −40h, 60–7F −20h, A0–BF −40h, C0–FE −80h, FF → 5Eh.
 - Glyf: `glyph_addr` s EXT_8X8 bere `font_pet` (stránkově zarovnané, 256 × 8 B). `cga_draw_wide` pozná glyf

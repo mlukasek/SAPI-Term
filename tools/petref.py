@@ -21,7 +21,7 @@ C64_RGB6 = [(0x00, 0x00, 0x00), (0x3F, 0x3F, 0x3F), (0x1A, 0x0D, 0x0A), (0x1C, 0
 
 class Term:
     def __init__(self):
-        self.fg, self.rvs, self.lower = FG, False, 0
+        self.fg, self.rvs, self.lower = FG, False, 0x80     # the lower case set, as terminal programs start
         self.chr = [[0x20] * COLS for _ in range(ROWS)]
         self.att = [[self.attr()] * COLS for _ in range(ROWS)]
         self.pet = [[False] * COLS for _ in range(ROWS)]   # a PETSCII cell (blank ones are not)

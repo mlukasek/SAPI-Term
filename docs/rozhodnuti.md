@@ -313,3 +313,8 @@ Autor byl stále pryč, rozhodoval jsem sám.
 - **Volba pro každou BBS:** bit 7 bajtu sady v adresáři (`,RAW` v souboru), v menu N. Některé BBS pro Atari a C64
   běží bez telnetu. FFh (π v PETSCII, vložení znaku v ATASCII) by se jinak bralo jako IAC a další bajt jako
   příkaz telnetu. Telnet je výchozí, protože ho používá většina BBS.
+- **PETSCII začíná v sadě malých písmen** (jako terminálové programy C64, např. CCGMS), ne ve velkých jako C64 po
+  zapnutí. The Basement posílá text malými písmeny PETSCII bez přepnutí a ve velké sadě se ukázal jako grafika.
+  Retro Campus si sadu přepíná sám, výsledek je stejný.
+- **The Basement je jednolinkový C64:** po opakovaných spojeních hlásí obsazeno („Please try again in a few
+  minutes“). V adresáři zůstává, zkoušet ho jen občas.

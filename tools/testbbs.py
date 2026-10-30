@@ -15,7 +15,7 @@ Keys of the menu:
   G a PETSCII page (pet_bytes: colours, reverse, the graphics, cursor keys, DEL, INST, both letter sets);
   A an ATASCII page (ata_bytes: the graphics, inverse, ESC, cursor keys, tab, delete and insert of lines and
   characters, scrolling);
-  R the bell (BEL); F a PETSCII clear, white and pi (FFh: one on telnet, two on raw TCP);
+  R the bell (BEL); F a PETSCII clear, white, upper case set and pi (FFh: one on telnet, two on raw TCP);
   V a Viewdata page (vdt_bytes: colours, mosaics contiguous and separated, double height, flash, conceal,
   backgrounds, the British characters, cursor keys and wrapping);
   downloads (binary mode first): Y YMODEM batch of YMODEM_FILES, X XMODEM (128 byte blocks, CRC) of
@@ -388,8 +388,8 @@ class Session:
             return None
         c = chr(b).upper()
         if c == 'F':
-            self.send(b'\x93\x05\xff')       # PETSCII: clear, white, pi (FFh, doubled by send: one pi on telnet,
-                                            # two on raw TCP)
+            self.send(b'\x93\x05\x8e\xff')   # PETSCII: clear, white, upper case set, pi (FFh, doubled by send:
+                                            # one pi on telnet, two on raw TCP)
         elif c == 'R':
             self.send(b'\x07')               # the bell
         elif c == 'V':

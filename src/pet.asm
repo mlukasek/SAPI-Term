@@ -15,8 +15,9 @@ pet_enter:
         ld (term_putc+1),hl
         xor a
         ld (js_enable),a
-        ld (pet_lower),a
         ld (pet_rvs),a
+        ld a,80h                ; the lower case set, as C64 terminal programs start (BBS text has both cases)
+        ld (pet_lower),a
         ld a,PET_FG
         ld (pet_fg),a
         ld a,1                  ; bit 7 of an attribute: a background colour 8-15 (reverse), no blink

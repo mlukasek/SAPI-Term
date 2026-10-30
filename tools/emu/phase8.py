@@ -245,7 +245,7 @@ def main():
                 keys('n', 1500)
                 keys('\x1b', 800)
             model = petref.Term()
-            model.feed(b'\x93\x05\xff\xff' if raw else b'\x93\x05\xff')
+            model.feed(b'\x93\x05\x8e\xff\xff' if raw else b'\x93\x05\x8e\xff')
             keys('f', 100)
             check(run_until(lambda: pet_matches(sym, model), ms=5000),
                   '%s: FFh as %s' % ('raw TCP' if raw else 'telnet', 'two pi' if raw else 'one pi'))
