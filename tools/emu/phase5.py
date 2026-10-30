@@ -135,9 +135,10 @@ def main():
         check(byte(sym, 'cs_type') == 0, 'not in the book: CP437')
         charsets(sym)
         keys('\x1d', 500)
-        keys('z', 500)
-        keys('z', 800)
-        check(byte(sym, 'cs_type') == 1, 'Z twice more: UTF-8')
+        keys('z', 500)                          # KOI8 -> PETSCII -> CP437 -> UTF-8
+        keys('z', 2000)
+        keys('z', 2000)
+        check(byte(sym, 'cs_type') == 1, 'Z three times more: UTF-8')
         keys('u', 1500)
         check(run_until(lambda: byte(sym, 'book_n') == 13, ms=5000), 'U: the BBS in the book')
         check('Uloženo do SAPITERM.CFG.' in mcp.call('screen_text'), 'U: saved (status card)')

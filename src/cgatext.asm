@@ -11,9 +11,11 @@
 
 DOMAINS         equ 7
 
-; glyph_addr: A = character, B = flags (EXT_KOI: KOI-8cs2 C0-FF from font_koi, else CP437) -> HL = glyph.
-; Changes A.
+; glyph_addr: A = character, B = flags (EXT_KOI: KOI-8cs2 C0-FF from font_koi, EXT_8X8: font_pet, else CP437)
+; -> HL = glyph. Changes A.
 glyph_addr:
+        bit 1,b
+        jr nz,ga_pet
         bit 0,b
         jr nz,ga_koi
         ld l,a
@@ -23,6 +25,16 @@ glyph_addr:
         add hl,hl
         ld a,h
         add a,high font_cp437
+        ld h,a
+        ret
+ga_pet:                         ; 8 dots a line (pet.asm), drawn in 40 columns as they are
+        ld l,a
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld a,h
+        add a,high font_pet
         ld h,a
         ret
 ga_koi:
@@ -170,6 +182,9 @@ cga_draw_wide:
         ld a,e
         cp SCR_COLS/2
         ret nc
+        ld a,h                  ; a glyph of font_pet: 8 dots, not doubled
+        cp high font_pet
+        jr nc,cga_draw_8
         push hl
         call cga_cell_addr
         pop de
@@ -192,6 +207,37 @@ cdw_line:
         pop de
         inc e
         djnz cdw_line
+        ret
+
+; cga_draw_8: a glyph of 8 dots a line in 40 columns: the left four dots to the first byte, the right four to
+; the second. MAP_CGA. Changes A, B, DE, HL.
+cga_draw_8:
+        push hl
+        call cga_cell_addr
+        pop de
+        ld b,8
+cd8_line:
+        ld a,(de)
+        and 0F0h
+        or c
+        ld (hl),a
+        inc hl
+        ld a,(de)
+        rlca
+        rlca
+        rlca
+        rlca
+        and 0F0h
+        or c
+        ld (hl),a
+        inc e
+        ld a,l
+        add a,79
+        ld l,a
+        jr nc,cd8_next
+        inc h
+cd8_next:
+        djnz cd8_line
         ret
 
 ; cga_cursor_xor: invert the dots of the last line of the cell D = row, E = column (an underline in the
@@ -1115,7 +1161,7 @@ ps_copy:                        ; colour A & 0Fh -> 3 bytes at DE
         ld l,a
         ld h,0
         push bc
-        ld bc,ansi_rgb
+        ld bc,(rgb_tab)         ; the ANSI colours, or those of the C64 (pet.asm)
         add hl,bc
         ld bc,3
         ldir

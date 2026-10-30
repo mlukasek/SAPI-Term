@@ -1176,6 +1176,7 @@ bdos_puts:
         include "charset.asm"
         include "xfer.asm"
         include "history.asm"
+        include "pet.asm"
         include "mph.asm"
         include "dpi.asm"
 
@@ -1426,6 +1427,11 @@ xm_left:        defs 4          ; bytes of the file still to write (FFFFFFFFh un
 xm_fcb:         defs 36
 pd_out:         defw 0          ; put_dec16
 msg_buf:        defs 64         ; a message made up (xm_run, xm_progress)
+term_putc:      jp ansi_putc    ; a byte of the BBS to the terminal: ansi_putc or pet_putc (pet.asm)
+rgb_tab:        defw ansi_rgb   ; the colours of the attributes (pal_slot): ansi_rgb or c64_rgb
+pet_lower:      defb 0          ; PETSCII: 80h = the lower case set
+pet_rvs:        defb 0          ; PETSCII: reverse on
+pet_fg:         defb 0          ; PETSCII: the colour of the text (0-15 of the C64)
 hist_head:      defb 0          ; history: the next line to write
 hist_count:     defb 0          ; lines in it
 hv_on:          defb 0          ; hist_view: shown (scrolled rows do not go to the history)
@@ -1443,6 +1449,8 @@ cfg_fcb:        defs 36
         defs (256 - ($ & 0FFh)) & 0FFh
         include "../build/font4x8.inc"
         include "../build/tables.inc"
+        defs (256 - ($ & 0FFh)) & 0FFh
+        include "../build/font_pet.inc"
 
 PROGRAM_END:
 
@@ -1465,9 +1473,10 @@ sauce_buf       equ in_buf + 128*IN_RECORDS     ; 256: the last two records (SAU
 rx_raw          equ sauce_buf                   ; 253: a TCPRECV (SAUCE is not used on line)
 book            equ sauce_buf + 256             ; BOOK_MAX entries of the address book
 cfg_buf         equ book + BOOK_ENTRY*BOOK_MAX  ; CFG_BUF_SIZE: the text of SAPITERM.CFG
+xm_pkt          equ cfg_buf                     ; 1030: a block of XMODEM / YMODEM (no download while the file
+                                                ; is written, no file while a download runs)
 log_buf         equ cfg_buf + CFG_BUF_SIZE      ; 128: a record of the session log
-xm_pkt          equ log_buf + 128               ; 1030: a block of XMODEM / YMODEM
-STACK_TOP       equ xm_pkt + 1030 + 256
+STACK_TOP       equ log_buf + 128 + 256
 BSS_END         equ STACK_TOP
 hist_buf        equ STACK_TOP                   ; the history up to D5FFh (C000h and on with MAP_CPM only)
 HIST_LINES      equ (0D600h - hist_buf) / HIST_REC

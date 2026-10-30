@@ -25,22 +25,33 @@ scr_init:
         ld (view_y),a
         jp scr_cls
 
-; term_size: term_cols, term_rows and cga_wide for the terminal card: the AND-1V 64x20, the CGA-1V 80x25, or
-; 40x25 on line with cols40 (COLUMNS=40). Changes A, B.
+; term_size: term_cols, term_rows and cga_wide for the terminal card: the AND-1V 64x20 (PETSCII 40x20), the CGA-1V
+; 80x25, or 40x25 on line with cols40 (COLUMNS=40) or PETSCII. Changes A, B.
 term_size:
         xor a
         ld (cga_wide),a
         ld a,(term_dev)
         cp DEV_CGA
-        ld a,AND_COLS
+        jr z,tsz_cga
         ld b,AND_ROWS
-        jr nz,tsz_set
+        ld a,(cs_type)          ; PETSCII has 40 columns on the AND-1V too (40x20)
+        cp CS_PETSCII
+        ld a,SCR_COLS/2
+        jr z,tsz_set
+        ld a,AND_COLS
+        jr tsz_set
+tsz_cga:
         ld b,SCR_ROWS
         ld a,(mode)
         cp MODE_ONLINE
         ld a,SCR_COLS
         jr nz,tsz_set
+        ld a,(cs_type)          ; PETSCII is 40 columns always
+        cp CS_PETSCII
+        ld a,1
+        jr z,tsz_wide
         ld a,(cols40)
+tsz_wide:
         ld (cga_wide),a
         or a
         ld a,SCR_COLS
@@ -57,6 +68,7 @@ tsz_set:
 ; Changes all.
 term_resize:
         call term_size
+        call pet_palette        ; the colours of the C64 only on the CGA-1V
         ld a,(term_rows)
         ld b,a
         ld a,(cur_row)

@@ -384,9 +384,15 @@ ol_open:
         ld (in_ptr),hl
         ld (in_end),hl
         call js_by_speed
+        ld a,(cs_type)          ; a PETSCII BBS of the book: the screen of a C64
+        cp CS_PETSCII
+        call z,pet_enter
         ld hl,t_connected
         call ol_say
         call ansi_reset
+        ld a,(cs_type)
+        cp CS_PETSCII
+        call z,pet_att
         call stat_screen
         call cur_restart
         xor a
@@ -463,6 +469,9 @@ ol_end:
         call tx_flush
         call dpi_close
         call log_stop
+        ld a,(cs_type)
+        cp CS_PETSCII
+        call z,pet_leave
         xor a
         ld (js_enable),a
         ld (mode),a
@@ -641,13 +650,25 @@ om_speed_set:
         call cfg_save_msg
         jp om_show
 om_cs:                          ; the next character set (U keeps it for the BBS)
+        call cur_hide
         ld a,(cs_type)
         inc a
         cp CS_COUNT
-        jr c,om_cs_set
+        jr c,om_cs_new
         xor a
-om_cs_set:
+om_cs_new:
+        push af
+        ld a,(cs_type)
+        cp CS_PETSCII
+        call z,pet_leave        ; from PETSCII: the ANSI terminal again
+        pop af
         ld (cs_type),a
+        cp CS_PETSCII
+        jr nz,om_cs_naws
+        call pet_enter          ; to PETSCII: the screen of a C64
+om_cs_naws:
+        call tn_naws            ; the size may have changed
+        call tx_flush
         xor a
         ld (utf_need),a
         ld hl,0
@@ -686,10 +707,14 @@ txt_bd:
 
 ; js_by_speed: jump scroll on line only at full speed (a modem shows line by line). Changes A.
 js_by_speed:
+        ld a,(cs_type)          ; PETSCII: no line feeds to look for
+        cp CS_PETSCII
+        jr z,jbs_off
         ld a,(speed)
         or a
         ld a,1
         jr z,jbs_set
+jbs_off:
         xor a
 jbs_set:
         ld (js_enable),a
@@ -837,7 +862,7 @@ fi_byte:
         ld a,(hl)
         inc hl
         ld (in_ptr),hl
-        call ansi_putc
+        call term_putc          ; ansi_putc, or pet_putc
         jr feed_input
 
 ; The speed of the line: pace_acc counts the time (in counts of 55930 Hz, the MPH-1V counter 0, without it
@@ -932,7 +957,7 @@ pc_one:
         ld a,(hl)
         inc hl
         ld (in_ptr),hl
-        call ansi_putc
+        call term_putc          ; ansi_putc, or pet_putc
         pop bc
         djnz pc_byte
         ret
@@ -967,6 +992,10 @@ speed_names:
 ; (kbd_type chooses). Changes all.
 key_send:
         ld c,a
+        ld a,(cs_type)
+        cp CS_PETSCII
+        ld a,c
+        jp z,pet_key
         ld hl,keys_ekl
         ld a,(kbd_type)
         or a

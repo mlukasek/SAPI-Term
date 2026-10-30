@@ -12,6 +12,7 @@ Keys of the menu:
   text in a character set (CHARSET_TEXT, the screen cleared first): U UTF-8 (with more Unicode), L Latin-2,
   W CP1250, P CP852, K Kamenicky, O KOI-8cs2;
   B blinking text (SGR 5 and 100-107 without iCE), I the same with iCE (bright backgrounds);
+  G a PETSCII page (pet_bytes: colours, reverse, the graphics, cursor keys, DEL, INST, both letter sets);
   downloads (binary mode first): Y YMODEM batch of YMODEM_FILES, X XMODEM (128 byte blocks, CRC) of
   XMODEM_FILE; the result goes to the log as xfer ('ok' or what failed).
   python tools/testbbs.py [--port 6023] [--log build/testbbs.json]
@@ -49,6 +50,25 @@ XMODEM_FILE = 'ANSITEST'
 
 def art_file(name):
     return open(os.path.join(ROOT, 'build', 'art', name + '.ANS'), 'rb').read()
+
+
+def pet_bytes():
+    """A PETSCII page for a C64 terminal (SAPI-Term in the set PETSCII)."""
+    def t(text):
+        return text.encode('ascii')
+    b = b'\x93\x05' + t('WHITE ') + b'\x1c' + t('RED ') + b'\x1e' + t('GREEN ') + b'\x1f' + t('BLUE ')
+    b += b'\x9e' + t('YELLOW') + b'\x0d\x81' + t('ORANGE ') + b'\x95' + t('BROWN ') + b'\x96' + t('LT RED ')
+    b += b'\x97' + t('DK GREY') + b'\x0d\x98' + t('GREY ') + b'\x99' + t('LT GREEN ') + b'\x9a' + t('LT BLUE ')
+    b += b'\x9b' + t('LT GREY ') + b'\x9c' + t('PURPLE ') + b'\x9f' + t('CYAN WRAPS') + b'\x0d'
+    b += b'\x12\x1c' + t('REVERSE') + b'\x92' + t(' NORMAL ') + b'\x12\x05' + t(' WHITE RVS ') + b'\x0d'
+    b += b'\x9e' + bytes(range(0x60, 0x80)) + b'\x0d\x9a' + bytes(range(0xA0, 0xC0)) + b'\x0d'
+    b += b'\x05\xb0' + b'\xc0' * 10 + b'\xae\x0d\xdd' + t('  BOX     ') + b'\xdd\x0d\xad' + b'\xc0' * 10 + b'\xbd\x0d'
+    b += b'\x1e' + t('ABCDEF') + b'\x14\x14' + t('Z') + b'\x0d' + t('12345') + b'\x9d\x9d\x94' + t('I') + b'\x0d'
+    b += b'\x13\x11\x11\x11' + b'\x1d' * 30 + b'\x1c' + t('X') + b'\x91\x9d\x9d' + t('Y')
+    b += b'\x13' + b'\x11' * 16 + b'\x0e\x9b' + t('LOWER ') + b'\xc1\xce\xc4' + t(' UPPER') + b'\x0d'
+    for i in range(12):
+        b += b'\x9f' + t('LINE %d ' % i) + b'\xa6' * (i + 1) + b'\x0d'
+    return b + b'\x8e\x05' + t('UPPER AGAIN')
 
 
 def blink_bytes(ice):
@@ -317,7 +337,12 @@ class Session:
                 self.send(bytes([b]))
             return None
         c = chr(b).upper()
-        if c in 'YX':
+        if c == 'G':
+            data = pet_bytes()
+            self.send(data)
+            self.log['sent'].append({'page': 'PETSCII', 'bytes': len(data)})
+            self.save()
+        elif c in 'YX':
             self.log['xfer'] = None
             self.save()
             try:
