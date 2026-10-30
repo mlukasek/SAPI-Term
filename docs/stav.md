@@ -145,7 +145,8 @@
       blikání), klávesy;
     - skutečná služba Telstar (`glasstty.com:6502`), správně (`build/preview/f8_vdt_telstar.png`). V adresáři
       není: zbylo by jediné volné místo. Připojit adresou, v menu Z zvolit VIEWDATA, U ji uloží.
-  - **Paměť:** buffery a zásobník končí na BC24h, pod C000h zbývá asi 1 KB. Historie bez CGA-1V má 38 řádků.
+  - **Paměť:** `SAPITERM.CFG` se čte a píše po záznamech 128 B (dřív celý soubor v bufferu 2,7 KB). Buffery
+    a zásobník končí na B5AAh, pod C000h zbývá 2,6 KB. Historie bez CGA-1V má 48 řádků.
 
 ## Plán (schválený 2026-10-30, rozhodnutí v `docs/rozhodnuti.md`)
 
@@ -164,7 +165,7 @@
 ## Další krok
 
 Fáze 9: skutečný HW dávkově s autorem (`docs/hw-otazky.md`). Do té doby drobnosti: zvonek BEL na YM3812 (MPH-1V),
-volba raw TCP pro BBS bez telnetu, uvolnění paměti (čtení `SAPITERM.CFG` po záznamech).
+volba raw TCP pro BBS bez telnetu.
 
 ## Otevřené drobnosti
 
@@ -182,7 +183,7 @@ volba raw TCP pro BBS bez telnetu, uvolnění paměti (čtení `SAPITERM.CFG` po
   ukazuje stále.
 - **Znaková sada BBS Liane** (`bbs.vslib.cz`) není známá: úvodní obrazovka je v ASCII a hlubší pohled chce
   přihlášení (BBS nabízí veřejný účet `guest`). V adresáři je zatím CP437. Na BBS se dá vyzkoušet Z a uložit U.
-- **Paměť:** program má 29,8 KB. Historie bez CGA-1V (v RAM) se s každým dalším kódem zmenšuje, teď 53 řádků.
-  Víc místa by dalo čtení a zápis `SAPITERM.CFG` po záznamech (2,7 KB) nebo písma nahrávaná ze souboru.
+- **Paměť:** program má 31,2 KB a pod C000h zbývají 2,6 KB. Historie bez CGA-1V (v RAM) se s každým dalším kódem
+  zmenšuje (48 řádků). Víc místa by daly písma PETSCII a ATASCII nahrávaná ze souboru až při potřebě.
 - **Aleco Experience BBS** (Praha, Atari, `bbs.alecoexp.cz`) 2026-10-30 spojení na port 23 odmítala, web běží.
   Zkusit později a případně přidat.

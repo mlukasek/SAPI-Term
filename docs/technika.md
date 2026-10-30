@@ -217,7 +217,8 @@ nenapodobí (`docs/rozhodnuti.md`).
 - **Disk:** `cfg_find_drive` hned po startu (dokud je CCP v paměti), `cfg_drive` 0 = A.
 - **FCB** `cfg_fcb` (36 B) se jménem `SAPITERMCFG` a diskem `cfg_drive` + 1.
 - **Načtení** (`cfg_load` po detekci karet):
-  - až 20 záznamů sekvenčně (B_READSEQ) do `cfg_buf`, DMA mimo 0080h, takže argumenty v 0080h zůstanou;
+  - záznam po záznamu (B_READSEQ) do `cfg_rec`, DMA mimo 0080h, takže argumenty v 0080h zůstanou;
+  - každý řádek (nejvýš `CFG_LINE` znaků) se složí v `cfg_line` a projde `cfg_parse`;
   - řádky `KEYBOARD=`, `SCREEN=`, `BBS=` (klíče bez ohledu na velikost písmen), ostatní se přeskočí.
 - **Položka adresáře** (`book`, 16 × 97 B): jméno 00h, adresa 00h, znaková sada (CS_*).
   - `book_find` hledá adresu `ui_line`;
@@ -225,8 +226,10 @@ nenapodobí (`docs/rozhodnuti.md`).
   - `book_add` přidá nebo opraví;
   - `book_delete` smaže a posune zbytek.
 - **Uložení** (`cfg_save`, s MAP = 0):
-  1. text do `cfg_buf`, za ním 1Ah až do konce záznamu;
-  2. B_DELETE, B_MAKE, B_WRITESEQ po 128 B, B_CLOSE.
+  1. B_DELETE, B_MAKE;
+  2. text přes `cfg_putc` do `cfg_rec`, plný záznam hned B_WRITESEQ, na konci 1Ah do konce záznamu;
+  3. B_CLOSE.
+  - `cfg_rec` a `cfg_line` leží v `xm_pkt`: soubor se během stahování nečte ani nepíše.
   - A = 0 uloženo, jinak plný adresář nebo disk. Hlášení dá `cfg_save_msg` do `ui_msg` a `om_msg`.
 
 ## Rychlost linky a blikání

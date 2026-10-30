@@ -1394,7 +1394,9 @@ ps_rgb:         defs 6          ; pal_slot
 om_msg:         defw 0          ; ol_menu: what the last choice did (KOI text, 0 none)
 cfg_drive:      defb 0          ; the disk of SAPITERM.COM and SAPITERM.CFG (0 = A)
 cfg_term:       defb 0          ; SCREEN=: 0 CGA-1V, 1 AND-1V
-cfg_ptr:        defw 0          ; cfg_load, cfg_save: the end of the text
+cfg_lptr:       defw 0          ; cfg_load: the end of the line in cfg_line
+cfg_optr:       defw 0          ; cfg_save: the next byte in cfg_rec
+cfg_werr:       defb 0          ; cfg_save: a record could not be written
 book_n:         defb 0          ; entries in the address book
 cs_type:        defb 0          ; character set of the BBS (CS_*)
 utf_need:       defb 0          ; UTF-8: continuation bytes still to come
@@ -1492,10 +1494,11 @@ in_buf          equ rec_buf + 128               ; IN_RECORDS * 128: input (file,
 sauce_buf       equ in_buf + 128*IN_RECORDS     ; 256: the last two records (SAUCE)
 rx_raw          equ sauce_buf                   ; 253: a TCPRECV (SAUCE is not used on line)
 book            equ sauce_buf + 256             ; BOOK_MAX entries of the address book
-cfg_buf         equ book + BOOK_ENTRY*BOOK_MAX  ; CFG_BUF_SIZE: the text of SAPITERM.CFG
-xm_pkt          equ cfg_buf                     ; 1030: a block of XMODEM / YMODEM (no download while the file
-                                                ; is written, no file while a download runs)
-log_buf         equ cfg_buf + CFG_BUF_SIZE      ; 128: a record of the session log
+xm_pkt          equ book + BOOK_ENTRY*BOOK_MAX  ; 1030: a block of XMODEM / YMODEM; cfg_rec and cfg_line in it too
+                                                ; (SAPITERM.CFG is not read or written while a download runs)
+cfg_rec         equ xm_pkt                      ; 128: a record of SAPITERM.CFG
+cfg_line        equ cfg_rec + 128               ; CFG_LINE + 2: a line of it
+log_buf         equ xm_pkt + 1030               ; 128: a record of the session log
 hv_line         equ log_buf + 128               ; HIST_REC: a row of the history put together or read back
 vdt_raw         equ hv_line + HIST_REC          ; 24 x 40: the codes of Viewdata
 vdt_dh          equ vdt_raw + 24*40             ; 24: double height in the row

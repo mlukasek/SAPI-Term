@@ -19,8 +19,7 @@ BOOK_MAX        equ 16
 NAME_MAX        equ 31
 ADDR_MAX        equ LINE_MAX
 BOOK_ENTRY      equ NAME_MAX+1+ADDR_MAX+1+1 ; name 00h, address 00h, character set
-CFG_RECORDS     equ 20                      ; records of 128 bytes read at most
-CFG_BUF_SIZE    equ CFG_RECORDS*128+128     ; the text, its end mark and the rest of the last record
+CFG_LINE        equ 126                     ; characters of a line kept (cfg_line; the rest of it is skipped)
 B_CLOSE         equ 16
 B_DELETE        equ 19
 B_READSEQ       equ 20
@@ -88,7 +87,8 @@ txt_cfg_name:
 txt_cfg_file:
         defb ':SAPITERM.CFG',0
 
-; cfg_load: settings and book from the file (no file: the defaults, an empty book). Changes all.
+; cfg_load: settings and book from the file (no file: the defaults, an empty book), read a record at a time
+; (cfg_rec), each line put together in cfg_line and parsed. Changes all.
 cfg_load:
         xor a
         ld (book_n),a
@@ -98,29 +98,57 @@ cfg_load:
         call BDOS
         inc a
         ret z                   ; no file
-        ld hl,cfg_buf           ; read up to CFG_RECORDS records
-        ld (cfg_ptr),hl
-        ld b,CFG_RECORDS
-cl_read:
-        push bc
-        ld de,(cfg_ptr)
+        ld hl,cfg_line
+        ld (cfg_lptr),hl
+cl_record:
+        ld de,cfg_rec
         ld c,B_SETDMA
         call BDOS
         ld de,cfg_fcb
         ld c,B_READSEQ
         call BDOS
-        pop bc
         or a
-        jr nz,cl_parse          ; the end of the file
-        ld hl,(cfg_ptr)
-        ld de,128
-        add hl,de
-        ld (cfg_ptr),hl
-        djnz cl_read
-cl_parse:
-        ld hl,(cfg_ptr)
-        ld (hl),1Ah             ; the end mark
-        ld hl,cfg_buf
+        jr nz,cl_one_line       ; the end of the file: its last line
+        ld hl,cfg_rec
+        ld b,128
+cl_char:
+        ld a,(hl)
+        inc hl
+        cp 1Ah
+        jr z,cl_one_line        ; the end of the text: its last line
+        push hl
+        push bc
+        cp 0Ah
+        jr z,cl_eol
+        ld hl,(cfg_lptr)        ; into the line while there is room
+        ld de,cfg_line+CFG_LINE
+        ex de,hl
+        or a
+        sbc hl,de
+        ex de,hl
+        jr z,cl_kept
+        ld (hl),a
+        inc hl
+        ld (cfg_lptr),hl
+        jr cl_kept
+cl_eol:
+        call cl_one_line
+cl_kept:
+        pop bc
+        pop hl
+        djnz cl_char
+        jr cl_record
+
+; cl_one_line: the line in cfg_line parsed (LF and 1Ah after it), cfg_line empty again. Changes all.
+cl_one_line:
+        ld hl,(cfg_lptr)
+        ld (hl),0Ah
+        inc hl
+        ld (hl),1Ah
+        ld hl,cfg_line
+        ld (cfg_lptr),hl
+; cfg_parse: the lines of the text at HL up to 1Ah. Changes all.
+cfg_parse:
 cl_line:                        ; HL = the start of a line
         call skip_blanks
         ld a,(hl)
@@ -511,12 +539,12 @@ str_same:
         inc de
         jr str_same
 
-; cfg_save: the settings and the book written to SAPITERM.CFG anew. A = 0 saved, else BDOS failed. MAP_CPM.
-; Changes all.
+; cfg_save: the settings and the book written to SAPITERM.CFG anew, a record at a time (cfg_rec through
+; cfg_putc). A = 0 saved, else BDOS failed. MAP_CPM. Changes all.
 cfg_save:
         ld a,(stat_dev)         ; with both cards the terminal card of now is kept
         or a
-        jr z,cfs_text
+        jr z,cfs_file
         ld a,(term_dev)
         cp DEV_AND
         ld a,1
@@ -524,92 +552,7 @@ cfg_save:
         xor a
 cfs_term:
         ld (cfg_term),a
-cfs_text:
-        ld de,cfg_buf
-        ld hl,cfg_header
-        call put_str
-        ld hl,key_keyboard
-        call put_str
-        ld hl,val_ekl
-        ld a,(kbd_type)
-        or a
-        jr z,cfs_kbd
-        ld hl,val_consul
-cfs_kbd:
-        call put_str
-        call put_crlf
-        ld hl,key_screen
-        call put_str
-        ld hl,val_cga
-        ld a,(cfg_term)
-        or a
-        jr z,cfs_scr
-        ld hl,val_and
-cfs_scr:
-        call put_str
-        call put_crlf
-        ld hl,key_speed
-        call put_str
-        push de
-        ld a,(speed)
-        call speed_name
-        pop de
-        call put_str
-        call put_crlf
-        ld hl,key_columns
-        call put_str
-        ld hl,val_80
-        ld a,(cols40)
-        or a
-        jr z,cfs_cols
-        ld hl,val_40
-cfs_cols:
-        call put_str
-        call put_crlf
-        xor a
-cfs_entry:
-        ld hl,book_n
-        cp (hl)
-        jr nc,cfs_end
-        push af
-        push de
-        call book_entry_a
-        ex de,hl                ; HL = the entry
-        pop de
-        push hl
-        ld hl,key_bbs
-        call put_str
-        pop hl
-        call put_str            ; the name
-        ld a,','
-        ld (de),a
-        inc de
-        inc hl
-        call put_str            ; the address
-        inc hl
-        ld a,(hl)               ; the character set, when not CP437
-        or a
-        jr z,cfs_line
-        push de
-        call cs_name
-        pop de
-        ld a,','
-        ld (de),a
-        inc de
-        call put_str
-cfs_line:
-        call put_crlf
-        pop af
-        inc a
-        jr cfs_entry
-cfs_end:
-        ld (cfg_ptr),de         ; the end mark, 1Ah up to the end of its record
-        ld a,1Ah
-        ld b,128
-cfs_pad:
-        ld (de),a
-        inc de
-        djnz cfs_pad
+cfs_file:
         call cfg_fcb_init
         ld de,cfg_fcb
         ld c,B_DELETE
@@ -621,40 +564,141 @@ cfs_pad:
         inc a
         ld a,1
         ret z                   ; the directory is full
-        ld hl,cfg_buf
-cfs_record:                     ; records up to the one with the end mark
-        push hl
-        ex de,hl
-        ld c,B_SETDMA
-        call BDOS
-        ld de,cfg_fcb
-        ld c,B_WRITESEQ
-        call BDOS
-        pop hl
+        xor a
+        ld (cfg_werr),a
+        ld hl,cfg_rec
+        ld (cfg_optr),hl
+        ld hl,cfg_header
+        call cfg_puts
+        ld hl,key_keyboard
+        call cfg_puts
+        ld hl,val_ekl
+        ld a,(kbd_type)
         or a
-        jr nz,cfs_failed        ; the disk is full
-        ld de,128
-        add hl,de
-        ex de,hl
-        ld hl,(cfg_ptr)
+        jr z,cfs_kbd
+        ld hl,val_consul
+cfs_kbd:
+        call cfg_puts
+        call cfg_crlf
+        ld hl,key_screen
+        call cfg_puts
+        ld hl,val_cga
+        ld a,(cfg_term)
+        or a
+        jr z,cfs_scr
+        ld hl,val_and
+cfs_scr:
+        call cfg_puts
+        call cfg_crlf
+        ld hl,key_speed
+        call cfg_puts
+        ld a,(speed)
+        call speed_name
+        call cfg_puts
+        call cfg_crlf
+        ld hl,key_columns
+        call cfg_puts
+        ld hl,val_80
+        ld a,(cols40)
+        or a
+        jr z,cfs_cols
+        ld hl,val_40
+cfs_cols:
+        call cfg_puts
+        call cfg_crlf
+        xor a
+cfs_entry:
+        ld hl,book_n
+        cp (hl)
+        jr nc,cfs_end
+        push af
+        call book_entry_a
+        push de
+        ld hl,key_bbs
+        call cfg_puts
+        pop hl
+        call cfg_puts           ; the name
+        ld a,','
+        call cfg_putc
+        inc hl
+        call cfg_puts           ; the address
+        inc hl
+        ld a,(hl)               ; the character set, when not CP437
+        or a
+        jr z,cfs_line
+        call cs_name
+        ld a,','
+        call cfg_putc
+        call cfg_puts
+cfs_line:
+        call cfg_crlf
+        pop af
+        inc a
+        jr cfs_entry
+cfs_end:                        ; 1Ah up to the end of the last record
+        ld hl,(cfg_optr)
+        ld de,cfg_rec
         or a
         sbc hl,de
-        ex de,hl
-        jr nc,cfs_record
+        jr z,cfs_close
+        ld a,1Ah
+        call cfg_putc
+        jr cfs_end
+cfs_close:
         ld de,cfg_fcb
         ld c,B_CLOSE
         call BDOS
         inc a
         ld a,1
         ret z
-        xor a
+        ld a,(cfg_werr)
         ret
-cfs_failed:
-        ld de,cfg_fcb
-        ld c,B_CLOSE
+
+; cfg_putc: A into cfg_rec, a full record written to the file (a failure in cfg_werr). Changes A.
+cfg_putc:
+        push bc
+        push de
+        push hl
+        ld hl,(cfg_optr)
+        ld (hl),a
+        inc hl
+        ld (cfg_optr),hl
+        ld de,cfg_rec+128
+        or a
+        sbc hl,de
+        jr nz,cpc_done
+        ld de,cfg_rec
+        ld (cfg_optr),de
+        ld c,B_SETDMA
         call BDOS
+        ld de,cfg_fcb
+        ld c,B_WRITESEQ
+        call BDOS
+        or a
+        jr z,cpc_done
         ld a,1
+        ld (cfg_werr),a
+cpc_done:
+        pop hl
+        pop de
+        pop bc
         ret
+
+; cfg_puts: the text at HL (00h at the end) through cfg_putc, HL stays on its 00h. Changes A, HL.
+cfg_puts:
+        ld a,(hl)
+        or a
+        ret z
+        call cfg_putc
+        inc hl
+        jr cfg_puts
+
+; cfg_crlf: CR LF through cfg_putc. Changes A.
+cfg_crlf:
+        ld a,0Dh
+        call cfg_putc
+        ld a,0Ah
+        jp cfg_putc
 cfg_header:
         defb '; SAPI-Term: nastaveni a adresar BBS. Lezi vedle SAPITERM.COM, SAPI-Term ho prepisuje.',0Dh,0Ah
         defb '; KEYBOARD=EKL-1 nebo CONSUL, SCREEN=CGA nebo AND (terminal na karte),',0Dh,0Ah
