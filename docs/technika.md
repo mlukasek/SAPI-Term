@@ -297,6 +297,16 @@ nenapodobí (`docs/rozhodnuti.md`).
 - Glyf `font_ata` (128 × 8 B, za `font_pet`, kreslí se také bez zdvojení), AND-1V `and_map_ata`.
 - Klávesy `ata_key` (tabulka `ata_keys`).
 
+## Viewdata (`src/vdt.asm`)
+
+- `cs_type` = CS_VIEWDATA (9), `vdt_enter` (odchod `pet_leave`), paleta `vdt_rgb` (8 barev teletextu), `ice_mode`
+  = 0 (bit 7 atributu = blikání), `cur_off` = 1 do DC1.
+- `vdt_raw` (24 × 40 kódů), `vdt_dh` (řádek s dvojitou výškou). `vdt_write` → `vdt_row` (celý řádek, případně
+  řádky pod ním) nebo `vdt_cell`. Dekódování `vdt_step` (stav `vs_*`), dolní řádek `vdt_row_lower`.
+- Buňka: znak (atribut jako mezera), atribut blikání << 7 | pozadí << 4 | barva (skryté: barva = pozadí),
+  příznaky EXT_VDT (08h), VDT_MOS (10h), VDT_SEP (20h), VDT_DHT (40h), VDT_DHB (80h).
+- Glyf `ga_vdt` (z `glyph_addr`), AND-1V `ach_vdt` (mozaika → grafika 2×3 AND-1V), klávesy `vdt_key`.
+
 ## Znakové sady (`src/charset.asm`)
 
 - `cs_type` (CS_CP437 … CS_KOI8) se nastaví v `online` z adresáře (podle adresy), jinak CP437. Menu Z ho přepíná,

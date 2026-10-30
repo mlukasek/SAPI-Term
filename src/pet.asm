@@ -42,13 +42,15 @@ pet_leave:
         call scr_reset_region
         jp scr_cls
 
-; term8_enter: the terminal of the set cs_type when it is PETSCII or ATASCII. Changes all.
+; term8_enter: the terminal of the set cs_type when it is PETSCII, ATASCII or Viewdata. Changes all.
 term8_enter:
         ld a,(cs_type)
         cp CS_PETSCII
         jp z,pet_enter
         cp CS_ATASCII
         jp z,ata_enter
+        cp CS_VIEWDATA
+        jp z,vdt_enter
         ret
 
 ; term8_att: cur_att of PETSCII or ATASCII (after ansi_reset). Changes A.
@@ -58,6 +60,8 @@ term8_att:
         jp z,pet_att
         cp CS_ATASCII
         jp z,ata_att
+        cp CS_VIEWDATA
+        jp z,vdt_att
         ret
 
 ; term8_leave: from PETSCII or ATASCII the ANSI terminal again. Changes all.
@@ -81,8 +85,13 @@ pet_palette:
         jr ppl_set
 ppl_ata:
         cp CS_ATASCII
-        jr nz,ppl_set
+        jr nz,ppl_vdt
         ld hl,ata_rgb
+        jr ppl_set
+ppl_vdt:
+        cp CS_VIEWDATA
+        jr nz,ppl_set
+        ld hl,vdt_rgb
 ppl_set:
         ld (rgb_tab),hl
         ld hl,pal_dirty

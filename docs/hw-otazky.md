@@ -64,6 +64,11 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 
 1. **ATASCII:** `SAPITERM 15` (Southern Amis), Return. Kresba Atari 800XL a inverzní text, barvy Atari.
 
+## SAPITERM 0.8 (fáze 8, Viewdata)
+
+1. **Viewdata:** připojit `glasstty.com:6502` (Telstar), v menu Z zvolit VIEWDATA. Barvy teletextu, dvojitá výška,
+   mozaiky. Enter = # (pokračovat).
+
 ## Na později
 
 - **Čekání DPI-1L (WAIT) při TCP:** jak dlouho drží Z80 jeden TCPRECV a TCPSTATUS při běžném provozu

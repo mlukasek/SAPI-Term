@@ -291,3 +291,19 @@ Autor byl stále pryč, rozhodoval jsem sám.
 - **Historie ve stránce B CGA-1V:** terminál kreslí jen do stránky A, stránka B (16 000 B) byla volná. Kruh je tam
   93 řádků a nezmenšuje se, když program roste. Přístup přes MAP_CGA a CONFIG D1 (procesor na stránce B), potom
   zpět A. Záznam se skládá a čte v bufferu `hv_line` v RAM. Bez CGA-1V zůstává kruh v RAM za zásobníkem.
+
+## 2026-10-30: fáze 8, Viewdata
+
+- **Kódy zvlášť, obrazovka ze stínu:** sériové atributy teletextu platí od své buňky do konce řádku. Přijaté kódy
+  jsou proto ve `vdt_raw` (960 B) a řádek se z nich dekóduje zleva do stínu přes `scr_set` (počty dvojic barev
+  zůstanou správné).
+  - Celý řádek se přepočte, když atribut přijde nebo zmizí, nebo když má řádek či řádek nad ním dvojitou výšku.
+  - Jinak se přepočte jen jedna buňka (stav od začátku řádku).
+- **Glyf se dělá při kreslení** (`ga_vdt` do `vdt_glyph`): písmena z písma ATASCII a sedmi britských znaků
+  (`vdt_extra`), mozaiky jako bloky 2×3 (řádky 3/2/3, oddělené bez posledního sloupce a řádku bloku), polovina
+  glyfu dvakrát pro dvojitou výšku. Tabulka 128 mozaik by stála 1 KB.
+- **Atribut „set-at“ a „set-after“** podle teletextu úrovně 1: hned platí ustálené písmo, normální výška, skrytí,
+  souvislé a oddělené mozaiky, černé a nové pozadí; od další buňky barvy, blikání a dvojitá výška. Bez „hold
+  mosaics“.
+- **Enter posílá `_`** (5Fh, klávesa # Prestelu, kterou Telstar čeká na potvrzení volby).
+- **Telstar není ve výchozím adresáři:** byl by šestnáctou položkou a uživateli by nezbylo místo. Je v dokumentaci.

@@ -46,9 +46,9 @@ tsz_cga:
         cp MODE_ONLINE
         ld a,SCR_COLS
         jr nz,tsz_set
-        ld a,(cs_type)          ; PETSCII 40x25 and ATASCII 40x24 always
+        ld a,(cs_type)          ; PETSCII 40x25, ATASCII and Viewdata 40x24 always
         cp CS_ATASCII
-        jr nz,tsz_pet
+        jr c,tsz_pet
         dec b
 tsz_pet:
         cp CS_PETSCII

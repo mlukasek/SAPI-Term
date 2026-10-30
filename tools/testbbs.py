@@ -15,6 +15,8 @@ Keys of the menu:
   G a PETSCII page (pet_bytes: colours, reverse, the graphics, cursor keys, DEL, INST, both letter sets);
   A an ATASCII page (ata_bytes: the graphics, inverse, ESC, cursor keys, tab, delete and insert of lines and
   characters, scrolling);
+  V a Viewdata page (vdt_bytes: colours, mosaics contiguous and separated, double height, flash, conceal,
+  backgrounds, the British characters, cursor keys and wrapping);
   downloads (binary mode first): Y YMODEM batch of YMODEM_FILES, X XMODEM (128 byte blocks, CRC) of
   XMODEM_FILE; the result goes to the log as xfer ('ok' or what failed).
   python tools/testbbs.py [--port 6023] [--log build/testbbs.json]
@@ -52,6 +54,29 @@ XMODEM_FILE = 'ANSITEST'
 
 def art_file(name):
     return open(os.path.join(ROOT, 'build', 'art', name + '.ANS'), 'rb').read()
+
+
+def vdt_bytes():
+    """A Viewdata page for a Prestel terminal (SAPI-Term in the set VIEWDATA)."""
+    def t(text):
+        return text.encode('ascii')
+
+    def e(code):                                # an attribute as ESC + 40h-5Fh
+        return bytes([0x1B, code - 0x40])
+    b = b'\x0c' + e(0x8D) + e(0x83) + t('SAPI-TERM VIEWDATA') + e(0x8C) + e(0x86) + t('small') + b'\r\n\n'
+    b += e(0x81) + t('RED') + e(0x82) + t('GREEN') + e(0x83) + t('YELLOW') + e(0x84) + t('BLUE') + e(0x85)
+    b += t('MAG') + e(0x86) + t('CYAN') + b'\r\n'
+    b += e(0x91) + bytes(range(0x20, 0x40)) + b'\r\n'
+    b += e(0x96) + e(0x9A) + bytes(range(0x60, 0x80)) + b'\r\n'
+    b += e(0x92) + e(0x9D) + e(0x97) + t('WHITE ON GREEN') + e(0x9C) + t('BLACK BG') + b'\r\n'
+    b += e(0x88) + t('FLASHING') + e(0x89) + t(' STEADY ') + e(0x98) + t('HIDDEN') + e(0x83) + t('SEEN') + b'\r\n'
+    b += t('# [ \\ ] ^ _ ` { | } ~ ') + bytes([0x7F]) + b'\r\n'
+    b += bytes([0x93, 0x7F, 0x7F, 0x7F, 0x94]) + t('8BIT') + b'\r\n'
+    b += e(0x8D) + e(0x95) + bytes(range(0x60, 0x70)) + e(0x87) + t('DOUBLE') + b'\r\n\n'
+    b += t('under the double row') + b'\r\n'
+    b += b'\x1e\n\n\n' + b'\t' * 30 + t('X') + b'\x08\x08\x08\x0b' + t('Y')
+    b += b'\x1e' + b'\x0b' + t('LAST ROW, WRAPS TO THE TOP') + b'\x0d' + b'\x08' + t('Z')
+    return b
 
 
 def ata_bytes():
@@ -361,7 +386,12 @@ class Session:
                 self.send(bytes([b]))
             return None
         c = chr(b).upper()
-        if c == 'A':
+        if c == 'V':
+            data = vdt_bytes()
+            self.send(data)
+            self.log['sent'].append({'page': 'VIEWDATA', 'bytes': len(data)})
+            self.save()
+        elif c == 'A':
             data = ata_bytes()
             self.send(data)
             self.log['sent'].append({'page': 'ATASCII', 'bytes': len(data)})

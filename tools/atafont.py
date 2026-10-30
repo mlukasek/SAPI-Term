@@ -3,7 +3,8 @@
 128 glyphs by the ATASCII code 00h-7Fh (80h-FFh are the same in inverse video, drawn with the colours swapped):
 letters, digits and signs are the font 4x8 of SAPI-Term with each dot doubled (as in tools/petfont.py), the
 graphics 00h-1Fh, 60h and 7Bh-7Fh are drawn here from what each character means (the ATASCII article of
-Wikipedia lists them as Unicode). Nothing is taken from an Atari ROM. Also and_map_ata for the AND-1V.
+Wikipedia lists them as Unicode). Nothing is taken from an Atari ROM. Also and_map_ata for the AND-1V, and
+vdt_extra: the characters of the British teletext set ATASCII lacks (src/vdt.asm: £ ½ ¼ ¾ ‖ ÷ ■).
   python tools/atafont.py
 """
 import os
@@ -67,6 +68,19 @@ GRAPHICS = {
 }
 
 
+VDT_HAND = {
+    'three_quarters': ['##......', '..#.....', '##...#..', '..#.#...', '##.#.##.', '..#.#.#.', '.#..####', '......#.'],
+    'double_bar': ['.##..##.', '.##..##.', '.##..##.', '.##..##.', '.##..##.', '.##..##.', '.##..##.', '.##..##.'],
+}
+
+
+def vdt_extra():
+    """£ ½ ¼ ¾ ‖ ÷ ■ (Viewdata 23h, 5Ch, 7Bh, 7Dh, 7Ch, 7Eh, 7Fh): the font 4x8 doubled where CP437 has them."""
+    cp = fontgen.parse()['cp437']
+    return [pf.doubled(cp[0x9C]), pf.doubled(cp[0xAB]), pf.doubled(cp[0xAC]), pf.grid(VDT_HAND['three_quarters']),
+            pf.grid(VDT_HAND['double_bar']), pf.doubled(cp[0xF6]), pf.cells(lambda x, y: True)]
+
+
 def build():
     cp = fontgen.parse()['cp437']
     return [GRAPHICS[c] if c in GRAPHICS else pf.doubled(cp[c]) for c in range(128)]
@@ -103,6 +117,9 @@ def main():
     m = and_map(glyphs)
     for i in range(0, 128, 16):
         out.append('        defb ' + ','.join('%03Xh' % v for v in m[i:i + 16]))
+    out.append('vdt_extra:                      ; the pound, 1/2, 1/4, 3/4, double bar, divide, block (vdt.asm)')
+    for g in vdt_extra():
+        out.append('        defb %s' % ','.join('%03Xh' % b for b in pf.glyph_bytes(g)))
     path = os.path.join(ROOT, 'build', 'font_ata.inc')
     open(path, 'w', encoding='ascii', newline='\n').write('\n'.join(out) + '\n')
     print('build/font_ata.inc: 128 glyphs 8x8')

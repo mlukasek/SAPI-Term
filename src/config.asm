@@ -12,7 +12,7 @@
 ;   BBS=name,host[:port][,set]    at most BOOK_MAX, in this order on the start screen (no ',' in the name);
 ;                                 set = the character set of the BBS (charset.asm: CP437 when none, UTF-8,
 ;                                 LATIN2, CP1250, CP852, KAMENICKY, KOI8, PETSCII: the terminal of a C64,
-;                                 ATASCII: of an Atari)
+;                                 ATASCII: of an Atari, VIEWDATA: Prestel)
 ; Saving writes the file anew from the settings and the book (comments and unknown lines are not kept).
 
 BOOK_MAX        equ 16
@@ -663,7 +663,7 @@ cfg_header:
         defb '; BBS=jmeno,adresa[:port][,sada] (nejvys 16, poradi jako na uvodni obrazovce, jmeno bez carky),'
         defb 0Dh,0Ah
         defb ';   sada znaku BBS: CP437 (bez udani), UTF-8, LATIN2, CP1250, CP852, KAMENICKY, KOI8, PETSCII,'
-        defb 0Dh,0Ah,';   ATASCII.'
+        defb 0Dh,0Ah,';   ATASCII, VIEWDATA.'
         defb 0Dh,0Ah,0
 
 ; put_str: the text at HL (00h at the end) to DE, HL stays on its 00h. Changes A, DE, HL.

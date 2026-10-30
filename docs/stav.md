@@ -132,6 +132,20 @@
   - **Výchozí adresář má 15 BBS:** přibyla Southern Amis (Atari) se sadou ATASCII.
   - **Historie** je ve stránce B videopaměti CGA-1V, kterou terminál nezobrazuje: 93 řádků. Bez CGA-1V je v RAM
     (53 řádků). Řádek si pamatuje i písmo (PETSCII, ATASCII), záznam má 171 B.
+- **Fáze 8 hotová:** `SAPITERM.COM` 0.8 (31,2 KB), poslední část Viewdata (Prestel).
+  - **Zapnutí:** sada VIEWDATA (desátá v menu Z, v adresáři `,VIEWDATA`).
+  - **Obrazovka:** 40×24 v 8 barvách teletextu.
+  - **Sériové atributy úrovně 1:** barvy písmen a mozaik, pozadí (černé, nové), blikání, skrytý text, dvojitá
+    výška (řádek pod ní ukazuje dolní poloviny), mozaiky 2×3 souvislé i oddělené.
+  - **Kódy:** atribut jako ESC + 40h–5Fh i jako 80h–9Fh. Kurzor obtáčí, nic neroluje (jako Prestel).
+  - **Klávesy:** Enter posílá `_` (klávesa # Prestelu), šipky 08h–0Bh.
+  - **Bez „hold mosaics“:** buňka atributu je vždy mezera.
+  - **Ověřeno:**
+    - `tools/emu/phase8.py`: stránka V testovací BBS proti modelu `tools/vdtref.py` (stín i obraz v obou fázích
+      blikání), klávesy;
+    - skutečná služba Telstar (`glasstty.com:6502`), správně (`build/preview/f8_vdt_telstar.png`). V adresáři
+      není: zbylo by jediné volné místo. Připojit adresou, v menu Z zvolit VIEWDATA, U ji uloží.
+  - **Paměť:** buffery a zásobník končí na BC24h, pod C000h zbývá asi 1 KB. Historie bez CGA-1V má 38 řádků.
 
 ## Plán (schválený 2026-10-30, rozhodnutí v `docs/rozhodnuti.md`)
 
@@ -144,13 +158,13 @@
    (UTF-8, Latin-2, CP1250, CP852, Kamenický, KOI-8čs) a čeština z EKL-1~~
 6. ~~ANSI art a animace: rychlost modemu, blikání, 40×25 (písmo 4×8 zdvojené), rychlejší kreslení~~
 7. ~~Historie a záznam relace, stahování XMODEM/YMODEM (na disk programu)~~
-8. **PETSCII, ATASCII, Viewdata** (40 sloupců, vlastní fonty, případně overlay).
+8. ~~PETSCII, ATASCII, Viewdata (40 sloupců, vlastní písma)~~
 9. **Skutečný HW** dávkově s autorem.
 
 ## Další krok
 
-Fáze 8 dál: Viewdata (Prestel, mozaiková grafika; zkouška na Telstar, glasstty.com:6502). Pak fáze 9: skutečný HW
-dávkově s autorem.
+Fáze 9: skutečný HW dávkově s autorem (`docs/hw-otazky.md`). Do té doby drobnosti: zvonek BEL na YM3812 (MPH-1V),
+volba raw TCP pro BBS bez telnetu, uvolnění paměti (čtení `SAPITERM.CFG` po záznamech).
 
 ## Otevřené drobnosti
 

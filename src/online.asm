@@ -989,6 +989,10 @@ key_send:
         cp CS_ATASCII
         ld a,c
         jp z,ata_key
+        ld a,(cs_type)
+        cp CS_VIEWDATA
+        ld a,c
+        jp z,vdt_key
         ld hl,keys_ekl
         ld a,(kbd_type)
         or a

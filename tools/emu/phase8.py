@@ -1,11 +1,12 @@
-"""Phase 8 check: PETSCII (the terminal of a C64) and ATASCII (of an Atari).
+"""Phase 8 check: PETSCII (the terminal of a C64), ATASCII (of an Atari) and Viewdata (Prestel).
 
 With the local test BBS (tools/testbbs.py, started here): menu Z seven times to PETSCII (40 columns, NAWS 40x25),
 the PETSCII page G (colours, reverse, all graphics, cursor keys, DEL, INST, both letter sets, scrolling): the
 shadow and the CGA-1V picture equal the model tools/petref.py (font_pet, the colours of the C64); keys as a C64
 sends them; Tab: the page on the AND-1V, Tab: the CGA-1V picture again; U keeps the BBS with PETSCII, its number
 connects in PETSCII at once; Z to ATASCII (40x24): the page A against
-the model tools/ataref.py, the picture, keys as an Atari sends them; Z back to CP437 (80x25). Needs the emulator with MCP (tools/emu/sapiemu.cmd) and
+the model tools/ataref.py, the picture, keys as an Atari sends them; Z to VIEWDATA: the page V against
+tools/vdtref.py, keys; Z back to CP437 (80x25). Needs the emulator with MCP (tools/emu/sapiemu.cmd) and
 build.cmd. Screenshots to build/preview/f8_*.png.
   python tools/emu/phase8.py
 """
@@ -22,6 +23,7 @@ import emu  # noqa: E402
 from emu import mcp  # noqa: E402
 import ansiref  # noqa: E402
 import ataref  # noqa: E402
+import vdtref  # noqa: E402
 import petfont  # noqa: E402
 import petref  # noqa: E402
 import testbbs  # noqa: E402
@@ -31,6 +33,7 @@ from phase4 import check, failed, keys, log, run_until, LOG, PORT  # noqa: E402
 PREVIEW = os.path.join(emu.REPO, 'build', 'preview')
 CS_PETSCII = 7
 CS_ATASCII = 8
+CS_VIEWDATA = 9
 
 
 def pet_matches(sym, model):
@@ -111,6 +114,65 @@ def atascii(sym):
     keys('!', 500)
 
 
+def vdt_matches(sym, want):
+    """The shadow (characters, attributes, flags of 40x24) equals the display of the model."""
+    offs = emu.read(sym['row_off'], 48)
+    chars = emu.read(sym['scr_chr'], 2000)
+    atts = emu.read(sym['scr_att'], 2000)
+    exts = emu.read(sym['scr_ext'], 2000)
+    for r in range(24):
+        o = offs[2 * r] | offs[2 * r + 1] << 8
+        got = [(c, a, 8 if c == 0x20 and e == 0 else e)    # a space never written is a space of Viewdata
+               for c, a, e in zip(chars[o:o + 40], atts[o:o + 40], exts[o:o + 40])]
+        if got != want[r]:
+            return False
+    return True
+
+
+def viewdata(sym):
+    """The Viewdata page V against the model tools/vdtref.py (shadow, picture in either phase of flash), keys."""
+    model = vdtref.Term()
+    model.feed(testbbs.vdt_bytes())
+    want = model.display()
+    keys('v', 100)
+    ok = run_until(lambda: vdt_matches(sym, want), ms=20000, step=500)
+    check(ok, 'the Viewdata page: shadow equals the model')
+    if not ok:
+        offs = emu.read(sym['row_off'], 48)
+        for r in range(24):
+            o = offs[2 * r] | offs[2 * r + 1] << 8
+            got = list(zip(emu.read(sym['scr_chr'] + o, 40), emu.read(sym['scr_att'] + o, 40),
+                           emu.read(sym['scr_ext'] + o, 40)))
+            if got != want[r]:
+                c = next(i for i in range(40) if got[i] != want[r][i])
+                print('      row %d col %d: emu %s model %s' % (r, c, got[c], want[r][c]))
+    cur = (emu.read(sym['cur_row'], 1)[0], emu.read(sym['cur_col'], 1)[0])
+    check(cur == (model.row, model.col), 'Viewdata: the cursor %s (the model %s)' % (cur, (model.row, model.col)))
+    renders = [vdtref.render(model, True), vdtref.render(model, False)]
+    path = os.path.join(PREVIEW, 'f8_viewdata.png')
+    best = None
+    for _ in range(15):
+        mcp.call('run_for', ms=200)
+        mcp.call('pause')
+        emu.screenshot(path, display='CGA-1V')
+        w, h, got = ansiref.png_rgb(path)
+        for want_rgb in renders:
+            diff = sum(1 for i in range(0, len(want_rgb), 3) if want_rgb[i:i + 3] != got[i:i + 3])
+            best = diff if best is None else min(best, diff)
+        if best == 0:
+            break
+    check(best == 0, 'Viewdata: the CGA-1V picture equals the model (%d dots differ)' % best)
+    keys('e', 300)
+    before = len(log().get('keys', ''))
+    keys('Ab\r', 600)
+    mcp.call('press_key', key='up', run_ms=300)
+    mcp.call('pause')
+    sent = bytes.fromhex(log().get('keys', '')[before:])
+    check(sent.startswith(bytes([0x41, 0x62, 0x5F, 0x0B])), 'Viewdata keys: A b Enter up as 41 62 5F 0B (%s)'
+          % sent.hex(' '))
+    keys('!', 500)
+
+
 def to_petscii(sym, presses):
     keys('\x1d', 500)
     for _ in range(presses):
@@ -185,6 +247,12 @@ def main():
         check(run_until(lambda: log().get('naws', [])[-1:] == [[40, 24]], ms=5000), 'NAWS 40x24')
         keys('\x1b', 800)
         atascii(sym)
+        keys('\x1d', 500)                       # Z: Viewdata
+        keys('z', 2000)
+        check(emu.read(sym['cs_type'], 1)[0] == CS_VIEWDATA, 'Z: VIEWDATA')
+        check(emu.read(sym['term_cols'], 1)[0] == 40 and emu.read(sym['term_rows'], 1)[0] == 24, 'VIEWDATA: 40x24')
+        keys('\x1b', 800)
+        viewdata(sym)
         keys('\x1d', 500)                       # Z: CP437 again
         keys('z', 2000)
         check(emu.read(sym['cs_type'], 1)[0] == 0 and emu.read(sym['term_cols'], 1)[0] == 80, 'Z: CP437, 80 columns')

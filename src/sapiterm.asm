@@ -1179,6 +1179,7 @@ bdos_puts:
         include "history.asm"
         include "pet.asm"
         include "ata.asm"
+        include "vdt.asm"
         include "mph.asm"
         include "dpi.asm"
 
@@ -1435,6 +1436,19 @@ pet_lower:      defb 0          ; PETSCII: 80h = the lower case set
 pet_rvs:        defb 0          ; PETSCII: reverse on
 pet_fg:         defb 0          ; PETSCII: the colour of the text (0-15 of the C64)
 ata_esc:        defb 0          ; ATASCII: ESC came, the next byte is printed as it is
+vdt_esc:        defb 0          ; Viewdata: ESC came, the next byte is an attribute
+vs_fg:          defb 0          ; Viewdata: the state of a row while it is decoded (vdt_rowstart: in this order)
+vs_bg:          defb 0
+vs_mos:         defb 0          ; VDT_MOS or 0
+vs_sep:         defb 0          ; VDT_SEP or 0
+vs_flash:       defb 0
+vs_dh:          defb 0          ; VDT_DHT or 0
+vs_conc:        defb 0
+vs_code:        defb 0          ; vdt_step: the attribute
+vd_ext:         defb 0          ; vdt_step: the flags of the cell
+vr_any:         defb 0          ; vdt_row: double height in the row
+vc_col:         defb 0          ; vdt_cell
+gv_flags:       defb 0          ; ga_vdt
 hist_head:      defb 0          ; history: the next line to write
 hist_count:     defb 0          ; lines in it
 hv_on:          defb 0          ; hist_view: shown (scrolled rows do not go to the history)
@@ -1483,7 +1497,11 @@ xm_pkt          equ cfg_buf                     ; 1030: a block of XMODEM / YMOD
                                                 ; is written, no file while a download runs)
 log_buf         equ cfg_buf + CFG_BUF_SIZE      ; 128: a record of the session log
 hv_line         equ log_buf + 128               ; HIST_REC: a row of the history put together or read back
-STACK_TOP       equ hv_line + HIST_REC + 256
+vdt_raw         equ hv_line + HIST_REC          ; 24 x 40: the codes of Viewdata
+vdt_dh          equ vdt_raw + 24*40             ; 24: double height in the row
+vdt_glyph       equ vdt_dh + 24                 ; 8: the glyph made by ga_vdt (after font_pet: drawn as it is)
+vdt_dhbuf       equ vdt_glyph + 8               ; 8
+STACK_TOP       equ vdt_dhbuf + 8 + 256
 BSS_END         equ STACK_TOP
 hist_buf        equ STACK_TOP                   ; the history without a CGA-1V, up to D5FFh (C000h and on
                                                 ; with MAP_CPM only)

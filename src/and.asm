@@ -17,6 +17,8 @@ and_cls:
 ; and_char: A = character of the shadow, B = its flags -> A = code for the AND-1V (KOI-8cs2 letters as they
 ; are, CP437 through and_map_cp437). Changes HL.
 and_char:
+        bit 3,b
+        jp nz,ach_vdt
         bit 2,b
         jr nz,ach_ata
         bit 1,b

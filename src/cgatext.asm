@@ -15,6 +15,8 @@ DOMAINS         equ 7
 ; font_ata, else CP437)
 ; -> HL = glyph. Changes A.
 glyph_addr:
+        bit 3,b
+        jp nz,ga_vdt            ; Viewdata (vdt.asm): made in vdt_glyph
         bit 2,b
         jr nz,ga_ata
         bit 1,b
