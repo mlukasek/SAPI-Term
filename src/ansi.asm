@@ -207,82 +207,29 @@ csi_final:
         or a
         ret nz
         ld c,b
-        ld hl,csi_table
-csi_find:
-        ld a,(hl)
-        or a
-        ret z
-        inc hl
-        cp c
-        jr z,csi_go
-        inc hl
-        inc hl
-        jr csi_find
-csi_go:
+        ld a,b                  ; final bytes 40h-7Eh: their routine from csi_jump
+        sub 40h
+        ret c
+        add a,a
+        ld hl,csi_jump
+        call add_hl_a
         ld a,(hl)
         inc hl
         ld h,(hl)
         ld l,a
         jp (hl)
+csi_none:
+        ret
 
-csi_table:
-        defb 'A'
-        defw csi_cuu
-        defb 'B'
-        defw csi_cud
-        defb 'C'
-        defw csi_cuf
-        defb 'D'
-        defw csi_cub
-        defb 'E'
-        defw csi_cnl
-        defb 'F'
-        defw csi_cpl
-        defb 'G'
-        defw csi_cha
-        defb '`'
-        defw csi_cha
-        defb 'a'
-        defw csi_cuf
-        defb 'd'
-        defw csi_vpa
-        defb 'e'
-        defw csi_cud
-        defb 'H'
-        defw csi_cup
-        defb 'f'
-        defw csi_cup
-        defb 'J'
-        defw csi_ed
-        defb 'K'
-        defw csi_el
-        defb 'L'
-        defw csi_il
-        defb 'M'
-        defw csi_dl
-        defb '@'
-        defw csi_ich
-        defb 'P'
-        defw csi_dch
-        defb 'X'
-        defw csi_ech
-        defb 'S'
-        defw csi_su
-        defb 'T'
-        defw csi_sd
-        defb 'm'
-        defw csi_sgr
-        defb 'r'
-        defw csi_stbm
-        defb 's'
-        defw ans_save
-        defb 'u'
-        defw ans_restore
-        defb 'n'
-        defw csi_dsr
-        defb 'c'
-        defw csi_da
-        defb 0
+csi_jump:
+        defw csi_ich, csi_cuu, csi_cud, csi_cuf, csi_cub, csi_cnl, csi_cpl, csi_cha     ; @ A B C D E F G
+        defw csi_cup, csi_none, csi_ed, csi_el, csi_il, csi_dl, csi_none, csi_none      ; H I J K L M N O
+        defw csi_dch, csi_none, csi_none, csi_su, csi_sd, csi_none, csi_none, csi_none  ; P Q R S T U V W
+        defw csi_ech, csi_none, csi_none, csi_none, csi_none, csi_none, csi_none, csi_none ; X Y Z [ \ ] ^ _
+        defw csi_cha, csi_cuf, csi_none, csi_da, csi_vpa, csi_cud, csi_cup, csi_none    ; ` a b c d e f g
+        defw csi_none, csi_none, csi_none, csi_none, csi_none, csi_sgr, csi_dsr, csi_none ; h i j k l m n o
+        defw csi_none, csi_none, csi_stbm, ans_save, csi_none, ans_restore, csi_none, csi_none ; p q r s t u v w
+        defw csi_none, csi_none, csi_none, csi_none, csi_none, csi_none, csi_none       ; x y z { | } ~
 
 ; par_addr: HL = address of the current parameter. Changes A.
 par_addr:

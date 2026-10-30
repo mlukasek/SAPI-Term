@@ -212,23 +212,18 @@ scr_set:
         ld a,c
         ld (ss_att),a
         call scr_offset
-        push hl
-        ld bc,scr_chr
+        ld bc,scr_chr           ; scr_chr, scr_att, scr_ext follow each other
         add hl,bc
         ld a,(ss_chr)
         ld (hl),a
-        pop hl
-        push hl
-        ld bc,scr_ext
-        add hl,bc
-        ld a,(ss_ext)
-        ld (hl),a
-        pop hl
-        ld bc,scr_att
+        ld bc,SCR_COLS*SCR_ROWS
         add hl,bc
         ld a,(hl)
         ld (ss_old),a
         ld a,(ss_att)
+        ld (hl),a
+        add hl,bc
+        ld a,(ss_ext)
         ld (hl),a
         ld a,(term_dev)
         cp DEV_CGA
@@ -244,10 +239,23 @@ ss_cga:
         push de
         ld a,d
         call pair_row_dom
+        ld a,(ss_old)           ; the same attribute as before: its slot, the count stays
+        ld b,a
+        ld a,(ss_att)
+        cp b
+        jr nz,ss_pair
+        ld l,a
+        ld a,(pd_page)
+        ld h,a
+        ld a,(hl)
+        cp 16
+        jr c,ss_slot
+ss_pair:
         ld a,(ss_old)
         call pair_unref
         ld a,(ss_att)
         call pair_get
+ss_slot:
         push af
         call kbd_scan           ; a new pair may have taken a scan of 256 attributes
         pop af

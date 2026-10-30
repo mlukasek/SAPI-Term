@@ -55,24 +55,78 @@ cga_cell_addr:
         inc h
         ret
 
-; cga_draw: the glyph at HL at D = row, E = column with slot C. MAP_CGA. Changes A, B, DE, HL.
+; cga_draw: the glyph at HL at D = row, E = column with slot C, 8 lines unrolled (glyphs are 8 bytes,
+; 8-aligned: inc e). MAP_CGA. Changes A, B, DE, HL.
 cga_draw:
         push hl
         call cga_cell_addr
         pop de
-        ld b,8
-cdr_line:
         ld a,(de)
-        inc e                   ; glyphs are 8 bytes, 8-aligned
+        inc e
         or c
         ld (hl),a
         ld a,l
         add a,80
         ld l,a
-        jr nc,cdr_next
+        jr nc,$+3
         inc h
-cdr_next:
-        djnz cdr_line
+        ld a,(de)
+        inc e
+        or c
+        ld (hl),a
+        ld a,l
+        add a,80
+        ld l,a
+        jr nc,$+3
+        inc h
+        ld a,(de)
+        inc e
+        or c
+        ld (hl),a
+        ld a,l
+        add a,80
+        ld l,a
+        jr nc,$+3
+        inc h
+        ld a,(de)
+        inc e
+        or c
+        ld (hl),a
+        ld a,l
+        add a,80
+        ld l,a
+        jr nc,$+3
+        inc h
+        ld a,(de)
+        inc e
+        or c
+        ld (hl),a
+        ld a,l
+        add a,80
+        ld l,a
+        jr nc,$+3
+        inc h
+        ld a,(de)
+        inc e
+        or c
+        ld (hl),a
+        ld a,l
+        add a,80
+        ld l,a
+        jr nc,$+3
+        inc h
+        ld a,(de)
+        inc e
+        or c
+        ld (hl),a
+        ld a,l
+        add a,80
+        ld l,a
+        jr nc,$+3
+        inc h
+        ld a,(de)
+        or c
+        ld (hl),a
         ret
 
 ; cga_cursor_xor: invert the dots of the last line of the cell D = row, E = column (an underline in the
@@ -280,6 +334,14 @@ pair_init:
         ld bc,DOMAINS*2
         xor a
         call fill
+        ld hl,slot_att          ; owners: attribute 0 (pair_unmap checks that it has the slot)
+        ld bc,DOMAINS*16
+        xor a
+        call fill
+        ld hl,near_n
+        ld bc,DOMAINS
+        xor a
+        call fill
         ld a,0FFh               ; no domain chosen yet
         ld (pair_dom),a
         xor a
@@ -384,6 +446,10 @@ pg_find:
         ld a,c                  ; all used: the nearest pair
         call pair_nearest
         ld b,a
+        ld a,(pair_dom)         ; one more attribute on a pair not its own
+        ld hl,near_n
+        call add_hl_a
+        inc (hl)
         ld a,(pd_page)
         ld h,a
         ld l,c
@@ -464,27 +530,65 @@ pair_sub:
         ld (hl),a
         ret
 
-; pair_unmap: attributes that have slot A in the domain lose it; the keyboard is polled every 64 entries (the
-; whole scan is 1.3 ms at 4 MHz). Changes E, HL.
+; pair_unmap: attributes that have slot A in the domain lose it: its old owner (slot_att), and the
+; attributes that got it as the nearest pair, when the domain has any (near_n; the scan of all 256 takes 1.3 ms
+; at 4 MHz, the keyboard is polled every 64 entries). Changes DE, HL.
 pair_unmap:
         push af
+        push bc
+        ld c,a
+        ld hl,(pd_satt)
+        add a,l
+        ld l,a
+        jr nc,pu_owner
+        inc h
+pu_owner:
+        ld l,(hl)               ; the old owner
         ld a,(pd_page)
         ld h,a
-        pop af
+        ld a,(hl)
+        cp c
+        jr nz,pu_near
+        ld (hl),0FFh
+pu_near:
+        ld a,(pair_dom)
+        ld hl,near_n
+        call add_hl_a
+        ld a,(hl)
+        or a
+        jr z,pu_done
+        push hl
+        ld a,(pd_page)
+        ld h,a
         ld l,0
         ld e,64
+        ld b,0                  ; B = taken from the nearest ones
 pu_loop:
+        ld a,c
         cp (hl)
         jr nz,pu_next
         ld (hl),0FFh
+        inc b
 pu_next:
         inc l
-        ret z
+        jr z,pu_end
         dec e
         jr nz,pu_loop
         ld e,64
-        call kbd_scan_a
+        call kbd_scan
         jr pu_loop
+pu_end:
+        pop hl
+        ld a,(hl)
+        sub b
+        jr nc,pu_count
+        xor a
+pu_count:
+        ld (hl),a
+pu_done:
+        pop bc
+        pop af
+        ret
 kbd_scan_a:                     ; kbd_scan keeping A
         push af
         call kbd_scan

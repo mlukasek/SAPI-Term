@@ -1400,6 +1400,7 @@ cf_byte:        defb 0          ; cga_fill_rows, cga_scroll
 cf_count:       defb 0
 pal_dirty:      defs 2*DOMAINS  ; per domain: slots whose pair must go to the palette
 pn_best:        defw 0          ; pair_nearest
+near_n:         defs DOMAINS    ; per domain: attributes on the nearest pair (pair_unmap)
 pn_slot:        defb 0
 ps_rgb:         defs 6          ; pal_slot
 om_msg:         defw 0          ; ol_menu: what the last choice did (KOI text, 0 none)
