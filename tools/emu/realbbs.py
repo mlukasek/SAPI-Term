@@ -2,7 +2,9 @@
 the first screen of the BBS for a while (no login, no keys), a screenshot of the CGA-1V (build/preview/bbs_NN.png
 or bbs_HOST.png), the menu disconnects. Prints how the connection went, the telnet options agreed and the text
 rows of the screen. Needs the emulator with MCP (tools/emu/sapiemu.cmd), build.cmd and the internet.
-  python tools/emu/realbbs.py [NUMBER | HOST[:PORT] ...] [--secs N]
+  python tools/emu/realbbs.py [NUMBER | HOST[:PORT] ...] [--secs N] [--set SET] [--keys TEXT] [--shot NAME]
+--set: menu Z to the set SET (CP437 ... VIEWDATA) right after the connection; --keys: then these keys (\r for
+Enter); --shot: the screenshot build/preview/NAME.png (for one BBS).
 """
 import os
 import sys
@@ -19,6 +21,7 @@ from phase4 import row_koi  # noqa: E402
 PREVIEW = os.path.join(emu.REPO, 'build', 'preview')
 MODE_ONLINE = 2
 OPTS = {0: 'BINARY', 1: 'ECHO', 3: 'SGA', 24: 'TTYPE', 31: 'NAWS'}
+SETS = ['CP437', 'UTF-8', 'LATIN2', 'CP1250', 'CP852', 'KAMENICKY', 'KOI8', 'PETSCII', 'ATASCII', 'VIEWDATA']
 
 
 def run_wall(secs, cond=None):
@@ -32,7 +35,7 @@ def run_wall(secs, cond=None):
     mcp.call('pause')
 
 
-def one(sym, n, secs):
+def one(sym, n, secs, cs=None, keys='', shot=None):
     emu.checkpoint()
     mcp.call('resume')
     mcp.call('type_text', text='SAPITERM %s\r' % n)
@@ -42,13 +45,25 @@ def one(sym, n, secs):
         run_wall(1)
         print('%2s %-36s FAIL: %s' % (n, host, row_koi(sym, 6).strip()))
         return False
+    if cs is not None:
+        mcp.call('resume')
+        mcp.call('type_text', text='\x1d', run_ms=300)
+        for _ in range(len(SETS)):
+            if emu.read(sym['cs_type'], 1)[0] == cs:
+                break
+            mcp.call('type_text', text='z', run_ms=600)
+        mcp.call('type_text', text='\x1b', run_ms=500)
+        run_wall(4)
+    if keys:
+        mcp.call('resume')
+        mcp.call('type_text', text=keys, run_ms=300)
     run_wall(secs)
     us = emu.read(sym['tn_us'], 32)
     them = emu.read(sym['tn_them'], 32)
     agreed = ['%s%s' % ('us ' if us[o] else 'them ', name) for o, name in OPTS.items() if us[o] or them[o]]
     print('%2s %-36s on line, telnet: %s' % (n, host, ', '.join(agreed) or '-'))
     name = '%02d' % n if isinstance(n, int) else n.split(':')[0].replace('.', '_')
-    emu.screenshot(os.path.join(PREVIEW, 'bbs_%s.png' % name), display='CGA-1V')
+    emu.screenshot(os.path.join(PREVIEW, '%s.png' % (shot or 'bbs_' + name)), display='CGA-1V')
     for r in range(25):
         t = row_koi(sym, r).rstrip()
         if t.strip():
@@ -68,10 +83,18 @@ def main():
         i = args.index('--secs')
         secs = int(args[i + 1])
         del args[i:i + 2]
+    opt = {}
+    for name in ('--set', '--keys', '--shot'):
+        if name in args:
+            i = args.index(name)
+            opt[name] = args[i + 1]
+            del args[i:i + 2]
+    cs = SETS.index(opt['--set'].upper()) if '--set' in opt else None
+    keys = opt.get('--keys', '').replace('\\r', '\r')
     sym = emu.symbols()
     emu.use_machine('sapi1v_term')
     nums = [int(a) if a.isdigit() else a for a in args] or range(1, 16)
-    ok = [n for n in nums if one(sym, n, secs)]
+    ok = [n for n in nums if one(sym, n, secs, cs, keys, opt.get('--shot'))]
     print('on line: %d of %d' % (len(ok), len(nums)))
 
 

@@ -4,7 +4,7 @@ build/font_ata.inc.
 128 glyphs by the ATASCII code 00h-7Fh (80h-FFh are the same in inverse video, drawn with the colours swapped).
 Also and_map_ata for the AND-1V, and vdt_extra: the characters of the British teletext set ATASCII lacks
 (src/vdt.asm: £ ½ ¼ ¾ ‖ ÷ ■): the pound of the C64, ½ ¼ ÷ the font 4x8 of SAPI-Term doubled, the rest drawn here.
-  python tools/atafont.py
+  python tools/atafont.py [--preview build/preview/font_ata.png]
 """
 import os
 import sys
@@ -75,6 +75,8 @@ def main():
     path = os.path.join(ROOT, 'build', 'font_ata.inc')
     open(path, 'w', encoding='ascii', newline='\n').write('\n'.join(out) + '\n')
     print('build/font_ata.inc: 128 glyphs 8x8')
+    if '--preview' in sys.argv:
+        pf.preview(glyphs, sys.argv[sys.argv.index('--preview') + 1])
 
 
 if __name__ == '__main__':

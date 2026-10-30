@@ -5,7 +5,7 @@ font_mz: 8 bytes a glyph, dots D7 (left) to D0, 8-aligned: CP437 20h-7Fh (glyphs
 CP437 outside ASCII the MZ has (mz_extra: code, glyph; MZ_EXTRA_N pairs), then the letters of KOI-8cs2 (mz_koi:
 C0h-FFh -> glyph, the codes without a letter a space). src/cgatext.asm glyph_addr takes them in 40 columns; all
 other characters are the font 4x8 with its dots doubled.
-  python tools/mzfont.py
+  python tools/mzfont.py [--preview build/preview/font_mz.png]
 """
 import os
 import sys
@@ -65,6 +65,8 @@ def main():
     path = os.path.join(ROOT, 'build', 'font_mz.inc')
     open(path, 'w', encoding='ascii', newline='\n').write('\n'.join(out) + '\n')
     print('build/font_mz.inc: %d glyphs 8x8 (%d CP437 outside ASCII)' % (len(glyphs), len(extra)))
+    if '--preview' in sys.argv:
+        pf.preview([pf.grid(g) for g in glyphs], sys.argv[sys.argv.index('--preview') + 1])
 
 
 if __name__ == '__main__':
