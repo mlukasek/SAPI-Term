@@ -48,6 +48,13 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
    sněhu na obrazovce.
 3. **40 sloupců:** na BBS menu S. Písmo 4×8 se zdvojenými body, čitelnost na monitoru.
 
+## SAPITERM 0.7 (fáze 7)
+
+1. **Záznam relace:** na BBS menu L, chvíli procházet, L. V CP/M `SAPITERM LOG00.ANS` relaci přehraje.
+2. **Historie:** na BBS po delším výpisu menu H, PgUp, šipky, Esc. Obrazovka se má vrátit beze změny.
+3. **Stahování:** na BBS, kde je účet (třeba Vertrauen), zvolit stažení malého souboru protokolem YMODEM nebo
+   XMODEM, pak menu D. Soubor má být vedle `SAPITERM.COM`. Zajímá mě rychlost se skutečnou DPI-1L.
+
 ## Na později
 
 - **Čekání DPI-1L (WAIT) při TCP:** jak dlouho drží Z80 jeden TCPRECV a TCPSTATUS při běžném provozu

@@ -6,7 +6,7 @@
 ; Bytes 80h-FFh go through the character set of the BBS (charset.asm). The speed of a modem (menu R) lets
 ; the bytes to the terminal at that speed, as ANSI animations expect. Ctrl+] opens the menu on the status
 ; card: disconnect, quit, swap the cards, keyboard type, character set, speed, columns, into the book, the
-; session log, a download (xfer.asm). The connection ends when the BBS closes it.
+; session log, a download (xfer.asm), the history (history.asm). The connection ends when the BBS closes it.
 
 MODE_LOCAL      equ 0               ; test screen, typewriter
 MODE_VIEW       equ 1               ; a file shown
@@ -529,13 +529,16 @@ om_cols:
         ld hl,t_menu_dl
         call ss_text
         ld de,12*256+2
+        ld hl,t_menu_hist
+        call ss_text
+        ld de,13*256+2
         ld hl,t_menu_back
         call ss_text
         ld hl,(om_msg)          ; what the last choice did
         ld a,h
         or l
         jr z,om_key
-        ld de,14*256+0
+        ld de,15*256+0
         call ss_text
 om_key:
         call kbd_get
@@ -554,11 +557,13 @@ om_key:
         cp 'R'
         jp z,om_speed
         cp 'S'
-        jr z,om_width
+        jp z,om_width
         cp 'L'
         jr z,om_log
         cp 'D'
         jr z,om_download
+        cp 'H'
+        jr z,om_hist
         cp 09h                  ; Tab (09h stays 09h)
         jr z,om_swap
         cp 1Bh
@@ -603,6 +608,9 @@ om_log_off:
 om_log_said:
         ld hl,0
         jr om_said
+om_hist:                        ; the rows that scrolled off, back to the BBS after it
+        call hist_view
+        jp om_back
 om_download:                    ; XMODEM, YMODEM (the BBS was told to send first)
         call stat_cls
         ld de,0*256+0

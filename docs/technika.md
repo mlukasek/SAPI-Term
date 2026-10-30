@@ -209,7 +209,8 @@ nenapodobí (`docs/rozhodnuti.md`).
 - **Režimy (`mode`):** 0 místní (testovací obrazovka, psací stroj), 1 soubor, 2 na lince. Podle nich vypadá stavová
   obrazovka.
 - **Menu Ctrl+] (`ol_menu`):** O odpojit, K konec, Tab výměna karet (a NAWS), T typ klávesnice, Z znaková sada,
-  R rychlost linky, S 80/40 sloupců, U do adresáře, Esc zpět. Co volba udělala, ukáže řádek 12 (`om_msg`).
+  R rychlost linky, S 80/40 sloupců, U do adresáře, L záznam relace, D stáhnout, H historie, Esc zpět. Co volba
+  udělala, ukáže řádek 15 (`om_msg`), průběh stahování řádek 16.
 
 ## Nastavení a adresář (`src/config.asm`)
 
@@ -245,6 +246,32 @@ nenapodobí (`docs/rozhodnuti.md`).
 - `cga_cell_addr` násobí sloupec 2, `cga_draw_wide` kreslí 2 bajty na řádek glyfu (`wide_l`, `wide_r` podle
   bajtu glyfu). `cga_clip` ořeže rozsah buněk na sloupce 0–39 a přepočte ho na bajty (vyplnění, oprava slotů),
   `cga_move_cells` totéž pro posun.
+
+## Záznam relace a stahování (`src/xfer.asm`)
+
+- **Záznam:** `log_on`, `log_fcb` (`LOGnn.ANS`, `log_num`), `log_buf` (záznam 128 B), `log_ptr`.
+  - `net_rx` po každém příjmu volá `log_data`, plný záznam zapíše `log_record`.
+  - `log_stop` doplní 1Ah a soubor zavře. Volá se při menu L, konci spojení a `quit`.
+- **Stahování** (`xm_run`):
+  - bajty z `net_rx` skládá `xm_rx_byte` do `xm_pkt` (1030 B): číslo bloku, doplněk, data, CRC nebo součet;
+  - `xm_packet` blok ověří (`xm_check`, CRC-16/XMODEM bit po bitu, 1K asi 64 ms), pak hlavička YMODEMu
+    (`xm_create`, `parse_dec32` do `xm_left`) nebo data (`xw_record` po 128 B);
+  - čekání `XM_WAIT` (3 s) na blok, `XM_TRIES` (10) pokusů;
+  - výsledek v `xm_result`, zpráva pro menu v `msg_buf`.
+- **Telnet:** `tn_cr` = poslední datový bajt byl CR. NUL za ním se bez binárního režimu serveru zahodí.
+
+## Historie (`src/history.asm`)
+
+- Kruh `hist_buf` (= `STACK_TOP`, A298h) až po D5FFh, `HIST_LINES` = 77 řádků po `HIST_REC` = 170 B.
+  - `hist_head` je další zapisovaný řádek, `hist_count` počet řádků.
+  - Záznam řádku: 80 znaků, 80 atributů, 10 B bitů EXT_KOI (buňka 0 v bitu 0).
+- `scr_region_upk` při horní hranici 0 volá `hist_push_top` (řádky 0 až `rg_k` − 1). Během prohlížení
+  (`hv_on`) ne.
+- `hist_view`:
+  1. uloží kurzor, atribut a oblast, vloží obrazovku do historie;
+  2. `hv_top` je první zobrazený řádek historie, `hv_row` kreslí řádek přes `scr_set`;
+  3. o řádek se roluje přes `scr_region_down`/`scr_region_up`;
+  4. při návratu se obrazovka nakreslí z historie a řádky se z ní zase vyjmou.
 
 ## Znakové sady (`src/charset.asm`)
 

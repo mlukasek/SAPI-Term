@@ -194,7 +194,7 @@ XM_STOPPED      equ 2
 XM_CANCELLED    equ 3
 XM_TIMEOUT      equ 4
 XM_DISK         equ 5
-XM_ROW          equ 15              ; the progress on the status card (below the menu)
+XM_ROW          equ 16              ; the progress on the status card (below the menu)
 
 ; xm_run: receive files the BBS sends (the download is started on the BBS first). 'C' asks for CRC blocks,
 ; after 3 tries without an answer NAK for checksum ones. Block 0 (YMODEM) names the file, a block 1 first is

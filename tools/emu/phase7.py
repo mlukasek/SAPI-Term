@@ -1,7 +1,8 @@
-"""Phase 7 check: the session log and downloads (YMODEM batch, XMODEM).
+"""Phase 7 check: the session log, the history and downloads (YMODEM batch, XMODEM).
 
 With the local test BBS (tools/testbbs.py, started here): menu L starts the log LOG00.ANS, the MENU page comes,
-L stops it. Y on the BBS and menu D: YMODEM of two files (sunset-down.ans -> SUNSET-D.ANS, menu.ans -> MENU1.ANS
+L stops it. SCROLL (51 rows scroll off), menu H: the history as the model has it, PgUp, up, End, Esc: the screen
+as it was. Y on the BBS and menu D: YMODEM of two files (sunset-down.ans -> SUNSET-D.ANS, menu.ans -> MENU1.ANS
 because MENU.ANS is on the disk already); X and menu D: XMODEM -> XMODEM.BIN. Back in CP/M SAPI-Term shows each
 file, the screen must equal the model of the bytes sent (the log: the MENU page, the downloads: SUNSET.ANS with
 its SAUCE, MENU.ANS, ANSITEST.ANS). Needs the emulator with MCP (tools/emu/sapiemu.cmd) and build.cmd.
@@ -20,7 +21,11 @@ import emu  # noqa: E402
 from emu import mcp  # noqa: E402
 import ansiref  # noqa: E402
 import testbbs  # noqa: E402
+import fontgen  # noqa: E402
+from phase3 import shadow  # noqa: E402
 from phase4 import check, failed, keys, log, run_until, screen_matches, LOG, PORT  # noqa: E402
+
+PREVIEW = os.path.join(emu.REPO, 'build', 'preview')
 
 
 def download(sym, key, want):
@@ -34,6 +39,51 @@ def download(sym, key, want):
     check(ok and log().get('xfer') == 'ok', '%s: the BBS sent it all (%r)' % (key, log().get('xfer')))
     check(any(want in ln for ln in line), '%s: %r' % (key, line))
     keys('\x1b', 800)
+
+
+def history(sym, font):
+    """SCROLL from the BBS (51 rows scroll off), menu H, PgUp: the rows of the history as in the model; End, Esc:
+    the screen as it was (shadow, cursor and the CGA-1V picture)."""
+    model = ansiref.Term()
+    model.feed(testbbs.page_bytes('4'))
+    keys('4', 100)
+    check(run_until(lambda: screen_matches(sym, model), ms=30000, step=500), 'SCROLL on the screen')
+    cur = (emu.read(sym['cur_row'], 1)[0], emu.read(sym['cur_col'], 1)[0])
+    count = emu.read(sym['hist_count'], 1)[0]
+    check(count >= len(model.history), 'the history has %d rows (the model %d)' % (count, len(model.history)))
+    keys('\x1d', 500)
+    keys('h', 6000)
+    check(screen_matches(sym, model), 'H: the screen as it was, now the end of the history')
+    keys('\x12', 6000)                          # PgUp (Ctrl+R) of the EKL-1
+    rows = shadow(sym)
+    want = [(list(c), list(a)) for c, a in model.history[-24:]]
+    check([r for r in rows[:24]] == want, 'PgUp: rows 0-23 are the last 24 rows of the history')
+    check(rows[24] == (model.chr[0], model.att[0]), 'PgUp: row 24 is the first row of the screen')
+    emu.screenshot(os.path.join(PREVIEW, 'f7_history.png'), display='CGA-1V')
+    keys('\x05', 2000)                          # up a row
+    check(shadow(sym)[1] == want[0], 'up: the rows moved down by one')
+    keys('\x11', 6000)                          # End
+    check(screen_matches(sym, model), 'End: the screen again')
+    keys('\x1b', 6000)
+    check(screen_matches(sym, model), 'Esc: the screen as it was')
+    check((emu.read(sym['cur_row'], 1)[0], emu.read(sym['cur_col'], 1)[0]) == cur, 'Esc: the cursor where it was')
+    check(emu.read(sym['hist_count'], 1)[0] == count, 'Esc: the history as before (%d rows)' % count)
+    path = os.path.join(PREVIEW, 'f7_after_history.png')
+    want_rgb = ansiref.render(model, font)
+    for _ in range(10):
+        mcp.call('run_for', ms=200)
+        mcp.call('pause')
+        emu.screenshot(path, display='CGA-1V')
+        w, h, got = ansiref.png_rgb(path)
+        want_b, got = bytearray(want_rgb), bytearray(got)
+        for y in range(16):
+            for x in range(8):
+                p = ((cur[0] * 16 + y) * 640 + cur[1] * 8 + x) * 3
+                want_b[p:p + 3] = got[p:p + 3]
+        diff = sum(1 for i in range(0, len(want_b), 3) if want_b[i:i + 3] != got[i:i + 3])
+        if diff == 0:
+            break
+    check(diff == 0, 'Esc: the CGA-1V picture equals the model (%d dots differ)' % diff)
 
 
 def view(sym, name, model):
@@ -78,6 +128,7 @@ def main():
         check('vypnutý' in mcp.call('screen_text'), 'L again: the log off')
         keys('\x1b', 800)
 
+        history(sym, fontgen.parse()['cp437'])
         download(sym, 'Y', 'Staženo: MENU1.ANS, 2 KB')
         download(sym, 'X', 'Staženo: XMODEM.BIN, 2 KB')
 

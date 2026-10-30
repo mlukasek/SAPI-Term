@@ -1,7 +1,7 @@
 ; SAPI-Term - terminal for internet BBS (telnet) for the Tesla SAPI-1, set V, as a CP/M program SAPITERM.COM.
 ; Copyright (C) 2026 Martin Lukasek, GPLv3. Assembler pasmo 0.5.3 (build.cmd), docs in docs/.
 ;
-; Phase 6: the terminal for BBS. Text 80x25 on the CGA-1V (own font 4x8, pairs of colours per domain) or 64x20
+; Phase 7: the terminal for BBS. Text 80x25 on the CGA-1V (own font 4x8, pairs of colours per domain) or 64x20
 ; on the AND-1V, the status on the other card, ANSI-BBS and VT100, telnet through the DPI-1L. Settings and the
 ; address book in SAPITERM.CFG next to SAPITERM.COM (config.asm).
 ;   SAPITERM               asks for the address of a BBS or its number in the book (empty: the test screen and
@@ -20,7 +20,7 @@
         org 0100h
 
         jp start
-        defb 0Dh,0Ah,'SAPI-Term 0.6',0Dh,0Ah,1Ah
+        defb 0Dh,0Ah,'SAPI-Term 0.7',0Dh,0Ah,1Ah
 
 start:
         ld (cpm_sp),sp
@@ -424,6 +424,8 @@ handle_key:
         jp z,quit
         cp 09h                  ; Tab: swap the cards
         jp z,swap_cards
+        cp 12h                  ; PgUp of the EKL-1 (Ctrl+R): the history
+        jp z,hist_view
         cp 14h                  ; Ctrl+T: test screen
         jp z,test_screen
         cp 0Ch                  ; Ctrl+L: clear
@@ -1173,6 +1175,7 @@ bdos_puts:
         include "config.asm"
         include "charset.asm"
         include "xfer.asm"
+        include "history.asm"
         include "mph.asm"
         include "dpi.asm"
 
@@ -1423,6 +1426,17 @@ xm_left:        defs 4          ; bytes of the file still to write (FFFFFFFFh un
 xm_fcb:         defs 36
 pd_out:         defw 0          ; put_dec16
 msg_buf:        defs 64         ; a message made up (xm_run, xm_progress)
+hist_head:      defb 0          ; history: the next line to write
+hist_count:     defb 0          ; lines in it
+hv_on:          defb 0          ; hist_view: shown (scrolled rows do not go to the history)
+hv_top:         defb 0          ; the line of the history on the top row
+hv_total:       defb 0
+hv_rec:         defw 0
+hv_cur:         defw 0          ; the terminal as it was: cursor row and column, attribute, wrap, region
+hv_att:         defb 0
+hv_wrap:        defb 0
+hv_rtop:        defb 0
+hv_rbot:        defb 0
 cfg_fcb:        defs 36
 
 ; font and tables, page aligned
@@ -1455,5 +1469,7 @@ log_buf         equ cfg_buf + CFG_BUF_SIZE      ; 128: a record of the session l
 xm_pkt          equ log_buf + 128               ; 1030: a block of XMODEM / YMODEM
 STACK_TOP       equ xm_pkt + 1030 + 256
 BSS_END         equ STACK_TOP
+hist_buf        equ STACK_TOP                   ; the history up to D5FFh (C000h and on with MAP_CPM only)
+HIST_LINES      equ (0D600h - hist_buf) / HIST_REC
 
         end start

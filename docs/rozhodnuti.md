@@ -226,3 +226,24 @@ Autor byl pryč a požádal, abych rozhodoval sám a pokračoval podle plánu. T
   - Stín zůstává 80 sloupců, rutiny CGA ořežou sloupce od 40 výš a buňka je 2 bajty.
 - **Rychlejší kreslení podle profilu**, ne odhadem (`tools/emu/profile.py`, PC každou emulovanou milisekundu).
   Zrychlení od 12 do 33 %, obraz zůstal přesně podle modelu.
+
+## 2026-10-30: fáze 7, záznam relace, historie, stahování
+
+Autor byl stále pryč, rozhodoval jsem sám.
+
+- **Záznam relace** se zapisuje jako `.ANS`: data po telnetu, beze změny. Prohlížeč ho přehraje (iCE přes `?33h`,
+  rychlost linky), záznam je tedy hned k užitku. Jméno `LOGnn.ANS` (první volné 00–99) vedle programu. Během
+  stahování se nezapisuje.
+- **Stahování jen na disk programu**, ne na SD kartu DPI-1L: jedna cesta přes BDOS. Soubory pro CP/M patří na
+  disk CP/M. SD karta může přijít později.
+- **Stahuje se jen na pokyn** (menu D), bez automatického rozpoznání: XMODEM ani YMODEM začátek přenosu
+  neohlašuje (ZMODEM ano, ten zatím ne).
+- **XMODEM i YMODEM jedním přijímačem:** blok 0 znamená YMODEM (jméno, velikost), blok 1 hned na začátku XMODEM
+  (jméno `XMODEM.BIN`). 'C' žádá CRC, po třech marných pokusech NAK a součet. Velikost z YMODEMu ořízne poslední
+  záznam (zbytek 1Ah, jak to CP/M u textu čeká). Jméno, které na disku je, dostane číslici místo přepsání.
+- **Historie v paměti nad zásobníkem až po D5FF:** C000–D5FF je při MAP = 0 obyčejná RAM, TPA pod CCP. Do ní se
+  sahá jen s MAP = 0. Řádek 170 B (znaky, atributy, bity KOI), 77 řádků. Ukládá se při rolování oblasti od řádku 0
+  (i skokovém), ne při mazání obrazovky (jako u terminálů na PC).
+- **Prohlížení historie kreslí přes `scr_set`**, jako by psala BBS: počty dvojic barev zůstanou správné. Živá
+  obrazovka se na tu dobu uloží na konec historie a pak se z ní vrátí. Když je historie plná, přijde se tak o
+  nejstarších 25 řádků. Síť mezitím čeká (TCP okno karty).

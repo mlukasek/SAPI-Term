@@ -664,6 +664,9 @@ scr_region_upk:
         ld (rg_top),a
         ld a,c
         ld (rg_bot),a
+        ld a,b                  ; rows that leave the top of the screen go to the history
+        or a
+        call z,hist_push_top
         ld a,(term_dev)         ; the rows that leave give back their pairs
         cp DEV_CGA
         jr nz,ru_shadow

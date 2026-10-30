@@ -38,6 +38,7 @@ class Term:
         self.apply()
         self.max_pairs = [0] * 7                # the most attributes a domain had at once
         self.track = False
+        self.history = []                       # (characters, attributes) of the rows scrolled off the top
 
     # --- screen ---
     def reset_sgr(self):
@@ -82,6 +83,8 @@ class Term:
         self.note()
 
     def region_up(self, t, b):
+        if t == 0:                              # a row that leaves the top of the screen: the history
+            self.history.append((self.chr[0], self.att[0]))
         del self.chr[t]
         del self.att[t]
         ch, at = self.blank_row()

@@ -75,6 +75,24 @@
     - 40 sloupců (stín proti modelu 40×25, obraz proti zdvojenému písmu, NAWS);
     - rychlost 2400 Bd na BBS a v prohlížeči, `SPEED=2400` v souboru.
     - Fáze 2 až 5 procházejí dál.
+- **Fáze 7 hotová:** `SAPITERM.COM` 0.7 (24,6 KB), záznam relace, historie a stahování souborů.
+  - **Záznam relace** (menu L): přijatá data (po telnetu) jdou do `LOGnn.ANS` vedle programu.
+    `SAPITERM LOGnn.ANS` relaci přehraje, i nastavenou rychlostí linky.
+  - **Historie:**
+    - 77 řádků, které odrolovaly z obrazovky, v paměti A298–D5FF;
+    - menu H na BBS, PgUp (Ctrl+R) v psacím stroji;
+    - šipky po řádku, PgUp a PgDn po obrazovce, Home a End, Esc zpět na obrazovku, jak byla.
+  - **Stahování** (menu D, BBS musí začít posílat první):
+    - XMODEM (bloky 128 B a 1K, CRC nebo součet) a dávkový YMODEM;
+    - soubor jde vedle programu; jméno, které na disku už je, dostane číslici (MENU.ANS → MENU1.ANS);
+    - průběh je na stavové kartě, Esc stahování přeruší.
+  - **Telnet** zahodí NUL za CR, když BBS neposílá binárně (RFC 854). Stahování je pak čisté i bez binárního
+    režimu.
+  - **Ověřeno** skriptem `tools/emu/phase7.py` proti testovací BBS:
+    - záznam, historie (řádky proti modelu, obnovená obrazovka bod po bodu);
+    - YMODEM se dvěma soubory a XMODEM;
+    - každý stažený soubor i záznam program zobrazí a obraz se porovná s modelem odeslaných bajtů.
+    - Fáze 2 až 6 procházejí dál.
 
 ## Plán (schválený 2026-10-30, rozhodnutí v `docs/rozhodnuti.md`)
 
@@ -86,13 +104,13 @@
 5. ~~Skutečné BBS: ověřený seznam, adresář a nastavení v `SAPITERM.CFG` vedle `SAPITERM.COM`, znakové sady
    (UTF-8, Latin-2, CP1250, CP852, Kamenický, KOI-8čs) a čeština z EKL-1~~
 6. ~~ANSI art a animace: rychlost modemu, blikání, 40×25 (písmo 4×8 zdvojené), rychlejší kreslení~~
-7. **Historie a záznam relace**, stahování XMODEM/YMODEM (SD karta nebo A:).
+7. ~~Historie a záznam relace, stahování XMODEM/YMODEM (na disk programu)~~
 8. **PETSCII, ATASCII, Viewdata** (40 sloupců, vlastní fonty, případně overlay).
 9. **Skutečný HW** dávkově s autorem.
 
 ## Další krok
 
-Fáze 7: historie a záznam relace, stahování souborů XMODEM/YMODEM (na SD kartu DPI-1L nebo na disk CP/M).
+Fáze 8: PETSCII, ATASCII a Viewdata (40 sloupců, vlastní písma). Pak fáze 9: skutečný HW dávkově s autorem.
 
 ## Otevřené drobnosti
 
