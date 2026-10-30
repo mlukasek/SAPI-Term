@@ -273,6 +273,19 @@ nenapodobí (`docs/rozhodnuti.md`).
   3. o řádek se roluje přes `scr_region_down`/`scr_region_up`;
   4. při návratu se obrazovka nakreslí z historie a řádky se z ní zase vyjmou.
 
+## PETSCII (`src/pet.asm`)
+
+- `cs_type` = CS_PETSCII (7). `pet_enter` / `pet_leave` přepnou `term_putc` (skok v RAM: `jp ansi_putc` nebo
+  `jp pet_putc`), `ice_mode` = 1 (bit 7 atributu je barva pozadí 8–15), `rgb_tab` (`pet_palette`), velikost
+  (`term_size`) a smažou obrazovku.
+- Buňka: znak = kód obrazovky C64 | `pet_lower` (80h), `cur_ext` = EXT_8X8 (02h), `cur_att` = barva textu
+  (`pet_fg`), při reverzu ×16 (`pet_att`).
+- PETSCII → kód obrazovky: 20–3F stejně, 40–5F −40h, 60–7F −20h, A0–BF −40h, C0–FE −80h, FF → 5Eh.
+- Glyf: `glyph_addr` s EXT_8X8 bere `font_pet` (stránkově zarovnané, 256 × 8 B). `cga_draw_wide` pozná glyf
+  `font_pet` podle adresy a kreslí ho bez zdvojení (`cga_draw_8`: levé 4 body do prvního bajtu, pravé do druhého).
+  AND-1V: `and_map_pet`.
+- Klávesy: `pet_key` (tabulka `pet_keys`, písmena podle velikosti).
+
 ## Znakové sady (`src/charset.asm`)
 
 - `cs_type` (CS_CP437 … CS_KOI8) se nastaví v `online` z adresáře (podle adresy), jinak CP437. Menu Z ho přepíná,

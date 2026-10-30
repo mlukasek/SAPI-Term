@@ -247,3 +247,28 @@ Autor byl stále pryč, rozhodoval jsem sám.
 - **Prohlížení historie kreslí přes `scr_set`**, jako by psala BBS: počty dvojic barev zůstanou správné. Živá
   obrazovka se na tu dobu uloží na konec historie a pak se z ní vrátí. Když je historie plná, přijde se tak o
   nejstarších 25 řádků. Síť mezitím čeká (TCP okno karty).
+
+## 2026-10-30: fáze 8, PETSCII
+
+Autor byl stále pryč, rozhodoval jsem sám.
+
+- **PETSCII je další „sada“ v menu Z a v adresáři**, ne zvláštní nabídka. Přepne ale celý terminál:
+  - parser (`term_putc` → `pet_putc`);
+  - 40 sloupců, barvy C64, klávesy jako z C64;
+  - bez skokového rolování (PETSCII nemá LF).
+  - Zpět na jinou sadu se obrazovka smaže a terminál je zase ANSI. Uloží se s BBS jako `,PETSCII`.
+- **Stín drží kód obrazovky C64** (0–127) a v bitu 7 sadu malých písmen, s příznakem EXT_8X8.
+  - Přepnutí sad (0Eh/8Eh) přepíše bit 7 všech buněk PETSCII a překreslí obrazovku, jako to dělá C64.
+  - Reverz prohodí barvy (pozadí je černé). Jinak by písmo potřebovalo i obrácené glyfy, tedy 2 KB navíc.
+- **Barvy C64 jen na CGA-1V** (`rgb_tab`). Když je terminál na AND-1V, stavová karta na CGA-1V má dál barvy ANSI.
+  Hodnoty palety jsou běžně uváděné barvy VIC-II převedené na 6 bitů.
+- **Na AND-1V 40×20:** PETSCII potřebuje 40 sloupců, jinak by se kresby zalamovaly jinde.
+- **Písmo 8×8 vlastní, generované skriptem:**
+  - písmena, číslice a znaky z písma 4×8 SAPI-Termu se zdvojenými body (stejný vzhled jako zbytek);
+  - grafika podle významu znaků (Unicode Symbols for Legacy Computing, článek PETSCII na Wikipedii): čáry a
+    bloky po osminách, rámečky dva body silné, kvadranty, stínování;
+  - několik symbolů (♠ ♥ ♦ ♣ ● ○ π ✓, oblouky, úhlopříčky) nakreslených ručně;
+  - ROM Commodore se nepoužila.
+- **Přijímací stránka testu** je vlastní (`pet_bytes` v `tools/testbbs.py`). Model `tools/petref.py` popisuje,
+  co terminál má udělat. Rozdíl proti C64: DEL a INST posouvají i skrytou část řádku stínu (sloupce 40–79). Ta je
+  prázdná a test bere atributy prázdných buněk volně.

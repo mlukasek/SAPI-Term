@@ -1,12 +1,12 @@
 """Phase 5 check: settings and the address book in SAPITERM.CFG next to SAPITERM.COM, character sets of BBS.
 
-The RAM disk has the default SAPITERM.CFG (src/sapiterm.cfg, 13 BBS). In CP/M "SAPITERM": the book on the start
-screen; "-13" deletes the last BBS, a number not in the book gives a message. On line with the local test BBS
+The RAM disk has the default SAPITERM.CFG (src/sapiterm.cfg, 14 BBS). In CP/M "SAPITERM": the book on the start
+screen; "-14" deletes the last BBS, a number not in the book gives a message. On line with the local test BBS
 (tools/testbbs.py, started here): for each character set (menu Z) its text page on the screen glyph by glyph as
 the model of tools/tables.py says, and Czech letters typed on the EKL-1 sent in that set; the menu saves the BBS
 with UTF-8 into the book (U) and the keyboard type (T); the number of the new entry connects again with UTF-8;
 Tab at the prompt moves the terminal to the AND-1V. Back in CP/M, TYPE shows the file as SAPI-Term wrote it;
-"SAPITERM 13" then connects at once with the terminal on the AND-1V and the Consul keyboard type from the file.
+"SAPITERM 14" then connects at once with the terminal on the AND-1V and the Consul keyboard type from the file.
 Needs the emulator with MCP (tools/emu/sapiemu.cmd) and build.cmd.
   python tools/emu/phase5.py
 """
@@ -110,25 +110,26 @@ def main():
         check(run_until(lambda: at_prompt(sym), ms=5000), 'the start screen')
         scr = rows(sym)
         check(scr[BOOK_ROW].startswith('Adres?? BBS v A:SAPITERM.CFG:'), 'the book from A:SAPITERM.CFG')
-        check(byte(sym, 'book_n') == 13, 'the book has the 13 BBS of the default file')
+        check(byte(sym, 'book_n') == 14, 'the book has the 14 BBS of the default file')
         check(scr[BOOK_ROW + 1].startswith(' 1 Vertrauen'), 'entry 1: %r' % scr[BOOK_ROW + 1].rstrip())
         check(scr[BOOK_ROW + 2].startswith(' 2 Liane (CZ Liberec)'), 'entry 2: %r' % scr[BOOK_ROW + 2].rstrip())
         entry = emu.read(sym['book'] + sym['BOOK_ENTRY'], sym['BOOK_ENTRY'])
         name, addr, rest = entry.split(b'\0', 2)
         check(addr == b'bbs.vslib.cz' and rest[0] == 0, 'entry 2: address %r, set %d' % (addr, rest[0]))
         check(scr[BOOK_ROW + 5][40:].startswith('13 Clutch'), 'entry 13 in the second column')
+        check(scr[BOOK_ROW + 6][40:].startswith('14 The Basement (C64)'), 'entry 14: the PETSCII BBS')
         mcp.call('run_for', ms=300)             # the colours go to the palette in the next VBI
         mcp.call('pause')
         emu.screenshot(os.path.join(PREVIEW, 'f5_prompt.png'), display='CGA-1V')
 
-        keys('-13\r', 300)                      # delete the last one
-        check(run_until(lambda: byte(sym, 'book_n') == 12 and at_prompt(sym), ms=5000), '-13: 12 BBS left')
-        check(row_koi(sym, MSG_ROW).startswith('Ulo?eno do SAPITERM.CFG.'), '-13: saved')
-        check(not row_koi(sym, BOOK_ROW + 5)[40:].strip(), '-13: entry 13 gone from the screen')
+        keys('-14\r', 300)                      # delete the last one
+        check(run_until(lambda: byte(sym, 'book_n') == 13 and at_prompt(sym), ms=5000), '-14: 13 BBS left')
+        check(row_koi(sym, MSG_ROW).startswith('Ulo?eno do SAPITERM.CFG.'), '-14: saved')
+        check(not row_koi(sym, BOOK_ROW + 6)[40:].strip(), '-14: entry 14 gone from the screen')
         keys('40\r', 300)
         check(run_until(lambda: row_koi(sym, MSG_ROW).startswith('Takov?'), ms=5000), '40: no such number')
         keys('-0\r', 300)
-        check(run_until(lambda: byte(sym, 'book_n') == 12 and at_prompt(sym), ms=5000), '-0: nothing deleted')
+        check(run_until(lambda: byte(sym, 'book_n') == 13 and at_prompt(sym), ms=5000), '-0: nothing deleted')
 
         keys('127.0.0.1:%d\r' % PORT, 300)      # on line: the sets, U saves the BBS, T the keyboard type
         check(run_until(lambda: log().get('menu', 0) >= 1, ms=15000), 'connected to the test BBS')
@@ -140,25 +141,25 @@ def main():
         keys('z', 2000)
         check(byte(sym, 'cs_type') == 1, 'Z three times more: UTF-8')
         keys('u', 1500)
-        check(run_until(lambda: byte(sym, 'book_n') == 13, ms=5000), 'U: the BBS in the book')
+        check(run_until(lambda: byte(sym, 'book_n') == 14, ms=5000), 'U: the BBS in the book')
         check('Uloženo do SAPITERM.CFG.' in mcp.call('screen_text'), 'U: saved (status card)')
         keys('u', 1500)
-        check(byte(sym, 'book_n') == 13 and 'Uloženo do SAPITERM.CFG.' in mcp.call('screen_text'),
+        check(byte(sym, 'book_n') == 14 and 'Uloženo do SAPITERM.CFG.' in mcp.call('screen_text'),
               'U again: the same entry saved again')
         keys('t', 1500)
         check(byte(sym, 'kbd_type') == 1, 'T: the Consul keyboard type')
         keys('o', 300)
         check(run_until(lambda: at_prompt(sym), ms=8000), 'O: back at the prompt')
-        check(row_koi(sym, BOOK_ROW + 5)[40:].startswith('13 127.0.0.1'),
-              'entry 13 = 127.0.0.1: %r' % row_koi(sym, BOOK_ROW + 5)[40:].rstrip())
+        check(row_koi(sym, BOOK_ROW + 6)[40:].startswith('14 127.0.0.1'),
+              'entry 14 = 127.0.0.1: %r' % row_koi(sym, BOOK_ROW + 6)[40:].rstrip())
 
         n = log().get('connects', 0)
-        keys('13\r', 300)                       # the number from the book
+        keys('14\r', 300)                       # the number from the book
         check(run_until(lambda: log().get('connects', 0) > n and log().get('menu', 0) >= 1, ms=15000),
-              '13: connected to the test BBS again')
+              '14: connected to the test BBS again')
         text = mcp.call('screen_text')
-        check('BBS: 127.0.0.1:%d' % PORT in text, '13: the status card shows the address')
-        check(byte(sym, 'cs_type') == 1 and 'UTF-8' in text, '13: UTF-8 from the book')
+        check('BBS: 127.0.0.1:%d' % PORT in text, '14: the status card shows the address')
+        check(byte(sym, 'cs_type') == 1 and 'UTF-8' in text, '14: UTF-8 from the book')
         keys('\x1d', 500)
         keys('o', 300)
         check(run_until(lambda: at_prompt(sym), ms=8000), 'O: back at the prompt')
@@ -180,21 +181,21 @@ def main():
         check('KEYBOARD=CONSUL' in text, 'the file: KEYBOARD=CONSUL')
         check('SCREEN=AND' in text, 'the file: SCREEN=AND')
         check('BBS=127.0.0.1,127.0.0.1:%d,UTF-8' % PORT in text, 'the file: the new BBS with UTF-8')
-        check('Clutch' not in text, 'the file: the deleted BBS is not there')
+        check('Basement' not in text, 'the file: the deleted BBS is not there')
 
         n = log().get('connects', 0)
         mcp.call('resume')
-        mcp.call('type_text', text='SAPITERM 13\r')
+        mcp.call('type_text', text='SAPITERM 14\r')
         ok = run_until(lambda: log().get('connects', 0) > n and log().get('menu', 0) >= 1, ms=15000)
-        check(ok, 'SAPITERM 13: connected at once')
+        check(ok, 'SAPITERM 14: connected at once')
         if not ok:
             for line in mcp.call('screen_text').rstrip().split('\n'):
                 print('      ' + line)
             print('      mode %d, book_n %d, ui_line %r' % (byte(sym, 'mode'), byte(sym, 'book_n'),
                   emu.read(sym['ui_line'], 64).split(b'\0')[0]))
-        check(byte(sym, 'term_dev') == DEV_AND, 'SAPITERM 13: the terminal on the AND-1V (SCREEN=AND)')
-        check(byte(sym, 'kbd_type') == 1, 'SAPITERM 13: the Consul keyboard type from the file')
-        check(log().get('naws') == [[64, 20]], 'SAPITERM 13: NAWS 64x20: %r' % log().get('naws'))
+        check(byte(sym, 'term_dev') == DEV_AND, 'SAPITERM 14: the terminal on the AND-1V (SCREEN=AND)')
+        check(byte(sym, 'kbd_type') == 1, 'SAPITERM 14: the Consul keyboard type from the file')
+        check(log().get('naws') == [[64, 20]], 'SAPITERM 14: NAWS 64x20: %r' % log().get('naws'))
         keys('\x1d', 500)
         keys('k', 1500)
         res = mcp.call('run_until', screen_text='A>', timeout_ms=5000)

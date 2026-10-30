@@ -13,9 +13,10 @@ Terminal emulator (telnet BBS client) for the vintage Czech TESLA SAPI-1 compute
 - znakové sady BBS (UTF-8, Latin-2, CP1250, CP852, Kamenický, KOI-8čs) a psaní česky z EKL-1;
 - prohlížeč souborů `.ANS`;
 - rychlost linky pro ANSI animace, blikání a režim 40×25;
-- záznam relace, historie odrolovaných řádků, stahování XMODEM a YMODEM.
+- záznam relace, historie odrolovaných řádků, stahování XMODEM a YMODEM;
+- PETSCII (terminál C64 s vlastním písmem a barvami C64).
 
-Další na řadě jsou PETSCII, ATASCII a Viewdata. Plán a stav jsou v [docs/stav.md](docs/stav.md).
+Další na řadě jsou ATASCII a Viewdata. Plán a stav jsou v [docs/stav.md](docs/stav.md).
 
 ## Překlad
 

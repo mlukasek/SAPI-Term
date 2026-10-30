@@ -136,11 +136,11 @@ def main():
         keys('o', 300)
         check(run_until(lambda: emu.read(sym['mode'], 1)[0] == 0, ms=8000), 'O: disconnected')
         n = log().get('connects', 0)
-        keys('14\r', 300)                       # the new entry of the book
+        keys('15\r', 300)                       # the new entry of the book
         check(run_until(lambda: log().get('connects', 0) > n and log().get('menu', 0) >= 1, ms=15000),
-              '14: connected again')
+              '15: connected again')
         check(emu.read(sym['cs_type'], 1)[0] == CS_PETSCII and emu.read(sym['cga_wide'], 1)[0] == 1,
-              '14: PETSCII from the book, 40 columns')
+              '15: PETSCII from the book, 40 columns')
         keys('\x1d', 500)
         keys('k', 1500)
         res = mcp.call('run_until', screen_text='A>', timeout_ms=5000)

@@ -55,6 +55,11 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 3. **Stahování:** na BBS, kde je účet (třeba Vertrauen), zvolit stažení malého souboru protokolem YMODEM nebo
    XMODEM, pak menu D. Soubor má být vedle `SAPITERM.COM`. Zajímá mě rychlost se skutečnou DPI-1L.
 
+## SAPITERM 0.8 (fáze 8, PETSCII)
+
+1. **PETSCII:** `SAPITERM 14` (The Basement, C64), nebo Retro Campus (číslo 5) a tam volba 1 a v menu Z až na
+   PETSCII. Grafika C64 a barvy na monitoru, čitelnost písma 8×8.
+
 ## Na později
 
 - **Čekání DPI-1L (WAIT) při TCP:** jak dlouho drží Z80 jeden TCPRECV a TCPSTATUS při běžném provozu

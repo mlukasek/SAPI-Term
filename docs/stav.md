@@ -93,6 +93,27 @@
     - YMODEM se dvěma soubory a XMODEM;
     - každý stažený soubor i záznam program zobrazí a obraz se porovná s modelem odeslaných bajtů.
     - Fáze 2 až 6 procházejí dál.
+- **Fáze 8, část PETSCII hotová:** `SAPITERM.COM` 0.8 (27,9 KB): terminál C64.
+  - **Zapnutí:** sada PETSCII v menu Z (osmá) nebo v adresáři (`BBS=…,PETSCII`).
+  - **Obrazovka:** 40×25 na CGA-1V s barvami C64, na AND-1V 40×20.
+  - **Řídicí kódy editoru obrazovky C64:**
+    - 16 barev, reverz;
+    - kurzor, HOME, CLR, DEL, INST;
+    - přepnutí velkých a malých písmen (celá obrazovka jako na C64);
+    - zalomení hned na konci řádku.
+  - **Klávesy jako z C64:** malá písmena 41h–5Ah, velká C1h–DAh, šipky, Home, Backspace = DEL, Ins = INST.
+  - **Písmo 8×8 vlastní** (`tools/petfont.py`, náhled `build/preview/font_pet.png`):
+    - písmena z písma 4×8 se zdvojenými body;
+    - grafika nakreslená podle významu znaků;
+    - z ROM Commodore nic.
+  - **Ověřeno:**
+    - `tools/emu/phase8.py`: testovací stránka (barvy, reverz, celá grafika, kurzor, DEL, INST, obě sady,
+      rolování) proti modelu `tools/petref.py`, stín i obraz bod po bodu; klávesy; Tab na AND-1V a zpět;
+      uložení do adresáře;
+    - skutečná BBS: Retro Campus, volba 1 (CBM PETSCII), správně (`build/preview/f8_real_retrocampus.png`).
+  - **Výchozí adresář má 14 BBS:** přibyla The Basement (C64) se sadou PETSCII.
+  - Historie má teď 65 řádků (písmo PETSCII zabralo 2 KB). Blok XMODEMu sdílí místo s bufferem
+    `SAPITERM.CFG`.
 
 ## Plán (schválený 2026-10-30, rozhodnutí v `docs/rozhodnuti.md`)
 
@@ -110,7 +131,7 @@
 
 ## Další krok
 
-Fáze 8: PETSCII, ATASCII a Viewdata (40 sloupců, vlastní písma). Pak fáze 9: skutečný HW dávkově s autorem.
+Fáze 8 dál: ATASCII (Atari) a Viewdata (Prestel, mozaiková grafika). Pak fáze 9: skutečný HW dávkově s autorem.
 
 ## Otevřené drobnosti
 

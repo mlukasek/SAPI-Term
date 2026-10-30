@@ -1,7 +1,7 @@
 ; SAPI-Term - terminal for internet BBS (telnet) for the Tesla SAPI-1, set V, as a CP/M program SAPITERM.COM.
 ; Copyright (C) 2026 Martin Lukasek, GPLv3. Assembler pasmo 0.5.3 (build.cmd), docs in docs/.
 ;
-; Phase 7: the terminal for BBS. Text 80x25 on the CGA-1V (own font 4x8, pairs of colours per domain) or 64x20
+; Phase 8: the terminal for BBS. Text 80x25 on the CGA-1V (own font 4x8, pairs of colours per domain) or 64x20
 ; on the AND-1V, the status on the other card, ANSI-BBS and VT100, telnet through the DPI-1L. Settings and the
 ; address book in SAPITERM.CFG next to SAPITERM.COM (config.asm).
 ;   SAPITERM               asks for the address of a BBS or its number in the book (empty: the test screen and
@@ -20,7 +20,7 @@
         org 0100h
 
         jp start
-        defb 0Dh,0Ah,'SAPI-Term 0.7',0Dh,0Ah,1Ah
+        defb 0Dh,0Ah,'SAPI-Term 0.8',0Dh,0Ah,1Ah
 
 start:
         ld (cpm_sp),sp

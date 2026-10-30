@@ -70,7 +70,7 @@ def main():
         del args[i:i + 2]
     sym = emu.symbols()
     emu.use_machine('sapi1v_term')
-    nums = [int(a) if a.isdigit() else a for a in args] or range(1, 13)
+    nums = [int(a) if a.isdigit() else a for a in args] or range(1, 15)
     ok = [n for n in nums if one(sym, n, secs)]
     print('on line: %d of %d' % (len(ok), len(nums)))
 
