@@ -179,7 +179,8 @@ def mz800(path, cpm=None):
     names = {c: printable(c) for c in range(0x20, 0x80)}
     names[0x7F] = '⌂'
     extra = {c: rows(data, MZ_CP437[c] * 8, mirror=True) for c in MZ_CP437}
-    write('mz800.txt', header('Font 8x8 of the Sharp MZ-800 (its character ROM), for ANSI in 40 columns in SAPI-Term.', [
+    write('mz800.txt', header('Font 8x8 of the Sharp MZ-800 (its character ROM), for ANSI in 40 columns in '
+                              'SAPI-Term.', [
         'Copied from CGROM.ROM of the MZ-800 by tools/romfont.py, (c) Sharp; in SAPI-Term by the decision of its',
         'author (docs/rozhodnuti.md). Section ascii 20-7F: 7F (the house of CP437) is drawn for SAPI-Term in the',
         'style of the MZ, which lacks it; the rest is the ROM. Section cp437: the characters of CP437 outside',
