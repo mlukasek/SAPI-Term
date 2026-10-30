@@ -13,7 +13,8 @@ CS_CP852        equ 4               ; DOS Latin-2
 CS_KAMENICKY    equ 5               ; KEYBCS2
 CS_KOI8         equ 6               ; KOI-8cs2, as SAPI-1
 CS_PETSCII      equ 7               ; not a set only: the terminal of a C64 (pet.asm)
-CS_COUNT        equ 8
+CS_ATASCII      equ 8               ; the terminal of an Atari 8-bit (ata.asm)
+CS_COUNT        equ 9
 
 ; cs_byte: byte A (80h-FFh) of the BBS on the screen in the set cs_type (from ansi_putc). Changes all.
 cs_byte:
@@ -324,6 +325,6 @@ cp_next:                        ; DE to the next name
 
 ; names of the sets in the order of CS_*
 cs_names:
-        defb 'CP437',0, 'UTF-8',0, 'LATIN2',0, 'CP1250',0, 'CP852',0, 'KAMENICKY',0, 'KOI8',0, 'PETSCII',0
+        defb 'CP437',0, 'UTF-8',0, 'LATIN2',0, 'CP1250',0, 'CP852',0, 'KAMENICKY',0, 'KOI8',0, 'PETSCII',0, 'ATASCII',0
 cs_alias_utf8:
         defb 'UTF8',0

@@ -34,10 +34,10 @@ term_size:
         cp DEV_CGA
         jr z,tsz_cga
         ld b,AND_ROWS
-        ld a,(cs_type)          ; PETSCII has 40 columns on the AND-1V too (40x20)
+        ld a,(cs_type)          ; PETSCII and ATASCII have 40 columns on the AND-1V too (40x20)
         cp CS_PETSCII
         ld a,SCR_COLS/2
-        jr z,tsz_set
+        jr nc,tsz_set
         ld a,AND_COLS
         jr tsz_set
 tsz_cga:
@@ -46,10 +46,14 @@ tsz_cga:
         cp MODE_ONLINE
         ld a,SCR_COLS
         jr nz,tsz_set
-        ld a,(cs_type)          ; PETSCII is 40 columns always
+        ld a,(cs_type)          ; PETSCII 40x25 and ATASCII 40x24 always
+        cp CS_ATASCII
+        jr nz,tsz_pet
+        dec b
+tsz_pet:
         cp CS_PETSCII
         ld a,1
-        jr z,tsz_wide
+        jr nc,tsz_wide
         ld a,(cols40)
 tsz_wide:
         ld (cga_wide),a

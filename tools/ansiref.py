@@ -459,21 +459,24 @@ def render(t, font_cp437, blink_on=True):
 
 
 def png_rgb(path):
-    """(width, height, RGB bytes) of a PNG (8-bit RGB or RGBA, any filter), standard library only."""
+    """(width, height, RGB bytes) of a PNG (8-bit RGB or RGBA, or indexed with 1-8 bits; any filter), standard
+    library only. (The emulator saves a screen of few colours indexed.)"""
     data = open(path, 'rb').read()
-    pos, idat, w = 8, b'', 0
+    pos, idat, w, plte = 8, b'', 0, b''
     while pos < len(data):
         n = struct.unpack('>I', data[pos:pos + 4])[0]
         kind, body = data[pos + 4:pos + 8], data[pos + 8:pos + 8 + n]
         pos += 12 + n
         if kind == b'IHDR':
             w, h, depth, ctype = struct.unpack('>IIBB', body[:10])
-            assert depth == 8 and ctype in (2, 6), (depth, ctype)
-            bpp = 3 if ctype == 2 else 4
+            assert (depth == 8 and ctype in (2, 6)) or (ctype == 3 and depth in (1, 2, 4, 8)), (depth, ctype)
+        elif kind == b'PLTE':
+            plte = body
         elif kind == b'IDAT':
             idat += body
     raw = zlib.decompress(idat)
-    stride = w * bpp
+    bpp = {2: 3, 6: 4, 3: 1}[ctype]                     # bytes a pixel for the filters (at least 1)
+    stride = (w * depth + 7) // 8 if ctype == 3 else w * bpp
     prev = bytearray(stride)
     out = bytearray()
     for y in range(h):
@@ -494,7 +497,13 @@ def png_rgb(path):
                 pr = a if pa <= pb and pa <= pc else (b if pb <= pc else c)
                 line[i] = (line[i] + pr) & 255
         prev = line
-        if bpp == 4:
+        if ctype == 3:
+            per = 8 // depth
+            mask = (1 << depth) - 1
+            for x in range(w):
+                k = line[x // per] >> (8 - depth * (x % per + 1)) & mask
+                out += plte[3 * k:3 * k + 3]
+        elif bpp == 4:
             out += b''.join(line[i:i + 3] for i in range(0, stride, 4))
         else:
             out += line

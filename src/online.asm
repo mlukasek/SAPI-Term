@@ -384,15 +384,11 @@ ol_open:
         ld (in_ptr),hl
         ld (in_end),hl
         call js_by_speed
-        ld a,(cs_type)          ; a PETSCII BBS of the book: the screen of a C64
-        cp CS_PETSCII
-        call z,pet_enter
+        call term8_enter        ; a PETSCII or ATASCII BBS of the book: the screen of a C64 or an Atari
         ld hl,t_connected
         call ol_say
         call ansi_reset
-        ld a,(cs_type)
-        cp CS_PETSCII
-        call z,pet_att
+        call term8_att
         call stat_screen
         call cur_restart
         xor a
@@ -469,9 +465,7 @@ ol_end:
         call tx_flush
         call dpi_close
         call log_stop
-        ld a,(cs_type)
-        cp CS_PETSCII
-        call z,pet_leave
+        call term8_leave
         xor a
         ld (js_enable),a
         ld (mode),a
@@ -658,15 +652,10 @@ om_cs:                          ; the next character set (U keeps it for the BBS
         xor a
 om_cs_new:
         push af
-        ld a,(cs_type)
-        cp CS_PETSCII
-        call z,pet_leave        ; from PETSCII: the ANSI terminal again
+        call term8_leave        ; from PETSCII or ATASCII: the ANSI terminal again
         pop af
         ld (cs_type),a
-        cp CS_PETSCII
-        jr nz,om_cs_naws
-        call pet_enter          ; to PETSCII: the screen of a C64
-om_cs_naws:
+        call term8_enter        ; to PETSCII or ATASCII: the screen of a C64 or an Atari
         call tn_naws            ; the size may have changed
         call tx_flush
         xor a
@@ -707,9 +696,9 @@ txt_bd:
 
 ; js_by_speed: jump scroll on line only at full speed (a modem shows line by line). Changes A.
 js_by_speed:
-        ld a,(cs_type)          ; PETSCII: no line feeds to look for
+        ld a,(cs_type)          ; PETSCII, ATASCII: no line feeds to look for
         cp CS_PETSCII
-        jr z,jbs_off
+        jr nc,jbs_off
         ld a,(speed)
         or a
         ld a,1
@@ -996,6 +985,10 @@ key_send:
         cp CS_PETSCII
         ld a,c
         jp z,pet_key
+        ld a,(cs_type)
+        cp CS_ATASCII
+        ld a,c
+        jp z,ata_key
         ld hl,keys_ekl
         ld a,(kbd_type)
         or a

@@ -60,6 +60,10 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 1. **PETSCII:** `SAPITERM 14` (The Basement, C64), nebo Retro Campus (číslo 5) a tam volba 1 a v menu Z až na
    PETSCII. Grafika C64 a barvy na monitoru, čitelnost písma 8×8.
 
+## SAPITERM 0.8 (fáze 8, ATASCII)
+
+1. **ATASCII:** `SAPITERM 15` (Southern Amis), Return. Kresba Atari 800XL a inverzní text, barvy Atari.
+
 ## Na později
 
 - **Čekání DPI-1L (WAIT) při TCP:** jak dlouho drží Z80 jeden TCPRECV a TCPSTATUS při běžném provozu

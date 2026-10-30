@@ -1177,6 +1177,7 @@ bdos_puts:
         include "xfer.asm"
         include "history.asm"
         include "pet.asm"
+        include "ata.asm"
         include "mph.asm"
         include "dpi.asm"
 
@@ -1432,6 +1433,7 @@ rgb_tab:        defw ansi_rgb   ; the colours of the attributes (pal_slot): ansi
 pet_lower:      defb 0          ; PETSCII: 80h = the lower case set
 pet_rvs:        defb 0          ; PETSCII: reverse on
 pet_fg:         defb 0          ; PETSCII: the colour of the text (0-15 of the C64)
+ata_esc:        defb 0          ; ATASCII: ESC came, the next byte is printed as it is
 hist_head:      defb 0          ; history: the next line to write
 hist_count:     defb 0          ; lines in it
 hv_on:          defb 0          ; hist_view: shown (scrolled rows do not go to the history)
@@ -1451,6 +1453,7 @@ cfg_fcb:        defs 36
         include "../build/tables.inc"
         defs (256 - ($ & 0FFh)) & 0FFh
         include "../build/font_pet.inc"
+        include "../build/font_ata.inc"
 
 PROGRAM_END:
 

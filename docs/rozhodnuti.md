@@ -272,3 +272,19 @@ Autor byl stále pryč, rozhodoval jsem sám.
 - **Přijímací stránka testu** je vlastní (`pet_bytes` v `tools/testbbs.py`). Model `tools/petref.py` popisuje,
   co terminál má udělat. Rozdíl proti C64: DEL a INST posouvají i skrytou část řádku stínu (sloupce 40–79). Ta je
   prázdná a test bere atributy prázdných buněk volně.
+
+## 2026-10-30: fáze 8, ATASCII
+
+- **ATASCII stejně jako PETSCII:** další sada v menu Z a v adresáři, vlastní parser (`ata_putc`), písmo
+  (`font_ata`, příznak EXT_ATA), klávesy a barvy. Odchod a paletu sdílí s PETSCII (`term8_enter`,
+  `term8_leave`, `pet_palette`).
+- **40×24**, jak má Atari v GR.0. Okraj vlevo je 0, ne 2 jako po startu Atari OS: terminálové programy pro BBS
+  (a kresby z nich) počítají se 40 sloupci.
+- **Inverze po znacích** (80h–FFh) prohozenými barvami, ne obrácenými glyfy (o 1 KB méně). Barvy jsou modrá
+  Atari a světlý text, hodnoty odhadnuté podle běžného vzhledu GR.0.
+- **Kurzorové kódy obtáčejí po obrazovce** (nahoře dolů, vlevo doprava v řádku), jako editor Atari. Konec řádku
+  (9Bh) a tisk na konci řádku rolují.
+- **Telnet zůstává** i pro BBS Atari. Některé BBS běží „raw“ (bez telnetu): bajt FFh (vložit znak) by se pak bral
+  jako IAC. U vyzkoušených BBS to nevadilo. Volba raw pro BBS může přijít později.
+- **Historie si u řádku pamatuje písmo** (bajt příznaků EXT_8X8 a EXT_ATA, záznam 171 B). Jinak by se řádky
+  PETSCII a ATASCII v historii ukázaly písmem CP437.

@@ -286,6 +286,14 @@ nenapodobí (`docs/rozhodnuti.md`).
   AND-1V: `and_map_pet`.
 - Klávesy: `pet_key` (tabulka `pet_keys`, písmena podle velikosti).
 
+## ATASCII (`src/ata.asm`)
+
+- `cs_type` = CS_ATASCII (8), `ata_enter` (odchod `pet_leave`). Paleta `ata_rgb` (0 = modrá, 1 = světlý text,
+  dál barvy ANSI pro texty programu).
+- Buňka: znak = kód 00–7Fh, `cur_ext` = EXT_ATA (04h), atribut 01h, inverzně 10h. `ata_esc` = další bajt doslova.
+- Glyf `font_ata` (128 × 8 B, za `font_pet`, kreslí se také bez zdvojení), AND-1V `and_map_ata`.
+- Klávesy `ata_key` (tabulka `ata_keys`).
+
 ## Znakové sady (`src/charset.asm`)
 
 - `cs_type` (CS_CP437 … CS_KOI8) se nastaví v `online` z adresáře (podle adresy), jinak CP437. Menu Z ho přepíná,

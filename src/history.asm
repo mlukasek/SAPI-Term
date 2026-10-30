@@ -3,7 +3,8 @@
 ; warm boot loads again). hist_view shows it on the terminal; the screen itself goes to the end of the ring
 ; meanwhile and comes back from it.
 
-HIST_REC        equ 2*SCR_COLS+SCR_COLS/8   ; a row: characters, attributes, the KOI bits (170 bytes)
+HIST_REC        equ 2*SCR_COLS+SCR_COLS/8+1 ; a row: characters, attributes, the KOI bits, the flags of its font
+                                            ; (EXT_8X8, EXT_ATA of any cell; 171 bytes)
 
 ; hist_push_top: rows 0 to rg_k - 1 leave the screen at its top: into the history (not while it is shown).
 ; Changes A.
@@ -73,6 +74,21 @@ hpu_bit:
         inc de
         dec c
         jr nz,hpu_byte
+        push de                 ; the fonts of the row: PETSCII or ATASCII
+        ld bc,-SCR_COLS
+        add hl,bc
+        ld b,SCR_COLS
+        ld c,0
+hpu_font:
+        ld a,(hl)
+        inc hl
+        and EXT_8X8+EXT_ATA
+        or c
+        ld c,a
+        djnz hpu_font
+        pop de
+        ld a,c
+        ld (de),a
         ld a,(hist_head)
         inc a
         cp HIST_LINES
@@ -100,8 +116,16 @@ hli_first:
         cp HIST_LINES
         jr c,hist_addr
         sub HIST_LINES
-; hist_addr: HL = hist_buf + A * HIST_REC (170 = 128 + 32 + 8 + 2). Changes DE, HL.
+; hist_addr: HL = hist_buf + A * HIST_REC (171 = 128 + 32 + 8 + 2 + 1). Changes DE, HL.
 hist_addr:
+        push af
+        call ha_170
+        pop af
+        ld e,a
+        ld d,0
+        add hl,de
+        ret
+ha_170:
         ld l,a
         ld h,0
         add hl,hl
@@ -348,6 +372,10 @@ hvr_bit:
         jr hvr_bit
 hvr_got:
         and EXT_KOI
+        ld hl,(hv_rec)          ; and the font of the row
+        ld bc,HIST_REC-1
+        add hl,bc
+        or (hl)
         pop bc
         call scr_set
         pop de

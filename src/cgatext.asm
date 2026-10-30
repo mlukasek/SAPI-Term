@@ -11,9 +11,12 @@
 
 DOMAINS         equ 7
 
-; glyph_addr: A = character, B = flags (EXT_KOI: KOI-8cs2 C0-FF from font_koi, EXT_8X8: font_pet, else CP437)
+; glyph_addr: A = character, B = flags (EXT_KOI: KOI-8cs2 C0-FF from font_koi, EXT_8X8: font_pet, EXT_ATA:
+; font_ata, else CP437)
 ; -> HL = glyph. Changes A.
 glyph_addr:
+        bit 2,b
+        jr nz,ga_ata
         bit 1,b
         jr nz,ga_pet
         bit 0,b
@@ -25,6 +28,16 @@ glyph_addr:
         add hl,hl
         ld a,h
         add a,high font_cp437
+        ld h,a
+        ret
+ga_ata:                         ; 8 dots a line (ata.asm), after font_pet: drawn as it is too
+        ld l,a
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld a,h
+        add a,high font_ata
         ld h,a
         ret
 ga_pet:                         ; 8 dots a line (pet.asm), drawn in 40 columns as they are

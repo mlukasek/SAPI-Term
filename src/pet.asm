@@ -27,7 +27,8 @@ pet_enter:
         call scr_reset_region
         jp scr_cls
 
-; pet_leave: the ANSI terminal again (80 columns, its colours), the screen cleared. Changes all.
+; pet_leave: the ANSI terminal again (80 columns, its colours), the screen cleared; from ATASCII too.
+; Changes all.
 pet_leave:
         ld hl,ansi_putc
         ld (term_putc+1),hl
@@ -41,17 +42,47 @@ pet_leave:
         call scr_reset_region
         jp scr_cls
 
-; pet_palette: rgb_tab = the colours of the C64 when PETSCII is on the CGA-1V, else the ANSI ones; every slot
-; gets its colours again. Changes A, BC, HL.
-pet_palette:
-        ld hl,ansi_rgb
+; term8_enter: the terminal of the set cs_type when it is PETSCII or ATASCII. Changes all.
+term8_enter:
         ld a,(cs_type)
         cp CS_PETSCII
-        jr nz,ppl_set
+        jp z,pet_enter
+        cp CS_ATASCII
+        jp z,ata_enter
+        ret
+
+; term8_att: cur_att of PETSCII or ATASCII (after ansi_reset). Changes A.
+term8_att:
+        ld a,(cs_type)
+        cp CS_PETSCII
+        jp z,pet_att
+        cp CS_ATASCII
+        jp z,ata_att
+        ret
+
+; term8_leave: from PETSCII or ATASCII the ANSI terminal again. Changes all.
+term8_leave:
+        ld a,(cs_type)
+        cp CS_PETSCII
+        ret c
+        jp pet_leave
+
+; pet_palette: rgb_tab = the colours of the C64 (PETSCII) or of the Atari (ATASCII) when it is on the CGA-1V,
+; else the ANSI ones; every slot gets its colours again. Changes A, BC, HL.
+pet_palette:
+        ld hl,ansi_rgb
         ld a,(term_dev)
         cp DEV_CGA
         jr nz,ppl_set
+        ld a,(cs_type)
+        cp CS_PETSCII
+        jr nz,ppl_ata
         ld hl,c64_rgb
+        jr ppl_set
+ppl_ata:
+        cp CS_ATASCII
+        jr nz,ppl_set
+        ld hl,ata_rgb
 ppl_set:
         ld (rgb_tab),hl
         ld hl,pal_dirty

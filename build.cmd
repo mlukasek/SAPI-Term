@@ -12,6 +12,7 @@ if not exist build mkdir build
 python tools\fontgen.py || exit /b 1
 python tools\tables.py || exit /b 1
 python tools\petfont.py || exit /b 1
+python tools\atafont.py || exit /b 1
 python tools\texts.py || exit /b 1
 python tools\mkart.py || exit /b 1
 

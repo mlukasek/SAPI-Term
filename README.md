@@ -14,9 +14,9 @@ Terminal emulator (telnet BBS client) for the vintage Czech TESLA SAPI-1 compute
 - prohlížeč souborů `.ANS`;
 - rychlost linky pro ANSI animace, blikání a režim 40×25;
 - záznam relace, historie odrolovaných řádků, stahování XMODEM a YMODEM;
-- PETSCII (terminál C64 s vlastním písmem a barvami C64).
+- PETSCII a ATASCII (terminály C64 a Atari s vlastními písmy a jejich barvami).
 
-Další na řadě jsou ATASCII a Viewdata. Plán a stav jsou v [docs/stav.md](docs/stav.md).
+Další na řadě je Viewdata. Plán a stav jsou v [docs/stav.md](docs/stav.md).
 
 ## Překlad
 

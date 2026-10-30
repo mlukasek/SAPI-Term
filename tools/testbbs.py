@@ -13,6 +13,8 @@ Keys of the menu:
   W CP1250, P CP852, K Kamenicky, O KOI-8cs2;
   B blinking text (SGR 5 and 100-107 without iCE), I the same with iCE (bright backgrounds);
   G a PETSCII page (pet_bytes: colours, reverse, the graphics, cursor keys, DEL, INST, both letter sets);
+  A an ATASCII page (ata_bytes: the graphics, inverse, ESC, cursor keys, tab, delete and insert of lines and
+  characters, scrolling);
   downloads (binary mode first): Y YMODEM batch of YMODEM_FILES, X XMODEM (128 byte blocks, CRC) of
   XMODEM_FILE; the result goes to the log as xfer ('ok' or what failed).
   python tools/testbbs.py [--port 6023] [--log build/testbbs.json]
@@ -50,6 +52,28 @@ XMODEM_FILE = 'ANSITEST'
 
 def art_file(name):
     return open(os.path.join(ROOT, 'build', 'art', name + '.ANS'), 'rb').read()
+
+
+def ata_bytes():
+    """An ATASCII page for an Atari terminal (SAPI-Term in the set ATASCII)."""
+    def t(text):
+        return text.encode('ascii')
+    b = b'\x7d' + t('ATASCII TEST ') + bytes(c | 0x80 for c in t('INVERSE')) + b'\x9b'
+    b += bytes(range(0x00, 0x1b)) + b'\x1b\x1b\x1b\x1c\x1b\x1d\x1b\x1e\x1b\x1f' + b'\x60\x7b\x7c'
+    b += b'\x1b\x7d\x1b\x7e\x1b\x7f\x9b'
+    b += bytes(c | 0x80 for c in range(0x00, 0x1b)) + b'\x9b'
+    b += t('abcdefghijklmnopqrstuvwxyz 0123456789') + b'\x9b'
+    b += t('TAB') + b'\x7f' + t('X') + b'\x7f' + t('Y') + b'\x9b'
+    b += t('BACKSPACE') + b'\x7e\x7e' + t('Z') + b'\x9b'
+    b += t('DELETE CHAR') + b'\x1e\x1e\x1e\x1e\xfe' + b'\x9b'
+    b += t('INSERT CHAR') + b'\x1e\x1e\x1e\x1e\xff' + t('I') + b'\x9b'
+    b += t('LINE TO DELETE') + b'\x9b' + t('LINE AFTER') + b'\x9b\x1c\x1c\x9c\x1d' + t('INSERTED BELOW')
+    b += b'\x1c\x9d' + t('NEW LINE') + b'\x9b'
+    b += b'\x1c' * 30 + b'\x1e\x1e' + t('W')
+    b += b'\x9b' * 5
+    for i in range(22):
+        b += t('ROW %d ' % i) + bytes([0x12]) * (i % 16 + 1) + b'\x9b'
+    return b + t('END')
 
 
 def pet_bytes():
@@ -337,7 +361,12 @@ class Session:
                 self.send(bytes([b]))
             return None
         c = chr(b).upper()
-        if c == 'G':
+        if c == 'A':
+            data = ata_bytes()
+            self.send(data)
+            self.log['sent'].append({'page': 'ATASCII', 'bytes': len(data)})
+            self.save()
+        elif c == 'G':
             data = pet_bytes()
             self.send(data)
             self.log['sent'].append({'page': 'PETSCII', 'bytes': len(data)})

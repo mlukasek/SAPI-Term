@@ -114,6 +114,23 @@
   - **Výchozí adresář má 14 BBS:** přibyla The Basement (C64) se sadou PETSCII.
   - Historie má teď 65 řádků (písmo PETSCII zabralo 2 KB). Blok XMODEMu sdílí místo s bufferem
     `SAPITERM.CFG`.
+- **Fáze 8, část ATASCII hotová:** `SAPITERM.COM` 0.8 (29,8 KB): terminál Atari 8-bit.
+  - **Zapnutí:** sada ATASCII (devátá v menu Z, v adresáři `,ATASCII`).
+  - **Obrazovka:** 40×24 v barvách Atari (světlý text na modré), na AND-1V 40×20.
+  - **Řídicí kódy editoru Atari:**
+    - EOL 9Bh, ESC (další bajt doslova);
+    - kurzor obtáčí po obrazovce;
+    - smazání obrazovky, Backspace, Tab;
+    - mazání a vkládání řádků i znaků;
+    - 80h–FFh inverzně.
+  - **Klávesy jako z Atari:** Enter = 9Bh, Backspace = 7Eh, šipky 1Ch–1Fh, Tab, Del, Ins.
+  - **Písmo 128 znaků vlastní** (`tools/atafont.py`): písmena ze zdvojeného 4×8, grafika podle významu.
+  - **Ověřeno:**
+    - `tools/emu/phase8.py`: stránka A testovací BBS proti modelu `tools/ataref.py` (stín i obraz bod po bodu),
+      klávesy;
+    - skutečné BBS: AMIS (Southern Amis) a Clacker Works, správně (`build/preview/f8_ata_*.png`).
+  - **Výchozí adresář má 15 BBS:** přibyla Southern Amis (Atari) se sadou ATASCII.
+  - **Historie** má 53 řádků. Řádek si pamatuje i písmo (PETSCII, ATASCII), záznam má 171 B.
 
 ## Plán (schválený 2026-10-30, rozhodnutí v `docs/rozhodnuti.md`)
 
@@ -131,7 +148,8 @@
 
 ## Další krok
 
-Fáze 8 dál: ATASCII (Atari) a Viewdata (Prestel, mozaiková grafika). Pak fáze 9: skutečný HW dávkově s autorem.
+Fáze 8 dál: Viewdata (Prestel, mozaiková grafika; zkouška na Telstar, glasstty.com:6502). Pak fáze 9: skutečný HW
+dávkově s autorem.
 
 ## Otevřené drobnosti
 
@@ -149,5 +167,8 @@ Fáze 8 dál: ATASCII (Atari) a Viewdata (Prestel, mozaiková grafika). Pak fáz
   ukazuje stále.
 - **Znaková sada BBS Liane** (`bbs.vslib.cz`) není známá: úvodní obrazovka je v ASCII a hlubší pohled chce
   přihlášení (BBS nabízí veřejný účet `guest`). V adresáři je zatím CP437. Na BBS se dá vyzkoušet Z a uložit U.
+- **Paměť:** program má 29,8 KB a historie se tím zmenšuje (53 řádků). Víc místa by dalo čtení a zápis
+  `SAPITERM.CFG` po záznamech místo celého souboru v paměti (2,7 KB) nebo písma PETSCII a ATASCII nahrávaná
+  ze souboru až při potřebě.
 - **Aleco Experience BBS** (Praha, Atari, `bbs.alecoexp.cz`) 2026-10-30 spojení na port 23 odmítala, web běží.
   Zkusit později a případně přidat.
