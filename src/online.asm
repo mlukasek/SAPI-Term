@@ -3,8 +3,9 @@
 ; ui_prompt asks for "host[:port]" (port 23 when none) or a number of the address book on the terminal. online
 ; resolves the name (DNSREQ), opens TCP, then runs: keys to the BBS (arrows and the like as ANSI sequences),
 ; received bytes through telnet into the input buffer and the ANSI terminal (jump scroll looks ahead in it).
-; Ctrl+] opens the menu on the status card: disconnect, quit, swap the cards, keyboard type, into the book. The
-; connection ends when the BBS closes it.
+; Bytes 80h-FFh go through the character set of the BBS (charset.asm). Ctrl+] opens the menu on the status
+; card: disconnect, quit, swap the cards, keyboard type, character set, into the book. The connection ends when
+; the BBS closes it.
 
 MODE_LOCAL      equ 0               ; test screen, typewriter
 MODE_VIEW       equ 1               ; a file shown
@@ -328,6 +329,16 @@ ui_tab:
 ; Changes all.
 online:
         call parse_address
+        xor a
+        ld (utf_need),a
+        call book_find          ; the character set of the BBS from the book, else CP437
+        ld b,CS_CP437
+        jr c,ol_cs
+        call book_cs
+        ld b,(hl)
+ol_cs:
+        ld a,b
+        ld (cs_type),a
         ld hl,t_looking
         call ol_say
         ld hl,net_host
@@ -426,6 +437,7 @@ ol_end:
         xor a
         ld (js_enable),a
         ld (mode),a
+        ld (cs_type),a
         ld hl,0
         ld (reply_hook),hl
         ret
@@ -457,16 +469,20 @@ om_show:
         call ss_text
         call show_kbd
         ld de,6*256+2
+        ld hl,t_menu_cs
+        call ss_text
+        call show_cs
+        ld de,7*256+2
         ld hl,t_menu_book
         call ss_text
-        ld de,7*256+2
+        ld de,8*256+2
         ld hl,t_menu_back
         call ss_text
         ld hl,(om_msg)          ; what the last choice did
         ld a,h
         or l
         jr z,om_key
-        ld de,9*256+0
+        ld de,10*256+0
         call ss_text
 om_key:
         call kbd_get
@@ -480,6 +496,8 @@ om_key:
         jr z,om_kbd
         cp 'U'
         jr z,om_book
+        cp 'Z'
+        jr z,om_cs
         cp 09h                  ; Tab (09h stays 09h)
         jr z,om_swap
         cp 1Bh
@@ -500,17 +518,27 @@ om_swap:
         call tx_flush
         call cfg_save_msg
         jp om_show
-om_book:                        ; this BBS into the book, its host as the name
+om_book:                        ; this BBS and its set into the book (its host as the name)
         call book_add
-        ld hl,t_book_have
-        dec a
-        jr z,om_said
         ld hl,t_book_full
-        dec a
-        jr z,om_said
+        or a
+        jr nz,om_said
         call cfg_save_msg
         jp om_show
 om_said:
+        ld (om_msg),hl
+        jp om_show
+om_cs:                          ; the next character set (U keeps it for the BBS)
+        ld a,(cs_type)
+        inc a
+        cp CS_COUNT
+        jr c,om_cs_set
+        xor a
+om_cs_set:
+        ld (cs_type),a
+        xor a
+        ld (utf_need),a
+        ld hl,0
         ld (om_msg),hl
         jp om_show
 om_back:
@@ -529,6 +557,12 @@ show_kbd:
         jr z,sk_put
         ld hl,t_kbd_consul
 sk_put:
+        jp stat_puts
+
+; show_cs: the character set of the BBS after the menu line. Changes all.
+show_cs:
+        ld a,(cs_type)
+        call cs_name
         jp stat_puts
 
 ; ol_say: the KOI text HL on its own line of the terminal (yellow). Changes all.
@@ -690,7 +724,14 @@ ks_plain:
         ld a,c
         cp 80h
         jp c,tx_data            ; ASCII and controls as they are
-        ret                     ; others (Czech letters, function keys) not yet
+        cp 0C0h
+        ret c                   ; others (function keys) not yet
+        ld a,(kbd_type)
+        or a
+        ret nz
+        ld a,c
+        xor 20h                 ; EKL-1: Czech letters as KOI-8cs XOR 20h
+        jp cs_key
 
 ; key tables: code, the sequence, 00h; the list ends with 00h
 keys_ekl:

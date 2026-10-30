@@ -82,7 +82,7 @@ dpi_output:
 ; net_dns: HL = host name (00h at the end) -> net_ip. Numeric addresses are ready at once. Polled once a tick
 ; (tick_poll) for at most DNS_TICKS; Esc or Ctrl+] stops it. A = 0 found, 1 unknown name, 2 timeout,
 ; 3 stopped. Changes all.
-DNS_TICKS       equ 6*60
+DNS_TICKS       equ 10*60
 net_dns:
         ld a,DPI_DNSREQ
         out (DPI_CMD),a

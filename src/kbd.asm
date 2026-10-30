@@ -13,7 +13,8 @@ kbd_init:
         ld (kb_tail),a
         ret
 
-; kbd_scan: when a key is ready, read it, acknowledge it and put it into the ring (a key that does not fit is
+; kbd_scan: when a key is ready and the ring has room, read it, acknowledge it and put it into the ring. With
+; the ring full the key is not acknowledged: the EKL-1 holds it until there is room (the Consul's pulse may be
 ; lost). Changes A, F.
 kbd_scan:
         in a,(KB_STAT)
@@ -21,6 +22,13 @@ kbd_scan:
         ret c                   ; STROBE inactive
         push bc
         push hl
+        ld a,(kb_tail)
+        ld b,a
+        ld a,(kb_head)
+        inc a
+        and 15
+        cp b
+        jr z,ks_done            ; the ring is full
         in a,(KB_DATA)
         cpl
         ld c,a
@@ -39,11 +47,6 @@ ks_released:
         ld l,a
         inc a
         and 15
-        ld b,a
-        ld a,(kb_tail)
-        cp b
-        jr z,ks_done            ; the ring is full
-        ld a,b
         ld (kb_head),a
         ld a,l
         ld hl,kb_ring

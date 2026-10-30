@@ -8,7 +8,9 @@ event, for tools/emu/phase4.py:
 Keys of the menu:
   1 ANSITEST, 2 SUNSET (with ESC [ ? 33 h for iCE), 3 MENU, 4 SCROLL: the test files of tools/mkart.py
   E echo (everything typed comes back, ! ends it), C position report test, D device attributes test,
-  M the menu again, Q goodbye and close, X close at once.
+  M the menu again, Q goodbye and close, X close at once;
+  text in a character set (CHARSET_TEXT, the screen cleared first): U UTF-8 (with more Unicode), L Latin-2,
+  W CP1250, P CP852, K Kamenicky, O KOI-8cs2.
   python tools/testbbs.py [--port 6023] [--log build/testbbs.json]
 """
 import argparse
@@ -22,6 +24,40 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IAC, DONT, DO, WONT, WILL, SB, SE = 255, 254, 253, 252, 251, 250, 240
 BINARY, ECHO, SGA, TTYPE, NAWS = 0, 1, 3, 24, 31
 PAGES = {'1': ('ANSITEST', False), '2': ('SUNSET', True), '3': ('MENU', False), '4': ('SCROLL', False)}
+CHARSET_PAGES = {'U': 'UTF-8', 'L': 'LATIN2', 'W': 'CP1250', 'P': 'CP852', 'K': 'KAMENICKY', 'O': 'KOI8'}
+CHARSET_TEXT = ['Příliš žluťoučký kůň úpěl ďábelské ódy.', 'PŘÍLIŠ ŽLUŤOUČKÝ KŮŇ ÚPĚL ĎÁBELSKÉ ÓDY.',
+                'Ľudovít Štúr: ä ô ĺ ŕ Ĺ Ŕ Ä Ô']
+UTF8_MORE = ['┌─┬─┐ ┏━┓ ╭─╮ ╔═╗ ░▒▓█ ▀▄▌▐ ▁▃▅▇ ■▲►▼◄', '“uvozovky” ‘a’ – — … € ½ ° ± µ ß ł',
+             'emoji 🙂 zero​width é Ω α π Σ √ ∞ ≤ ≥']
+KAMENICKY = 'ČüéďäĎŤčěĚĹÍľĺÄÁÉžŽôöÓůÚýÖÜŠĽÝŘťáíóúňŇŮÔšřŕŔ¼§«»'
+KOI = {'á': 0xC1, 'č': 0xC3, 'ď': 0xC4, 'ě': 0xC5, 'ŕ': 0xC6, 'ü': 0xC8, 'í': 0xC9, 'ů': 0xCA, 'ĺ': 0xCB,
+       'ľ': 0xCC, 'ö': 0xCD, 'ň': 0xCE, 'ó': 0xCF, 'ô': 0xD0, 'ä': 0xD1, 'ř': 0xD2, 'š': 0xD3, 'ť': 0xD4,
+       'ú': 0xD5, 'é': 0xD7, 'à': 0xD8, 'ý': 0xD9, 'ž': 0xDA, 'Á': 0xE1, 'Č': 0xE3, 'Ď': 0xE4, 'Ě': 0xE5,
+       'Ŕ': 0xE6, 'Ü': 0xE8, 'Í': 0xE9, 'Ů': 0xEA, 'Ĺ': 0xEB, 'Ľ': 0xEC, 'Ö': 0xED, 'Ň': 0xEE, 'Ó': 0xEF,
+       'Ô': 0xF0, 'Ä': 0xF1, 'Ř': 0xF2, 'Š': 0xF3, 'Ť': 0xF4, 'Ú': 0xF5, 'É': 0xF7, 'À': 0xF8, 'Ý': 0xF9,
+       'Ž': 0xFA}
+
+
+def charset_lines(key):
+    """The lines of the text page of a character set (Unicode)."""
+    return CHARSET_TEXT + (UTF8_MORE if key == 'U' else [])
+
+
+def encode(text, name):
+    """text in the character set name (as SAPI-Term calls them)."""
+    if name == 'UTF-8':
+        return text.encode('utf-8')
+    if name == 'KAMENICKY':
+        return bytes(0x80 + KAMENICKY.index(c) if c in KAMENICKY else ord(c) for c in text)
+    if name == 'KOI8':
+        return bytes(KOI.get(c, ord(c)) for c in text)
+    return text.encode({'LATIN2': 'iso8859_2', 'CP1250': 'cp1250', 'CP852': 'cp852'}[name])
+
+
+def charset_bytes(key):
+    """The bytes the server sends for the text page of a character set."""
+    lines = [encode(t, CHARSET_PAGES[key]) for t in charset_lines(key)]
+    return b'\x1b[0m\x1b[2J' + b'\r\n'.join(lines) + b'\r\n'
 
 
 def page_bytes(key):
@@ -173,7 +209,12 @@ class Session:
                 self.send(bytes([b]))
             return None
         c = chr(b).upper()
-        if c in PAGES:
+        if c in CHARSET_PAGES:
+            data = charset_bytes(c)
+            self.send(data)
+            self.log['sent'].append({'page': CHARSET_PAGES[c], 'bytes': len(data)})
+            self.save()
+        elif c in PAGES:
             data = page_bytes(c)
             self.send(data)
             self.log['sent'].append({'page': PAGES[c][0], 'bytes': len(data)})

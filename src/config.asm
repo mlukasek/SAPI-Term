@@ -7,14 +7,16 @@
 ; The file is text (CR LF, 1Ah at the end), lines "KEY=value", ";" starts a comment:
 ;   KEYBOARD=EKL-1 or CONSUL
 ;   SCREEN=CGA or AND             the card of the terminal when both are there
-;   BBS=name,host[:port]          at most BOOK_MAX, in this order on the start screen
+;   BBS=name,host[:port][,set]    at most BOOK_MAX, in this order on the start screen; set = the character set
+;                                 of the BBS (charset.asm: CP437 when none, UTF-8, LATIN2, CP1250, CP852,
+;                                 KAMENICKY, KOI8)
 ; Saving writes the file anew from the settings and the book (comments and unknown lines are not kept).
 
 BOOK_MAX        equ 16
 NAME_MAX        equ 31
 ADDR_MAX        equ LINE_MAX
-BOOK_ENTRY      equ NAME_MAX+1+ADDR_MAX+1   ; name 00h, address 00h
-CFG_RECORDS     equ 16                      ; records of 128 bytes read at most
+BOOK_ENTRY      equ NAME_MAX+1+ADDR_MAX+1+1 ; name 00h, address 00h, character set
+CFG_RECORDS     equ 20                      ; records of 128 bytes read at most
 CFG_BUF_SIZE    equ CFG_RECORDS*128+128     ; the text, its end mark and the rest of the last record
 B_CLOSE         equ 16
 B_DELETE        equ 19
@@ -177,14 +179,28 @@ cl_bbs:                         ; the name up to ',', then the address up to a s
         call skip_blanks
         ld a,(hl)
         cp ' '+1
-        jr c,cl_next            ; an empty address: not taken
+        jp c,cl_next            ; an empty address: not taken
         ld b,ADDR_MAX
-        ld c,' '
-        call copy_field
+        call copy_word
+        inc de
+        xor a                   ; the character set: CP437 when none or unknown
+        ld (de),a
+        call skip_blanks
+        ld a,(hl)
+        cp ','
+        jr nz,cl_entry
+        inc hl
+        call skip_blanks
+        push de
+        call cs_parse
+        pop de
+        jr nz,cl_entry
+        ld (de),a
+cl_entry:
         ld a,(book_n)
         inc a
         ld (book_n),a
-        jr cl_next
+        jp cl_next
 
 ; skip_blanks: HL over spaces and tabs. Changes A.
 skip_blanks:
@@ -265,6 +281,23 @@ cf_end:
         xor a
         ld (de),a
         ret
+
+; copy_word: from HL to DE at most B characters, up to a space, ',' or the end of the line, 00h after them (DE
+; stays on it). HL stays on the byte that ended it (characters over B are skipped). Changes A, B.
+copy_word:
+        ld a,(hl)
+        cp ','
+        jr z,cf_end
+        cp ' '+1
+        jr c,cf_end
+        inc hl
+        inc b
+        dec b
+        jr z,copy_word
+        dec b
+        ld (de),a
+        inc de
+        jr copy_word
 
 ; book_entry: DE = entry book_n of the book (the first free one). book_entry_a: DE = entry A (0 = the first).
 ; Change A, DE, HL.
@@ -351,27 +384,48 @@ bd_done:
         or a
         ret
 
-; book_add: ui_line (the address of this connection) into the book with net_host as its name, when it is not
-; there yet and there is room. A = 0 added, 1 there already, 2 the book is full. Changes all.
-book_add:
+; book_find: A = the entry with the address ui_line (letters in any case); C when there is none. Changes all.
+book_find:
         ld a,(book_n)
         ld c,a
         ld b,0
-bk_find:
+bf_try:
         ld a,b
         cp c
-        jr z,bk_new
+        scf
+        ret z
         push bc
         call book_addr
         ld de,ui_line
-        call str_same
+        call str_same           ; NC
         pop bc
-        ld a,1
+        ld a,b
         ret z
         inc b
-        jr bk_find
+        jr bf_try
+
+; book_cs: HL = the character set of entry A. Changes A, DE, HL.
+book_cs:
+        call book_addr
+bcs_skip:
+        ld a,(hl)
+        inc hl
+        or a
+        jr nz,bcs_skip
+        ret
+
+; book_add: this connection into the book: ui_line (its address) with net_host as its name and cs_type, or
+; cs_type into its entry when it is there already. A = 0 done, 2 the book is full. Changes all.
+book_add:
+        call book_find
+        jr c,bk_new
+        call book_cs
+        ld a,(cs_type)
+        ld (hl),a
+        xor a
+        ret
 bk_new:
-        ld a,c
+        ld a,(book_n)
         cp BOOK_MAX
         ld a,2
         ret nc
@@ -383,8 +437,10 @@ bk_new:
         inc de
         ld hl,ui_line
         ld b,ADDR_MAX
-        ld c,' '
-        call copy_field
+        call copy_word
+        inc de
+        ld a,(cs_type)
+        ld (de),a
         ld a,(book_n)
         inc a
         ld (book_n),a
@@ -412,15 +468,15 @@ str_same:
 cfg_save:
         ld a,(stat_dev)         ; with both cards the terminal card of now is kept
         or a
-        jr z,cs_text
+        jr z,cfs_text
         ld a,(term_dev)
         cp DEV_AND
         ld a,1
-        jr z,cs_term
+        jr z,cfs_term
         xor a
-cs_term:
+cfs_term:
         ld (cfg_term),a
-cs_text:
+cfs_text:
         ld de,cfg_buf
         ld hl,cfg_header
         call put_str
@@ -429,9 +485,9 @@ cs_text:
         ld hl,val_ekl
         ld a,(kbd_type)
         or a
-        jr z,cs_kbd
+        jr z,cfs_kbd
         ld hl,val_consul
-cs_kbd:
+cfs_kbd:
         call put_str
         call put_crlf
         ld hl,key_screen
@@ -439,16 +495,16 @@ cs_kbd:
         ld hl,val_cga
         ld a,(cfg_term)
         or a
-        jr z,cs_scr
+        jr z,cfs_scr
         ld hl,val_and
-cs_scr:
+cfs_scr:
         call put_str
         call put_crlf
         xor a
-cs_entry:
+cfs_entry:
         ld hl,book_n
         cp (hl)
-        jr nc,cs_end
+        jr nc,cfs_end
         push af
         push de
         call book_entry_a
@@ -464,18 +520,30 @@ cs_entry:
         inc de
         inc hl
         call put_str            ; the address
+        inc hl
+        ld a,(hl)               ; the character set, when not CP437
+        or a
+        jr z,cfs_line
+        push de
+        call cs_name
+        pop de
+        ld a,','
+        ld (de),a
+        inc de
+        call put_str
+cfs_line:
         call put_crlf
         pop af
         inc a
-        jr cs_entry
-cs_end:
+        jr cfs_entry
+cfs_end:
         ld (cfg_ptr),de         ; the end mark, 1Ah up to the end of its record
         ld a,1Ah
         ld b,128
-cs_pad:
+cfs_pad:
         ld (de),a
         inc de
-        djnz cs_pad
+        djnz cfs_pad
         call cfg_fcb_init
         ld de,cfg_fcb
         ld c,B_DELETE
@@ -488,7 +556,7 @@ cs_pad:
         ld a,1
         ret z                   ; the directory is full
         ld hl,cfg_buf
-cs_record:                      ; records up to the one with the end mark
+cfs_record:                     ; records up to the one with the end mark
         push hl
         ex de,hl
         ld c,B_SETDMA
@@ -498,7 +566,7 @@ cs_record:                      ; records up to the one with the end mark
         call BDOS
         pop hl
         or a
-        jr nz,cs_failed         ; the disk is full
+        jr nz,cfs_failed        ; the disk is full
         ld de,128
         add hl,de
         ex de,hl
@@ -506,7 +574,7 @@ cs_record:                      ; records up to the one with the end mark
         or a
         sbc hl,de
         ex de,hl
-        jr nc,cs_record
+        jr nc,cfs_record
         ld de,cfg_fcb
         ld c,B_CLOSE
         call BDOS
@@ -515,7 +583,7 @@ cs_record:                      ; records up to the one with the end mark
         ret z
         xor a
         ret
-cs_failed:
+cfs_failed:
         ld de,cfg_fcb
         ld c,B_CLOSE
         call BDOS
@@ -524,7 +592,8 @@ cs_failed:
 cfg_header:
         defb '; SAPI-Term: nastaveni a adresar BBS. Lezi vedle SAPITERM.COM, SAPI-Term ho prepisuje.',0Dh,0Ah
         defb '; KEYBOARD=EKL-1 nebo CONSUL, SCREEN=CGA nebo AND (terminal na karte),',0Dh,0Ah
-        defb '; BBS=jmeno,adresa[:port] (nejvys 16, poradi jako na uvodni obrazovce).',0Dh,0Ah,0
+        defb '; BBS=jmeno,adresa[:port][,sada] (nejvys 16, poradi jako na uvodni obrazovce), sada znaku BBS:',0Dh,0Ah
+        defb ';   CP437 (bez udani), UTF-8, LATIN2, CP1250, CP852, KAMENICKY, KOI8.',0Dh,0Ah,0
 
 ; put_str: the text at HL (00h at the end) to DE, HL stays on its 00h. Changes A, DE, HL.
 put_str:

@@ -48,7 +48,11 @@ ansi_putc:
         jr nz,ans_seq
         ld a,c
         cp 20h
-        jp nc,scr_putc
+        jr c,ans_control
+        cp 80h
+        jp c,scr_putc
+        jp cs_byte              ; 80h-FFh in the set of the BBS
+ans_control:
         cp 1Bh
         jr z,ans_esc_start
         cp 0Dh

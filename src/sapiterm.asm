@@ -891,6 +891,12 @@ sst_online:                     ; on line: the BBS, the keys
         ld de,12*256+0
         ld hl,t_last_key
         call ss_text
+        ld de,13*256+0
+        ld hl,t_charset
+        call ss_text
+        ld de,13*256+23
+        call stat_at
+        call show_cs
         ld de,14*256+0
         ld hl,t_keys
         call ss_text
@@ -1116,6 +1122,7 @@ bdos_puts:
         include "telnet.asm"
         include "online.asm"
         include "config.asm"
+        include "charset.asm"
         include "mph.asm"
         include "dpi.asm"
 
@@ -1329,6 +1336,9 @@ cfg_drive:      defb 0          ; the disk of SAPITERM.COM and SAPITERM.CFG (0 =
 cfg_term:       defb 0          ; SCREEN=: 0 CGA-1V, 1 AND-1V
 cfg_ptr:        defw 0          ; cfg_load, cfg_save: the end of the text
 book_n:         defb 0          ; entries in the address book
+cs_type:        defb 0          ; character set of the BBS (CS_*)
+utf_need:       defb 0          ; UTF-8: continuation bytes still to come
+utf_cp:         defw 0          ; UTF-8: the character so far
 cfg_fcb:        defs 36
 
 ; font and tables, page aligned

@@ -6,9 +6,15 @@ grafiku CGA-1V (80×25 znaků) i na alfanumerický displej AND-1V (64×20) a vra
 
 Terminal emulator (telnet BBS client) for the vintage Czech TESLA SAPI-1 computer.
 
-**Stav:** ve vývoji. Hotový je terminál ANSI (ANSI-BBS, VT100) s vlastním písmem 4×8, telnet přes DPI-1L a prohlížeč souborů
-`.ANS`. Další na řadě jsou skutečné BBS (seznam, adresář, čeština). Plán a stav jsou v
-[docs/stav.md](docs/stav.md).
+**Stav:** ve vývoji. Hotové:
+- terminál ANSI (ANSI-BBS, VT100) s vlastním písmem 4×8;
+- telnet přes DPI-1L;
+- adresář BBS a nastavení v `SAPITERM.CFG` vedle programu;
+- znakové sady BBS (UTF-8, Latin-2, CP1250, CP852, Kamenický, KOI-8čs) a psaní česky z EKL-1;
+- prohlížeč souborů `.ANS`.
+
+Další na řadě jsou ANSI animace (rychlost modemu), blikání a režim 40×25. Plán a stav jsou
+v [docs/stav.md](docs/stav.md).
 
 ## Překlad
 

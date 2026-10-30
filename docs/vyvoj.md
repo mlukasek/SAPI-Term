@@ -49,6 +49,8 @@
 | `phase2.py [--consul]` | fáze 2: SAPITERM z disku, stavová obrazovka, stínová obrazovka v paměti (titulek, tabulka CP437), psaní a rolování, Tab na AND-1V a zpět, Ctrl+L, Ctrl+T, Ctrl+] a `DIR` po návratu; snímky `build/preview/f2_*.png` |
 | `phase3.py [JMÉNO...]` | fáze 3: každý testovací soubor `SAPITERM JMÉNO.ANS`, stínová obrazovka a kurzor proti `tools/ansiref.py`, snímek CGA-1V proti modelu vykreslenému fontem (bod po bodu), žádný zápis palety mimo VBI; snímky `build/preview/f3_*.png` |
 | `phase4.py` | fáze 4: spustí `tools/testbbs.py` (127.0.0.1:6023), `SAPITERM 127.0.0.1:6023`; vyjednání telnetu, tři stránky po síti proti modelu (stín i obraz), CPR a DA, odeslané klávesy, NAWS po Tab, konec spojení od BBS, odmítnutý port, neznámé jméno |
+| `phase5.py` | fáze 5: výchozí `SAPITERM.CFG`, adresář na úvodní obrazovce, mazání, chybné číslo; na testovací BBS všech šest znakových sad (stránka glyf po glyfu proti `tools/tables.py`, odeslaná „čŘ“), U, T; výběr číslem se sadou z adresáře, Tab na výzvě; `TYPE SAPITERM.CFG` po návratu; `SAPITERM 13` s AND-1V a Consulem ze souboru |
+| `realbbs.py [ČÍSLO\|ADRESA…]` | skutečné BBS z adresáře nebo podle adresy: připojení, úvodní obrazovka (text a snímek `build/preview/bbs_*.png`), vyjednané volby telnetu, odpojení; bez přihlášení a bez kláves; čeká ve skutečném čase |
 | `emu.py` | společné: sestava, kontrolní bod CP/M, příkaz CP/M, čtení paměti, symboly, snímek obrazovky |
 | `sapimcp.py` | klient MCP (`python tools\emu\sapimcp.py NÁSTROJ "{json}"`) |
 | `sapiemu.cmd [consul\|gui]` | spustí release emulátor s MCP |
@@ -89,3 +91,8 @@
 - **Windows a soubor, který jiný proces čte:** `os.replace` na něj hlásí „Access is denied“. `tools/testbbs.py` to
   zkouší znovu, test čte přes `with open`.
 - **Sestava `.sapi` je JSON:** uvozovky v textu popisu ho rozbijí („syntax error in machine file“).
+- **Escape sekvence ve skriptu v heredocu:** `'\x1b'` uvnitř `'''...'''` v Pythonu z heredocu se do souboru
+  zapíše jako skutečný znak ESC (a `\r\n` jako konec řádku). Úpravy s escape sekvencemi dělat nástrojem Edit
+  nebo skriptem uloženým přes Write.
+- **Tiky v emulátoru nejsou skutečný čas:** bez GUI běží emulátor rychleji, limity v ticích (DNS, spojení)
+  vypršejí dřív, než síť odpoví. Testy se skutečnou sítí (`realbbs.py`) proto běží podle hodin PC.

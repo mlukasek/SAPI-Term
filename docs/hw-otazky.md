@@ -30,6 +30,16 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
    z BBS.
 3. **Klávesy EKL-1 na BBS:** šipky v menu BBS, Enter, Backspace, Ctrl+C.
 
+## SAPITERM 0.5 (fáze 5)
+
+1. **Adresář na RAM disku:** `SAPITERM` ukáže 13 BBS z `SAPITERM.CFG`. Číslo připojí, např. `1` (Vertrauen).
+   V menu (Ctrl+]) T přepne klávesnici a uloží. Po novém startu musí typ zůstat (zápis na ZRD-1V).
+2. **Jiný disk:** je-li v sestavě další disk, `B:SAPITERM` má číst a psát `B:SAPITERM.CFG`.
+3. **Čeština z EKL-1:** na BBS se sadou UTF-8 nebo Latin-2 napsat „Příliš žluťoučký kůň“ (třeba do vyhledávání
+   nebo zprávy, bez odeslání) a podívat se, co BBS ukáže. Na Liane (`bbs.vslib.cz`, účet guest) zjistit její
+   znakovou sadu: Z v menu, dokud čeština nesedí, pak U.
+4. **Seznam BBS přes skutečnou DPI-1L:** projít pár BBS z adresáře (úvodní obrazovka, odpojení O).
+
 ## Na později
 
 - **Čekání DPI-1L (WAIT) při TCP:** jak dlouho drží Z80 jeden TCPRECV a TCPSTATUS při běžném provozu

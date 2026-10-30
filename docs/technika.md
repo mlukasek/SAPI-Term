@@ -189,7 +189,7 @@ nenapodobí (`docs/rozhodnuti.md`).
   - `dpi_cmd`: příkaz a parametry přes `OTIR`, pak `dpi_status` (4 bajty stavu, NZ při ERROR, A = kód | 80h);
   - `dpi_output`: výstup přes `INIR`.
 - **DNS a TCP:**
-  - `net_dns`: DNSREQ a dotazování DNSRES jednou za tik, limit 6 s;
+  - `net_dns`: DNSREQ a dotazování DNSRES jednou za tik, limit 10 s;
   - `net_open`: TCPIP, TCPPORT, TCPOPEN a TCPSTATUS jednou za tik, limit 12 s;
   - v obou Esc nebo Ctrl+] zastaví;
   - `net_recv` (TCPRECV), `net_send` (TCPSEND s bitem 15), `net_status`.
@@ -207,6 +207,40 @@ nenapodobí (`docs/rozhodnuti.md`).
   4. v klidu kurzor, tik a jednou za 30 tiků TCPSTATUS.
 - **Režimy (`mode`):** 0 místní (testovací obrazovka, psací stroj), 1 soubor, 2 na lince. Podle nich vypadá stavová
   obrazovka.
+- **Menu Ctrl+] (`ol_menu`):** O odpojit, K konec, Tab výměna karet (a NAWS), T typ klávesnice, Z znaková sada,
+  U do adresáře, Esc zpět. Co volba udělala, ukáže řádek 10 (`om_msg`).
+
+## Nastavení a adresář (`src/config.asm`)
+
+- **Disk:** `cfg_find_drive` hned po startu (dokud je CCP v paměti), `cfg_drive` 0 = A.
+- **FCB** `cfg_fcb` (36 B) se jménem `SAPITERMCFG` a diskem `cfg_drive` + 1.
+- **Načtení** (`cfg_load` po detekci karet):
+  - až 20 záznamů sekvenčně (B_READSEQ) do `cfg_buf`, DMA mimo 0080h, takže argumenty v 0080h zůstanou;
+  - řádky `KEYBOARD=`, `SCREEN=`, `BBS=` (klíče bez ohledu na velikost písmen), ostatní se přeskočí.
+- **Položka adresáře** (`book`, 16 × 97 B): jméno 00h, adresa 00h, znaková sada (CS_*).
+  - `book_find` hledá adresu `ui_line`;
+  - `book_pick` dá do `ui_line` adresu podle čísla;
+  - `book_add` přidá nebo opraví;
+  - `book_delete` smaže a posune zbytek.
+- **Uložení** (`cfg_save`, s MAP = 0):
+  1. text do `cfg_buf`, za ním 1Ah až do konce záznamu;
+  2. B_DELETE, B_MAKE, B_WRITESEQ po 128 B, B_CLOSE.
+  - A = 0 uloženo, jinak plný adresář nebo disk. Hlášení dá `cfg_save_msg` do `ui_msg` a `om_msg`.
+
+## Znakové sady (`src/charset.asm`)
+
+- `cs_type` (CS_CP437 … CS_KOI8) se nastaví v `online` z adresáře (podle adresy), jinak CP437. Menu Z ho přepíná,
+  po odpojení je zase 0.
+- **Příjem:** `ansi_putc` pošle bajty 80h–FFh v normálním stavu do `cs_byte`.
+  - CP437 je beze změny;
+  - jednobajtové sady přes `cs_in_<sada>` (128 kódů) a `cs_in_<sada>_koi` (16 B bitů, 1 = písmeno KOI-8čs2,
+    tedy EXT_KOI);
+  - UTF-8 skládá znak v `utf_need` a `utf_cp`, `uni_put` ho najde v `u_lat_code`/`u_lat_koi` (00A0–017F),
+    `u_box` (2500–25FF) nebo v seznamu `u_list`.
+- **Klávesy:** `key_send` pošle písmeno EKL-1 (≥ C0h, XOR 20h = KOI-8čs2) do `cs_key`. Tabulka `koi_out` má
+  7 × 64 B, pro UTF-8 je `koi_uni` (Unicode, posílá se 2 bajty).
+- **Model** je v `tools/tables.py` (`glyph`, `set_glyph`, `utf8_glyphs`, `encode_key`), z něj jsou tabulky i
+  očekávané výsledky testu.
 
 ## Návrat do CP/M (`quit` v `src/sapiterm.asm`)
 

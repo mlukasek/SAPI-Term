@@ -154,3 +154,46 @@ Nové rozhodnutí dopsat s datem a důvodem.
   - stavová obrazovka se obnovuje až v klidu, ne po každé klávese.
   - Test na Consulu běží ve výchozím režimu emulátoru, věrný režim `strict` občas klávesu ztratí
     (`docs/stav.md`).
+
+## 2026-10-30: fáze 5, adresář, nastavení a znakové sady
+
+- **`SAPITERM.CFG` leží vedle `SAPITERM.COM`** (přání autora).
+  - **Disk programu:** CP/M 2.2 programu neřekne, odkud se nahrál. Příkazová řádka je ale po startu ještě v CCP
+    (CCP = vstup BDOS − 806h, ověřené dvěma skoky na začátku CCP; +7 délka, +8 text, CCP ji převede na velká
+    písmena). Začíná-li `X:`, je to disk X, jinak aktuální disk (0004h).
+  - Ověřeno v emulátoru, CCP na CE00 začíná `C3 04 CF C3 00 CF`.
+- **Formát:** text s řádky `KLÍČ=hodnota` a komentáři `;`, aby šel upravit editorem na SAPI i na PC (CR LF,
+  `.gitattributes` drží CRLF i v repu). Program soubor při uložení napíše celý znovu se svou hlavičkou. Vlastní
+  komentáře a neznámé řádky se ztratí, je to zapsané v hlavičce.
+- **Ukládá se hned při změně** (T, Tab, U, `-číslo`). Zvláštní „uložit nastavení“ není potřeba a nic se neztratí
+  při Ctrl+] nebo pádu spojení. Zápis na RAM disk trvá chvilku.
+- **Adresář:**
+  - nejvýš 16 BBS, jméno do 31 znaků, adresa do 63;
+  - na úvodní obrazovce ve dvou sloupcích po osmi, vejde se i na AND-1V (64×20);
+  - číslo na výzvě nebo `SAPITERM číslo` připojí, `-číslo` smaže;
+  - U v menu na BBS uloží právě připojenou BBS se jménem = adresa (přejmenovat jde v souboru); je-li tam už,
+    uloží jen její znakovou sadu.
+- **Typ klávesnice a karta terminálu** (`KEYBOARD`, `SCREEN`) jsou v souboru. Karta platí, jen když jsou obě.
+  Tab na výzvě a v menu ji přepne a uloží.
+- **Znaková sada se volí u každé BBS** (`BBS=jméno,adresa,sada`, menu Z):
+  - sady: CP437 (výchozí, ANSI art), UTF-8, Latin-2 (ISO 8859-2), CP1250, CP852, Kamenický, KOI-8čs2;
+  - Latin-2 a CP1250 jsou zvlášť, liší se na místech š, ť, ž, Š, Ť, Ž a Ľ, ľ;
+  - **česká a slovenská písmena jsou vždy glyfy KOI-8čs2** (jako texty programu), i když je CP437 má (á é í ó ú
+    ä ö ü ô). V jedné větě tak nejsou dva styly písmen;
+  - co v písmu není: nejbližší znak CP437 (tučné a zaoblené rámečky jako jednoduché, ▁▂▃ jako ▄ nebo _, ●
+    jako •), jinak písmeno bez diakritiky, jinak `?`;
+  - UTF-8 do FFFFh: 00A0–017F a 2500–25FF přes tabulky, ostatní ze seznamu. 4bajtové znaky (emoji) jsou `?`,
+    nulová šířka a kombinující diakritika se nezobrazí, `…` jsou tři tečky.
+  - Tabulky dělá `tools/tables.py` z kodeků Pythonu, Kamenický a KOI-8čs2 jsou ve skriptu.
+- **Psaní česky:** EKL-1 posílá KOI-8čs XOR 20h, program písmeno převede do sady BBS. V CP437 jdou á é í ó ú ä ö
+  ü ô ve kódech CP437, ostatní bez diakritiky. Consul česká písmena nemá.
+- **Psací stroj** bere C1–C4 jako šipky jen s typem Consul, s EKL-1 jsou to Á Č Ď.
+- **Výchozí adresář:** BBS z PC i z emulátoru ukázaly úvodní obrazovku, bez přihlášení.
+  - Vynechané: Black Flag („BLOCKED“), Starbase21 (odmítá spojení), Absinthe (jen vyjednání telnetu),
+    csbbs.dyndns.org (Mystic jen anglicky).
+  - Aleco Experience (Praha) 2026-10-30 odmítala spojení, viz `docs/stav.md`.
+  - Česká BBS Liane (TU Liberec, `bbs.vslib.cz`) je v adresáři, sadu bez přihlášení nevíme.
+- **DNS čeká 10 s** (bylo 6 s). V emulátoru běží tiky rychleji než skutečný čas a pomalejší odpověď DNS (neznámé
+  jméno, první dotaz) občas skončila „Vypršel čas“.
+- **Plný kruh kláves (16) klávesu nepotvrdí.** EKL-1 ji drží, dokud není místo, a nic se neztratí. Dřív se klávesa
+  přečetla a zahodila: test psal adresu, zatímco se kreslila úvodní obrazovka s adresářem, a ztratil se Enter.
