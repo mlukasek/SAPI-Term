@@ -54,7 +54,7 @@
     - adresář, mazání, uložení z menu, výběr číslem, Tab, obsah souboru po návratu (`TYPE`);
     - všech šest sad glyf po glyfu proti modelu v `tools/tables.py`, odeslaná písmena „čŘ“ v každé sadě.
     - Fáze 2 až 4 procházejí dál, i na sestavě s Consulem.
-- **Fáze 6 hotová:** `SAPITERM.COM` 0.5 (21,8 KB), ANSI art a animace.
+- **Fáze 6 hotová:** `SAPITERM.COM` 0.6 (21,8 KB), ANSI art a animace.
   - **Rychlost linky** (menu R, `SPEED=`): bez omezení, 38400, 19200, 9600, 4800, 2400, 1200 a 300 Bd.
     - Bajty jdou do terminálu ve svém čase, na BBS i v prohlížeči `.ANS`, takže ANSI animace běží, jak mají.
     - Čas měří volně běžící čítač 0 na MPH-1V (bez ní tiky 60 Hz). Co terminál nestihne (rolování), dožene.

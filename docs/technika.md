@@ -120,9 +120,8 @@ nenapodobí (`docs/rozhodnuti.md`).
 
 ## MPH-1V (báze 50h)
 
-- Čítač 0 běží od detekce volně (režim 2, dělitel 0 = 65536, hradlo G0, IEN = 28h) jako hodiny rychlosti linky.
-
 - 82C54: CLK0 = CLK2 = 55 930,4 Hz.
+- Čítač 0 běží od detekce volně (režim 2, dělitel 0 = 65536, hradlo G0, IEN = 28h) jako hodiny rychlosti linky.
 - SAPI-Term spustí čítač 2 v režimu 2 s dělitelem 932 (60,01 Hz), hradlo G2 v IEN = 20h, bez přerušení.
 - Tik: STATUS (53h) D7 = F2, nuluje se `OUT 55h,80h`.
 - Při návratu IEN = 0 a IACK = C0h.
