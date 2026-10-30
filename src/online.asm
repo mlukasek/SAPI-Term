@@ -1,19 +1,24 @@
 ; SAPI-Term - the address of a BBS, the connection and the terminal on line.
 ;
-; ui_prompt asks for "host[:port]" (port 23 when none) on the terminal. online resolves the name (DNSREQ), opens
-; TCP, then runs: keys to the BBS (arrows and the like as ANSI sequences), received bytes through telnet into
-; the input buffer and the ANSI terminal (jump scroll looks ahead in it). Ctrl+] opens the menu on the status
-; card: disconnect, quit, swap the cards, keyboard type. The connection ends when the BBS closes it.
+; ui_prompt asks for "host[:port]" (port 23 when none) or a number of the address book on the terminal. online
+; resolves the name (DNSREQ), opens TCP, then runs: keys to the BBS (arrows and the like as ANSI sequences),
+; received bytes through telnet into the input buffer and the ANSI terminal (jump scroll looks ahead in it).
+; Ctrl+] opens the menu on the status card: disconnect, quit, swap the cards, keyboard type, into the book. The
+; connection ends when the BBS closes it.
 
 MODE_LOCAL      equ 0               ; test screen, typewriter
 MODE_VIEW       equ 1               ; a file shown
 MODE_ONLINE     equ 2               ; connected to a BBS
 LINE_MAX        equ 63
+MSG_ROW         equ 6               ; the start screen: how the last connection ended
+BOOK_ROW        equ 8               ; the address book (8 rows of entries below)
+PROMPT_ROW      equ 18              ; the input of the address
 RX_CHUNK        equ 253             ; TCPRECV at most
 IDLE_CHECK      equ 30              ; ticks without data between TCPSTATUS checks (0.5 s)
 
-; ui_prompt: the start screen with the input of the address. A = 0 connect to ui_line, 1 test screen, 2 quit.
-; Changes all.
+; ui_prompt: the start screen: the help, how the last connection ended, the address book (SAPITERM.CFG) and
+; the input of an address or of a number from the book ("-number" deletes it). Tab moves the terminal to the
+; other card. A = 0 connect to ui_line, 1 test screen, 2 quit. Changes all.
 ui_prompt:
         call ansi_reset
         call scr_cls
@@ -29,44 +34,216 @@ ui_prompt:
         ld de,3*256+0
         ld hl,t_ui_help2
         call ts_text
+        ld a,07h
+        ld de,4*256+0
+        ld hl,t_ui_help3
+        call ts_text
         ld a,(has_dpi)
         or a
         jr nz,up_msg
         ld a,0Ch
-        ld de,5*256+0
+        ld de,MSG_ROW*256+0
         ld hl,t_no_dpi
         call ts_text
 up_msg:
-        ld hl,(ui_msg)          ; how the last connection ended
+        ld hl,(ui_msg)          ; how the last connection ended, or what the book did
         ld a,h
         or l
-        jr z,up_input
+        jr z,up_book
         ld a,0Eh
-        ld de,5*256+0
+        ld de,MSG_ROW*256+0
         call ts_text
-up_input:
+up_book:
+        call ui_book
         ld a,0Bh
-        ld de,7*256+0
+        ld de,PROMPT_ROW*256+0
         ld hl,t_ui_prompt
         call ts_text
         ld a,0Fh
         ld (cur_att),a
         call stat_screen
         call ui_input
-        ret nz                  ; A = 2: quit
+        jr z,up_line
+        cp 2
+        ret z                   ; Ctrl+]: quit
+        call swap_cards         ; Tab: the terminal to the other card, kept in the file
+        call cfg_save_msg
+        jp ui_prompt
+up_line:
         ld a,(ui_len)
         or a
         ld a,1
         ret z                   ; empty: test screen
+        ld hl,ui_line
+        ld a,(hl)
+        cp '-'
+        jr z,up_delete
+        call parse_num
+        jr c,up_address
+        call book_pick          ; a number: the address from the book
+        jr c,up_nonum
+up_address:
         ld a,(has_dpi)
         or a
         ld a,1
         ret z
         xor a
         ret
+up_delete:
+        inc hl
+        call parse_num
+        jr c,up_nonum
+        call book_delete
+        jr c,up_nonum
+        call cfg_save_msg
+        jp ui_prompt
+up_nonum:
+        ld hl,t_no_number
+        ld (ui_msg),hl
+        jp ui_prompt
+
+; cfg_save_msg: cfg_save, ui_msg and om_msg = how it went. Changes all.
+cfg_save_msg:
+        call cfg_save
+        ld hl,t_saved
+        or a
+        jr z,csm_set
+        ld hl,t_save_fail
+csm_set:
+        ld (ui_msg),hl
+        ld (om_msg),hl
+        ret
+
+; ui_book: the address book on the start screen: its file at BOOK_ROW, the entries below it in two columns of
+; 8 ("number name"). Changes all.
+ui_book:
+        ld a,07h
+        ld de,BOOK_ROW*256+0
+        ld hl,t_book
+        call ts_text
+        ld a,(cfg_drive)
+        add a,'A'
+        call scr_putc
+        ld hl,txt_cfg_file
+        call scr_puts_koi
+        ld a,(book_n)
+        or a
+        jr nz,ub_list
+        ld hl,t_book_empty
+        jp scr_puts_koi
+ub_list:
+        ld a,':'
+        call scr_putc
+        xor a
+ub_entry:
+        ld hl,book_n
+        cp (hl)
+        ret nc
+        push af
+        ld b,a
+        and 7
+        add a,BOOK_ROW+1
+        ld d,a
+        ld e,0
+        bit 3,b
+        jr z,ub_at
+        ld a,(term_cols)
+        srl a
+        ld e,a
+ub_at:
+        call scr_at
+        ld a,0Fh
+        ld (cur_att),a
+        pop af
+        push af
+        inc a
+        call ui_num2
+        ld a,07h
+        ld (cur_att),a
+        ld a,' '
+        call scr_putc
+        pop af
+        push af
+        call book_entry_a
+        ex de,hl                ; HL = the name
+        ld a,(term_cols)
+        srl a
+        sub 4
+        ld b,a
+        call ui_puts_n
+        pop af
+        inc a
+        jr ub_entry
+
+; ui_num2: A (0-99) in two places, a space before a single digit. Changes all.
+ui_num2:
+        ld b,'0'-1
+un2_ten:
+        inc b
+        sub 10
+        jr nc,un2_ten
+        add a,10+'0'
+        push af
+        ld a,b
+        cp '0'
+        jr nz,un2_put
+        ld a,' '
+un2_put:
+        call scr_putc
+        pop af
+        jp scr_putc
+
+; ui_puts_n: the KOI text at HL (00h at the end), at most B characters. Changes all.
+ui_puts_n:
+        ld a,(hl)
+        or a
+        ret z
+        inc hl
+        push bc
+        push hl
+        call scr_putc_koi
+        pop hl
+        pop bc
+        djnz ui_puts_n
+        ret
+
+; parse_num: the text at HL (00h at the end) as a number 0-99 to A; C when it is not one. Changes A, BC, HL.
+parse_num:
+        ld a,(hl)
+        or a
+        scf
+        ret z
+        ld b,0
+pnum_digit:
+        ld a,(hl)
+        or a
+        jr z,pnum_end
+        sub '0'
+        ret c
+        cp 10
+        ccf
+        ret c
+        ld c,a
+        ld a,b
+        cp 10
+        ccf
+        ret c                   ; a third digit
+        add a,a
+        add a,a
+        add a,b
+        add a,a
+        add a,c
+        ld b,a
+        inc hl
+        jr pnum_digit
+pnum_end:
+        ld a,b
+        or a
+        ret
 
 ; ui_input: a line of up to LINE_MAX characters to ui_line (00h at the end, ui_len), typed at the cursor;
-; Backspace (and the left arrow) deletes. NZ with A = 2 for Ctrl+]. Changes all.
+; Backspace (and the left arrow) deletes. NZ with A = 2 for Ctrl+], A = 3 for Tab (with both cards).
+; Changes all.
 ui_input:
         xor a
         ld (ui_len),a
@@ -87,6 +264,8 @@ ui_got:
         pop af
         cp K_MENU
         jr z,ui_quit
+        cp 09h
+        jr z,ui_tab
         cp 0Dh
         jr z,ui_done
         cp 08h
@@ -137,6 +316,12 @@ ui_done:
 ui_quit:
         ld a,2
         or a
+        ret
+ui_tab:
+        ld a,(stat_dev)
+        or a
+        jr z,ui_next
+        ld a,3
         ret
 
 ; online: connect to ui_line and run the terminal until the end of the connection. ui_msg = how it ended.
@@ -245,11 +430,14 @@ ol_end:
         ld (reply_hook),hl
         ret
 
-; ol_menu: Ctrl+] on line. Without a status card it disconnects at once.
+; ol_menu: Ctrl+] on line. Without a status card it disconnects at once. The keyboard type, the card of the
+; terminal and the book (U) are saved in SAPITERM.CFG at once.
 ol_menu:
         ld a,(stat_dev)
         or a
         jp z,ol_user_end
+        ld hl,0
+        ld (om_msg),hl
 om_show:
         call stat_cls
         ld de,0*256+0
@@ -269,7 +457,16 @@ om_show:
         call ss_text
         call show_kbd
         ld de,6*256+2
+        ld hl,t_menu_book
+        call ss_text
+        ld de,7*256+2
         ld hl,t_menu_back
+        call ss_text
+        ld hl,(om_msg)          ; what the last choice did
+        ld a,h
+        or l
+        jr z,om_key
+        ld de,9*256+0
         call ss_text
 om_key:
         call kbd_get
@@ -281,6 +478,8 @@ om_key:
         jp z,quit
         cp 'T'
         jr z,om_kbd
+        cp 'U'
+        jr z,om_book
         cp 09h                  ; Tab (09h stays 09h)
         jr z,om_swap
         cp 1Bh
@@ -292,12 +491,27 @@ om_kbd:
         ld a,(kbd_type)
         xor 1
         ld (kbd_type),a
-        jr om_show
+        call cfg_save_msg
+        jp om_show
 om_swap:
         call cur_hide
         call swap_cards
         call tn_naws            ; the BBS gets the new size at once
         call tx_flush
+        call cfg_save_msg
+        jp om_show
+om_book:                        ; this BBS into the book, its host as the name
+        call book_add
+        ld hl,t_book_have
+        dec a
+        jr z,om_said
+        ld hl,t_book_full
+        dec a
+        jr z,om_said
+        call cfg_save_msg
+        jp om_show
+om_said:
+        ld (om_msg),hl
         jp om_show
 om_back:
         call stat_screen

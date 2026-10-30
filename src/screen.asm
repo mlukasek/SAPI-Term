@@ -414,6 +414,12 @@ scr_puts_koi:
         or a
         ret z
         push hl
+        call scr_putc_koi
+        pop hl
+        jr scr_puts_koi
+
+; scr_putc_koi: the KOI-8cs2 character A with cur_att (C0-FF as a Czech letter). Changes all.
+scr_putc_koi:
         ld b,0
         cp 0C0h
         jr c,spk_put
@@ -426,8 +432,7 @@ spk_put:
         call scr_putc
         xor a
         ld (cur_ext),a
-        pop hl
-        jr scr_puts_koi
+        ret
 
 ; scr_at: cursor to D = row, E = column. Changes A.
 scr_at:

@@ -10,3 +10,7 @@
 
 # keep Windows batch files with CRLF
 *.cmd text eol=crlf
+
+# CP/M text files with CRLF
+*.cfg text eol=crlf
+*.CFG text eol=crlf

@@ -1,7 +1,7 @@
 # Texts of the SAPI-Term user interface, UTF-8. tools/texts.py converts them to KOI-8cs2 (build/texts.inc).
 # One text per line: the asm label, one space, the text. A "\" at the end continues on the next line.
 
-t_title SAPI-Term 0.4 - terminál pro BBS (vývojová verze, fáze 4)
+t_title SAPI-Term 0.5 - terminál pro BBS (vývojová verze, fáze 5)
 t_terminal Terminál na:
 t_cga_size CGA-1V, 80x25 znaků
 t_and_size AND-1V, 64x20 znaků
@@ -24,7 +24,7 @@ t_viewing Zobrazuji soubor (klávesa ho zastaví)...
 t_shown Konec souboru. Klávesy píšou, Ctrl+] = konec.
 t_not_found Soubor nenalezen.
 
-t_test_title SAPI-Term 0.4 - test výstupu (80x25 na CGA-1V, 64x20 na AND-1V)
+t_test_title SAPI-Term 0.5 - test výstupu (80x25 na CGA-1V, 64x20 na AND-1V)
 t_test_fg Popředí 0-F:
 t_test_bg Pozadí 0-F:
 t_test_blocks Bloky:
@@ -34,9 +34,17 @@ t_cz_lower Příliš žluťoučký kůň úpěl ďábelské ódy.
 t_cz_upper PŘÍLIŠ ŽLUŤOUČKÝ KŮŇ ÚPĚL ĎÁBELSKÉ ÓDY.
 t_test_help Piš na klávesnici. Tab = druhá obrazovka, Ctrl+] = konec.
 
-t_ui_title SAPI-Term 0.4 - terminál pro BBS
-t_ui_help1 Zadej adresu BBS: jméno nebo IP adresu, za dvojtečkou port (bez něj 23).
-t_ui_help2 Prázdný Enter = testovací obrazovka, Ctrl+] = konec.
+t_ui_title SAPI-Term 0.5 - terminál pro BBS
+t_ui_help1 Adresa BBS: jméno nebo IP, za dvojtečkou port (bez něj 23).
+t_ui_help2 Číslo = BBS z adresáře, -číslo = smazat ji z adresáře.
+t_ui_help3 Prázdný Enter = test, Tab = druhá obrazovka, Ctrl+] = konec.
+t_book Adresář BBS v 
+t_book_empty  je prázdný (U v menu na BBS ji přidá).
+t_no_number Takové číslo v adresáři není.
+t_saved Uloženo do SAPITERM.CFG.
+t_save_fail SAPITERM.CFG se nepodařilo zapsat.
+t_book_have Tahle BBS už v adresáři je.
+t_book_full Adresář je plný (16 BBS).
 t_no_dpi Chybí karta DPI-1L, síť nejde.
 t_ui_prompt BBS: 
 t_looking Hledám adresu...
@@ -53,9 +61,10 @@ t_menu_off O  odpojit
 t_menu_quit K  konec programu (odpojí)
 t_menu_swap Tab  výměna obrazovek
 t_menu_kbd T  klávesnice: 
+t_menu_book U  uložit BBS do adresáře
 t_menu_back Esc, Ctrl+]  zpět k BBS
 t_kbd_ekl EKL-1
 t_kbd_consul Consul 262.3
 t_bbs BBS: 
-t_okey1 Ctrl+]  menu: odpojit, konec, Tab, klávesnice
+t_okey1 Ctrl+]  menu: odpojit, konec, Tab, klávesnice, adresář
 t_okey2 Klávesnice: 

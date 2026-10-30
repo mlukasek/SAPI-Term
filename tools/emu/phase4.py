@@ -154,14 +154,14 @@ def main():
 
         keys('Q', 100)
         check(run_until(lambda: log().get('closed'), ms=5000), 'Q: the BBS closed the connection')
-        check(run_until(lambda: 'BBS:' in bytes(shadow(sym)[7][0]).decode('cp437'), ms=8000),
+        check(run_until(lambda: 'BBS:' in bytes(shadow(sym)[18][0]).decode('cp437'), ms=8000),
               'back at the prompt')
-        check('BBS' in bytes(shadow(sym)[5][0]).decode('cp437').upper(), 'message: the BBS ended it')
+        check('BBS' in bytes(shadow(sym)[6][0]).decode('cp437').upper(), 'message: the BBS ended it')
 
         keys('127.0.0.1:%d\r' % (PORT + 1), 300)  # nobody listens there
-        check(run_until(lambda: 'P?ipojen? se nepoda?ilo' in row_koi(sym, 5), ms=20000), 'refused port: message')
+        check(run_until(lambda: 'P?ipojen? se nepoda?ilo' in row_koi(sym, 6), ms=20000), 'refused port: message')
         keys('neexistuje.invalid\r', 300)
-        check(run_until(lambda: 'Adresu se nepoda?ilo' in row_koi(sym, 5), ms=20000), 'unknown name: message')
+        check(run_until(lambda: 'Adresu se nepoda?ilo' in row_koi(sym, 6), ms=20000), 'unknown name: message')
 
         keys('\x1d', 1500)
         res = mcp.call('run_until', screen_text='A>', timeout_ms=5000)

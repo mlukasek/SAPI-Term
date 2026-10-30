@@ -1,10 +1,13 @@
 ; SAPI-Term - terminal for internet BBS (telnet) for the Tesla SAPI-1, set V, as a CP/M program SAPITERM.COM.
 ; Copyright (C) 2026 Martin Lukasek, GPLv3. Assembler pasmo 0.5.3 (build.cmd), docs in docs/.
 ;
-; Phase 4: the terminal for BBS. Text 80x25 on the CGA-1V (own font 4x8, pairs of colours per domain) or 64x20
-; on the AND-1V, the status on the other card, ANSI-BBS and VT100, telnet through the DPI-1L.
-;   SAPITERM               asks for the address of a BBS (empty: the test screen and a local typewriter)
+; Phase 5: the terminal for BBS. Text 80x25 on the CGA-1V (own font 4x8, pairs of colours per domain) or 64x20
+; on the AND-1V, the status on the other card, ANSI-BBS and VT100, telnet through the DPI-1L. Settings and the
+; address book in SAPITERM.CFG next to SAPITERM.COM (config.asm).
+;   SAPITERM               asks for the address of a BBS or its number in the book (empty: the test screen and
+;                          a local typewriter)
 ;   SAPITERM HOST[:PORT]   connects to the BBS (port 23 when none)
+;   SAPITERM NUMBER        connects to that BBS of the book
 ;   SAPITERM FILE.ANS      shows an ANSI file (iCE colours from its SAUCE record), then the typewriter
 ; Ctrl+] is the menu on line, else it quits.
 ;
@@ -17,7 +20,7 @@
         org 0100h
 
         jp start
-        defb 0Dh,0Ah,'SAPI-Term 0.4',0Dh,0Ah,1Ah
+        defb 0Dh,0Ah,'SAPI-Term 0.5',0Dh,0Ah,1Ah
 
 start:
         ld (cpm_sp),sp
@@ -31,8 +34,10 @@ st_di:
         ld sp,STACK_TOP
         ld a,MAP_CPM
         out (MAPREG),a
+        call cfg_find_drive     ; while the CCP still has the command line
         call kbd_init
         call detect
+        call cfg_load           ; settings and the address book (DMA not at 0080h: the arguments stay)
         ld a,(has_cga)
         or a
         jr nz,st_cards
@@ -62,6 +67,13 @@ st_term:
         jr z,st_screens
         ld a,DEV_AND
         ld (stat_dev),a
+        ld a,(cfg_term)         ; SCREEN=AND: the terminal on the AND-1V
+        or a
+        jr z,st_screens
+        ld a,DEV_CGA
+        ld (stat_dev),a
+        ld a,DEV_AND
+        ld (term_dev),a
 st_screens:
         ld a,07h
         ld (cur_att),a
@@ -84,6 +96,15 @@ st_screens:
         jr st_main
 st_address:
         call tail_to_line
+        ld hl,ui_line           ; a number: the BBS from the book
+        call parse_num
+        jr c,st_net
+        call book_pick
+        jr nc,st_net
+        ld hl,t_no_number
+        ld (ui_msg),hl
+        jr st_prompt
+st_net:
         ld a,(has_dpi)
         or a
         jr z,st_prompt
@@ -363,6 +384,11 @@ handle_key:
         jp z,hk_left
         cp 04h
         jp z,hk_right
+        ld b,a
+        ld a,(kbd_type)
+        or a
+        ld a,b
+        jr z,hk_text            ; EKL-1: C0-FF are Czech letters
         cp 0C1h                 ; Consul 262.3 arrows
         jp z,hk_up
         cp 0C2h
@@ -384,14 +410,7 @@ hk_text:
         cp 0C0h
         ret c
         xor 20h                 ; EKL-1 Czech: KOI-8cs XOR 20h
-        ld b,a
-        ld a,EXT_KOI
-        ld (cur_ext),a
-        ld a,b
-        call scr_putc
-        xor a
-        ld (cur_ext),a
-        ret
+        jp scr_putc_koi
 hk_fg:
         ld a,(cur_att)
         ld b,a
@@ -1096,6 +1115,7 @@ bdos_puts:
         include "ansi.asm"
         include "telnet.asm"
         include "online.asm"
+        include "config.asm"
         include "mph.asm"
         include "dpi.asm"
 
@@ -1304,6 +1324,12 @@ pal_dirty:      defs 2*DOMAINS  ; per domain: slots whose pair must go to the pa
 pn_best:        defw 0          ; pair_nearest
 pn_slot:        defb 0
 ps_rgb:         defs 6          ; pal_slot
+om_msg:         defw 0          ; ol_menu: what the last choice did (KOI text, 0 none)
+cfg_drive:      defb 0          ; the disk of SAPITERM.COM and SAPITERM.CFG (0 = A)
+cfg_term:       defb 0          ; SCREEN=: 0 CGA-1V, 1 AND-1V
+cfg_ptr:        defw 0          ; cfg_load, cfg_save: the end of the text
+book_n:         defb 0          ; entries in the address book
+cfg_fcb:        defs 36
 
 ; font and tables, page aligned
         defs (256 - ($ & 0FFh)) & 0FFh
@@ -1329,7 +1355,9 @@ rec_buf         equ slot_ref + 32*DOMAINS       ; 128: a record of the file
 in_buf          equ rec_buf + 128               ; IN_RECORDS * 128: input (file, later the BBS)
 sauce_buf       equ in_buf + 128*IN_RECORDS     ; 256: the last two records (SAUCE)
 rx_raw          equ sauce_buf                   ; 253: a TCPRECV (SAUCE is not used on line)
-STACK_TOP       equ sauce_buf + 256 + 256
+book            equ sauce_buf + 256             ; BOOK_MAX entries of the address book
+cfg_buf         equ book + BOOK_ENTRY*BOOK_MAX  ; CFG_BUF_SIZE: the text of SAPITERM.CFG
+STACK_TOP       equ cfg_buf + CFG_BUF_SIZE + 256
 BSS_END         equ STACK_TOP
 
         end start
