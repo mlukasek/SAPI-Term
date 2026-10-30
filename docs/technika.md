@@ -211,8 +211,8 @@ nenapodobí (`docs/rozhodnuti.md`).
 - **Režimy (`mode`):** 0 místní (testovací obrazovka, psací stroj), 1 soubor, 2 na lince. Podle nich vypadá stavová
   obrazovka.
 - **Menu Ctrl+] (`ol_menu`):** O odpojit, K konec, Tab výměna karet (a NAWS), T typ klávesnice, Z znaková sada,
-  R rychlost linky, S 80/40 sloupců, U do adresáře, L záznam relace, D stáhnout, H historie, Esc zpět. Co volba
-  udělala, ukáže řádek 15 (`om_msg`), průběh stahování řádek 16.
+  R rychlost linky, S 80/40 sloupců, U do adresáře, L záznam relace, D stáhnout, H historie, N telnet / raw TCP,
+  Esc zpět. Co volba udělala, ukáže řádek 16 (`om_msg`), průběh stahování řádek 17.
 
 ## Nastavení a adresář (`src/config.asm`)
 
@@ -264,6 +264,8 @@ nenapodobí (`docs/rozhodnuti.md`).
   - čekání `XM_WAIT` (3 s) na blok, `XM_TRIES` (10) pokusů;
   - výsledek v `xm_result`, zpráva pro menu v `msg_buf`.
 - **Telnet:** `tn_cr` = poslední datový bajt byl CR. NUL za ním se bez binárního režimu serveru zahodí.
+- **Raw TCP:** `tn_raw` (80h): `tn_filter` kopíruje přijaté bajty do vstupního bufferu beze změny, `tx_data` posílá
+  bajt jako `tx_raw`. Nastaví se z adresáře v `online` nebo klávesou N v menu, U ho uloží s BBS.
 
 ## Historie (`src/history.asm`)
 

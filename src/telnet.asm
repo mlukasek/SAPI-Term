@@ -37,8 +37,12 @@ tr_clear:
         djnz tr_clear
         ret
 
-; tn_filter: B received bytes at HL (B > 0). Changes all.
+; tn_filter: B received bytes at HL (B > 0); raw TCP (tn_raw): all of them data. Changes all.
 tn_filter:
+        ld a,(tn_raw)
+        or a
+        jr nz,tf_raw
+tf_byte:
         ld a,(hl)
         inc hl
         push hl
@@ -46,7 +50,14 @@ tn_filter:
         call tn_byte
         pop bc
         pop hl
-        djnz tn_filter
+        djnz tf_byte
+        ret
+tf_raw:
+        ld de,(in_end)
+        ld c,b
+        ld b,0
+        ldir
+        ld (in_end),de
         ret
 
 ; tn_byte: one received byte A.
@@ -277,8 +288,16 @@ tn_naws:
 
 ; --- sending ---
 
-; tx_data: data byte A to the BBS (FFh doubled, CR + NUL unless binary). Changes A, HL.
+; tx_data: data byte A to the BBS (FFh doubled, CR + NUL unless binary; raw TCP: as it is). Changes A, HL.
 tx_data:
+        push af
+        ld a,(tn_raw)
+        or a
+        jr z,td_telnet
+        pop af
+        jr tx_raw
+td_telnet:
+        pop af
         cp TN_IAC
         jr nz,td_cr
         call tx_raw

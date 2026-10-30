@@ -9,7 +9,8 @@
 ;   SCREEN=CGA or AND             the card of the terminal when both are there
 ;   SPEED=MAX or 38400 ... 300    the speed of a modem shown (bytes to the terminal tick by tick)
 ;   COLUMNS=80 or 40              columns of the CGA-1V on line (40: the font 4x8 with its dots doubled)
-;   BBS=name,host[:port][,set]    at most BOOK_MAX, in this order on the start screen (no ',' in the name);
+;   BBS=name,host[:port][,set][,RAW] at most BOOK_MAX, in this order on the start screen (no ',' in the name);
+;                                 RAW: raw TCP, no telnet (bit 7 of the set in the book);
 ;                                 set = the character set of the BBS (charset.asm: CP437 when none, UTF-8,
 ;                                 LATIN2, CP1250, CP852, KAMENICKY, KOI8, PETSCII: the terminal of a C64,
 ;                                 ATASCII: of an Atari, VIEWDATA: Prestel)
@@ -262,7 +263,22 @@ cl_bbs:                         ; the name up to ',', then the address up to a s
         push de
         call cs_parse
         pop de
+        jr nz,cl_raw
+        ld (de),a
+cl_raw:                         ; ",RAW": raw TCP
+        call skip_blanks
+        ld a,(hl)
+        cp ','
         jr nz,cl_entry
+        inc hl
+        call skip_blanks
+        push de
+        ld de,val_raw
+        call match_key
+        pop de
+        jr nz,cl_entry
+        ld a,(de)
+        or 80h
         ld (de),a
 cl_entry:
         ld a,(book_n)
@@ -319,6 +335,8 @@ val_40:
         defb '40',0
 val_80:
         defb '80',0
+val_raw:
+        defb 'RAW',0
 val_ekl:
         defb 'EKL-1',0
 val_consul:
@@ -490,15 +508,22 @@ bcs_skip:
         jr nz,bcs_skip
         ret
 
-; book_add: this connection into the book: ui_line (its address) with net_host as its name and cs_type, or
-; cs_type into its entry when it is there already. A = 0 done, 2 the book is full. Changes all.
+; book_add: this connection into the book: ui_line (its address) with net_host as its name, cs_type and raw TCP
+; (bit 7), or these into its entry when it is there already. A = 0 done, 2 the book is full. Changes all.
 book_add:
         call book_find
         jr c,bk_new
         call book_cs
-        ld a,(cs_type)
+        call bk_set
         ld (hl),a
         xor a
+        ret
+bk_set:                         ; A = cs_type | tn_raw
+        push hl
+        ld hl,tn_raw
+        ld a,(cs_type)
+        or (hl)
+        pop hl
         ret
 bk_new:
         ld a,(book_n)
@@ -515,7 +540,7 @@ bk_new:
         ld b,ADDR_MAX
         call copy_word
         inc de
-        ld a,(cs_type)
+        call bk_set
         ld (de),a
         ld a,(book_n)
         inc a
@@ -623,12 +648,21 @@ cfs_entry:
         inc hl
         call cfg_puts           ; the address
         inc hl
-        ld a,(hl)               ; the character set, when not CP437
+        ld a,(hl)               ; the character set, when not CP437 (or raw TCP)
         or a
         jr z,cfs_line
+        push af
+        and 7Fh
         call cs_name
         ld a,','
         call cfg_putc
+        call cfg_puts
+        pop af
+        and 80h
+        jr z,cfs_line
+        ld a,','
+        call cfg_putc
+        ld hl,val_raw
         call cfg_puts
 cfs_line:
         call cfg_crlf
@@ -704,7 +738,8 @@ cfg_header:
         defb '; KEYBOARD=EKL-1 nebo CONSUL, SCREEN=CGA nebo AND (terminal na karte),',0Dh,0Ah
         defb '; SPEED=MAX nebo rychlost linky 38400, 19200, 9600, 4800, 2400, 1200, 300 (ANSI animace),',0Dh,0Ah
         defb '; COLUMNS=80 nebo 40 (sloupce CGA-1V na BBS),',0Dh,0Ah
-        defb '; BBS=jmeno,adresa[:port][,sada] (nejvys 16, poradi jako na uvodni obrazovce, jmeno bez carky),'
+        defb '; BBS=jmeno,adresa[:port][,sada][,RAW] (nejvys 16, poradi jako na uvodni obrazovce, jmeno bez'
+        defb ' carky, RAW = bez telnetu),'
         defb 0Dh,0Ah
         defb ';   sada znaku BBS: CP437 (bez udani), UTF-8, LATIN2, CP1250, CP852, KAMENICKY, KOI8, PETSCII,'
         defb 0Dh,0Ah,';   ATASCII, VIEWDATA.'

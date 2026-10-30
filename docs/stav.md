@@ -164,8 +164,7 @@
 
 ## Další krok
 
-Fáze 9: skutečný HW dávkově s autorem (`docs/hw-otazky.md`). Do té doby drobnosti: volba raw TCP pro BBS bez
-telnetu.
+Fáze 9: skutečný HW dávkově s autorem (`docs/hw-otazky.md`). Všechny ostatní body plánu jsou hotové.
 
 ## Otevřené drobnosti
 
@@ -178,6 +177,8 @@ telnetu.
   EKL-1 (autorova) drží znak do potvrzení, jí se to netýká.
 - **Velká písmena s diakritikou** mají ve fontu 4×8 výšku malých písmen (`docs/rozhodnuti.md`). Autor je viděl
   a souhlasí (2026-10-30).
+- **Raw TCP** (menu N, v adresáři `,RAW`): pro BBS, které telnet nemluví. Přijaté bajty jdou beze změny, FFh se
+  neposílá dvakrát a za CR nejde NUL. Ověřeno v `phase8.py` (FFh jako π: s telnetem jedno, raw dvě).
 - **BEL** (v ATASCII bzučák FDh) zahraje krátký tón 880 Hz na YM3812 MPH-1V (asi 1/15 s, program na tu dobu
   čeká). Bez MPH-1V je ticho. Ověřeno nahrávkou zvuku v `tools/emu/phase6.py`.
 - **Blikání a kurzor stojí, když běží data:** tiky pro blikání se počítají jen v klidu. Při pomalé lince se kurzor

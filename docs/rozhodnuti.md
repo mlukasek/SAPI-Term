@@ -307,3 +307,9 @@ Autor byl stále pryč, rozhodoval jsem sám.
   mosaics“.
 - **Enter posílá `_`** (5Fh, klávesa # Prestelu, kterou Telstar čeká na potvrzení volby).
 - **Telstar není ve výchozím adresáři:** byl by šestnáctou položkou a uživateli by nezbylo místo. Je v dokumentaci.
+
+## 2026-10-30: raw TCP
+
+- **Volba pro každou BBS:** bit 7 bajtu sady v adresáři (`,RAW` v souboru), v menu N. Některé BBS pro Atari a C64
+  běží bez telnetu. FFh (π v PETSCII, vložení znaku v ATASCII) by se jinak bralo jako IAC a další bajt jako
+  příkaz telnetu. Telnet je výchozí, protože ho používá většina BBS.

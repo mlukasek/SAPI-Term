@@ -1408,6 +1408,7 @@ vf_eof:         defb 0          ; view_file: 1Ah in the buffer (in_end is there)
 cols40:         defb 0          ; COLUMNS=40: the CGA-1V has 40 columns on line
 cga_wide:       defb 0          ; the CGA-1V shows 40 columns now (term_size)
 tn_cr:          defb 0          ; telnet: the last data byte was CR
+tn_raw:         defb 0          ; 80h: raw TCP, no telnet (the book, menu N)
 log_on:         defb 0          ; session log (xfer.asm)
 log_num:        defb 0          ; LOGnn.ANS
 log_ptr:        defw 0          ; next byte in log_buf

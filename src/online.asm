@@ -332,14 +332,18 @@ online:
         call parse_address
         xor a
         ld (utf_need),a
-        call book_find          ; the character set of the BBS from the book, else CP437
+        call book_find          ; the character set of the BBS from the book (bit 7: raw TCP), else CP437
         ld b,CS_CP437
         jr c,ol_cs
         call book_cs
         ld b,(hl)
 ol_cs:
         ld a,b
+        and 7Fh
         ld (cs_type),a
+        ld a,b
+        and 80h
+        ld (tn_raw),a
         ld hl,t_looking
         call ol_say
         ld hl,net_host
@@ -535,13 +539,23 @@ om_cols:
         ld hl,t_menu_hist
         call ss_text
         ld de,13*256+2
+        ld hl,t_menu_raw
+        call ss_text
+        ld hl,t_proto_telnet
+        ld a,(tn_raw)
+        or a
+        jr z,om_proto
+        ld hl,t_proto_raw
+om_proto:
+        call stat_puts
+        ld de,14*256+2
         ld hl,t_menu_back
         call ss_text
         ld hl,(om_msg)          ; what the last choice did
         ld a,h
         or l
         jr z,om_key
-        ld de,15*256+0
+        ld de,16*256+0
         call ss_text
 om_key:
         call kbd_get
@@ -567,6 +581,8 @@ om_key:
         jr z,om_download
         cp 'H'
         jr z,om_hist
+        cp 'N'
+        jr z,om_raw
         cp 09h                  ; Tab (09h stays 09h)
         jr z,om_swap
         cp 1Bh
@@ -611,6 +627,13 @@ om_log_off:
 om_log_said:
         ld hl,0
         jr om_said
+om_raw:                         ; telnet or raw TCP (U keeps it for the BBS)
+        ld a,(tn_raw)
+        xor 80h
+        ld (tn_raw),a
+        ld hl,0
+        ld (om_msg),hl
+        jp om_show
 om_hist:                        ; the rows that scrolled off, back to the BBS after it
         call hist_view
         jp om_back

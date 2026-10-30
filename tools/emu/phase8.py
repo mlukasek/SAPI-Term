@@ -239,6 +239,16 @@ def main():
         diff = picture(sym, model, glyphs, os.path.join(PREVIEW, 'f8_petscii_again.png'))
         check(diff == 0, 'Tab again: the colours of the C64 (%d dots differ)' % diff)
 
+        for raw in (False, True, False):        # FFh (pi): telnet one, raw TCP two (the test BBS doubles it)
+            if raw != bool(emu.read(sym['tn_raw'], 1)[0]):
+                keys('\x1d', 500)
+                keys('n', 1500)
+                keys('\x1b', 800)
+            model = petref.Term()
+            model.feed(b'\x93\x05\xff\xff' if raw else b'\x93\x05\xff')
+            keys('f', 100)
+            check(run_until(lambda: pet_matches(sym, model), ms=5000),
+                  '%s: FFh as %s' % ('raw TCP' if raw else 'telnet', 'two pi' if raw else 'one pi'))
         keys('\x1d', 500)                       # U: the BBS with PETSCII; Z: ATASCII
         keys('u', 1500)
         keys('z', 2000)

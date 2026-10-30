@@ -69,6 +69,9 @@ t_menu_book U  uložit BBS (i se sadou) do adresáře
 t_menu_log L  záznam relace:\s
 t_menu_dl D  stáhnout soubor (XMODEM, YMODEM)
 t_menu_hist H  historie (odrolované řádky)
+t_menu_raw N  protokol:\s
+t_proto_telnet telnet
+t_proto_raw raw TCP (bez telnetu)
 t_hist_title Historie: šipky, PgUp, PgDn, Home, End, Esc = zpět
 t_hist_line Řádek\s
 t_hist_of  z\s
