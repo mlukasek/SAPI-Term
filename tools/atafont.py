@@ -1,10 +1,9 @@
-"""Font 8x8 of ATASCII for SAPI-Term (own design): build/font_ata.inc.
+"""Font 8x8 of ATASCII for SAPI-Term: fonts/atari.txt (the font of the Atari 400/800, tools/romfont.py) ->
+build/font_ata.inc.
 
-128 glyphs by the ATASCII code 00h-7Fh (80h-FFh are the same in inverse video, drawn with the colours swapped):
-letters, digits and signs are the font 4x8 of SAPI-Term with each dot doubled (as in tools/petfont.py), the
-graphics 00h-1Fh, 60h and 7Bh-7Fh are drawn here from what each character means (the ATASCII article of
-Wikipedia lists them as Unicode). Nothing is taken from an Atari ROM. Also and_map_ata for the AND-1V, and
-vdt_extra: the characters of the British teletext set ATASCII lacks (src/vdt.asm: £ ½ ¼ ¾ ‖ ÷ ■).
+128 glyphs by the ATASCII code 00h-7Fh (80h-FFh are the same in inverse video, drawn with the colours swapped).
+Also and_map_ata for the AND-1V, and vdt_extra: the characters of the British teletext set ATASCII lacks
+(src/vdt.asm: £ ½ ¼ ¾ ‖ ÷ ■): the pound of the C64, ½ ¼ ÷ the font 4x8 of SAPI-Term doubled, the rest drawn here.
   python tools/atafont.py
 """
 import os
@@ -15,58 +14,10 @@ import fontgen  # noqa: E402
 import petfont as pf  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC = os.path.join(ROOT, 'fonts', 'atari.txt')
 
-HAND = {
-    'esc': ['.######.', '##....##', '#.###..#', '#.#....#', '#.##...#', '#.###..#', '##....##', '.######.'],
-    'up': ['...##...', '..####..', '.######.', '...##...', '...##...', '...##...', '...##...', '........'],
-    'left': ['........', '..##....', '.##.....', '#######.', '.##.....', '..##....', '........', '........'],
-    'clear': ['..#.....', '.##.....', '######..', '.##..#..', '..#..#..', '.....#..', '.....#..', '........'],
-    'tri_left': ['......##', '....####', '..######', '########', '..######', '....####', '......##', '........'],
-}
-UP = pf.grid(HAND['up'])
-LEFT = pf.grid(HAND['left'])
-TRI_LEFT = pf.grid(HAND['tri_left'])
-
-GRAPHICS = {
-    0x00: pf.grid(pf.HAND['heart']),
-    0x01: pf.box(1, 1, 0, 1),                               # ├
-    0x02: pf.cells(lambda x, y: x >= 6),                    # right quarter
-    0x03: pf.box(1, 0, 1, 0),                               # ┘
-    0x04: pf.box(1, 1, 1, 0),                               # ┤
-    0x05: pf.box(0, 1, 1, 0),                               # ┐
-    0x06: pf.mirror_x(pf.DIAG),                             # ╱
-    0x07: pf.DIAG,                                          # ╲
-    0x08: pf.cells(lambda x, y: x + y >= 7),                # ◢
-    0x09: pf.cells(lambda x, y: x >= 4 and y >= 4),         # ▗
-    0x0A: pf.cells(lambda x, y: x <= y),                    # ◣
-    0x0B: pf.cells(lambda x, y: x >= 4 and y < 4),          # ▝
-    0x0C: pf.cells(lambda x, y: x < 4 and y < 4),           # ▘
-    0x0D: pf.cells(lambda x, y: y < 2),                     # upper quarter
-    0x0E: pf.cells(lambda x, y: y >= 6),                    # ▂
-    0x0F: pf.cells(lambda x, y: x < 4 and y >= 4),          # ▖
-    0x10: pf.grid(pf.HAND['club']),
-    0x11: pf.box(0, 1, 0, 1),                               # ┌
-    0x12: pf.box(0, 0, 1, 1),                               # ─
-    0x13: pf.box(1, 1, 1, 1),                               # ┼
-    0x14: pf.grid(pf.HAND['dot']),                          # •
-    0x15: pf.cells(lambda x, y: y >= 4),                    # ▄
-    0x16: pf.cells(lambda x, y: x < 2),                     # ▎
-    0x17: pf.box(0, 1, 1, 1),                               # ┬
-    0x18: pf.box(1, 0, 1, 1),                               # ┴
-    0x19: pf.cells(lambda x, y: x < 4),                     # ▌
-    0x1A: pf.box(1, 0, 0, 1),                               # └
-    0x1B: pf.grid(HAND['esc']),                             # ␛
-    0x1C: UP,                                               # ↑
-    0x1D: pf.mirror_y(UP),                                  # ↓
-    0x1E: LEFT,                                             # ←
-    0x1F: pf.mirror_x(LEFT),                                # →
-    0x60: pf.grid(pf.HAND['diamond']),
-    0x7B: pf.grid(pf.HAND['spade']),
-    0x7D: pf.grid(HAND['clear']),                           # the clear screen arrow
-    0x7E: TRI_LEFT,                                         # ◀
-    0x7F: pf.mirror_x(TRI_LEFT),                            # ▶
-}
-
+# the graphics (on the AND-1V by AND_GRAPHICS or their 2x3 look); the rest are letters, digits and signs
+GRAPHICS = set(range(0x20)) | {0x60, 0x7B, 0x7D, 0x7E, 0x7F}
 
 VDT_HAND = {
     'three_quarters': ['##......', '..#.....', '##...#..', '..#.#...', '##.#.##.', '..#.#.#.', '.#..####', '......#.'],
@@ -75,15 +26,16 @@ VDT_HAND = {
 
 
 def vdt_extra():
-    """£ ½ ¼ ¾ ‖ ÷ ■ (Viewdata 23h, 5Ch, 7Bh, 7Dh, 7Ch, 7Eh, 7Fh): the font 4x8 doubled where CP437 has them."""
+    """£ ½ ¼ ¾ ‖ ÷ ■ (Viewdata 23h, 5Ch, 7Bh, 7Dh, 7Ch, 7Eh, 7Fh)."""
     cp = fontgen.parse()['cp437']
-    return [pf.doubled(cp[0x9C]), pf.doubled(cp[0xAB]), pf.doubled(cp[0xAC]), pf.grid(VDT_HAND['three_quarters']),
+    pound = pf.build()[0x1C]
+    return [pound, pf.doubled(cp[0xAB]), pf.doubled(cp[0xAC]), pf.grid(VDT_HAND['three_quarters']),
             pf.grid(VDT_HAND['double_bar']), pf.doubled(cp[0xF6]), pf.cells(lambda x, y: True)]
 
 
 def build():
-    cp = fontgen.parse()['cp437']
-    return [GRAPHICS[c] if c in GRAPHICS else pf.doubled(cp[c]) for c in range(128)]
+    font = fontgen.parse(SRC)['atascii']
+    return [pf.grid(font[c]) for c in range(128)]
 
 
 AND_GRAPHICS = {0x01: pf.AND_BOX[(1, 1, 0, 1)], 0x03: pf.AND_BOX[(1, 0, 1, 0)], 0x04: pf.AND_BOX[(1, 1, 1, 0)],

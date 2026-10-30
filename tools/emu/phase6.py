@@ -4,7 +4,7 @@ With the local test BBS (tools/testbbs.py, started here): the blink page without
 100-107) on the shadow screen as the model says, the CGA-1V picture seen in both phases of the blink (each equal
 to the model drawn with the text shown or hidden); with iCE the same page has bright backgrounds and does not
 blink. BEL (R of the test BBS): a tone of the MPH-1V recorded. Menu S: 40 columns on the CGA-1V (NAWS 40x25, the MENU page equal to a model of 40 columns, the picture
-in the font 4x8 with its dots doubled), S again 80. Menu R to 2400 Bd: the MENU page takes its time at 240 bytes a second and ends equal to the model. Back
+in the font of the MZ-700 for ASCII, the rest in the font 4x8 with its dots doubled), S again 80. Menu R to 2400 Bd: the MENU page takes its time at 240 bytes a second and ends equal to the model. Back
 in CP/M "SAPITERM MENU.ANS" shows the file at the same speed (SPEED=2400 in SAPITERM.CFG). Needs the emulator
 with MCP (tools/emu/sapiemu.cmd) and build.cmd. Screenshots to build/preview/f6_*.png.
   python tools/emu/phase6.py
@@ -22,6 +22,7 @@ import emu  # noqa: E402
 from emu import mcp  # noqa: E402
 import ansiref  # noqa: E402
 import fontgen  # noqa: E402
+import mzfont  # noqa: E402
 import testbbs  # noqa: E402
 from phase3 import shadow  # noqa: E402
 from phase4 import check, failed, keys, log, run_until, screen_matches, LOG, PORT  # noqa: E402
@@ -78,17 +79,20 @@ def blink(sym, font):
 
 
 def render40(t, font):
-    """RGB of 640x400 for a model of 40 columns: each dot of the font 4x8 doubled (a cell is 8x8 CGA dots)."""
+    """RGB of 640x400 for a model of 40 columns: ASCII in the font of the MZ-700, the rest with each dot of the font
+    4x8 doubled (a cell is 8x8 CGA dots)."""
     pal = [tuple((v << 2 | v >> 4) for v in c) for c in ansiref.RGB6]
+    mz = mzfont.build()
     out = bytearray(640 * 400 * 3)
     for r in range(25):
         for c in range(40):
-            g = font[t.chr[r][c]]
+            code = t.chr[r][c]
+            g = mz[code] if code in mz else [[row[x // 2] == '#' for x in range(8)] for row in font[code]]
             a = t.att[r][c]
             fg, bg = pal[a & 15], pal[a >> 4]
             for y in range(8):
                 for x in range(8):
-                    col = fg if g[y][x // 2] == '#' else bg
+                    col = fg if g[y][x] else bg
                     for dy in range(2):
                         p = ((r * 8 + y) * 2 + dy) * 640 + (c * 8 + x) * 2
                         out[p * 3:p * 3 + 6] = bytes(col) * 2
@@ -129,7 +133,7 @@ def wide40(sym, font):
         diff = sum(1 for i in range(0, len(want), 3) if want[i:i + 3] != got[i:i + 3])
         if diff == 0:
             break
-    check(diff == 0, 'MENU in 40 columns: CGA-1V picture equals the doubled font (%d dots differ)' % diff)
+    check(diff == 0, 'MENU in 40 columns: CGA-1V picture equals the model with the MZ-700 font (%d dots differ)' % diff)
     keys('\x1d', 500)
     keys('s', 3000)
     check(emu.read(sym['cga_wide'], 1)[0] == 0 and emu.read(sym['term_cols'], 1)[0] == 80, 'S again: 80 columns')

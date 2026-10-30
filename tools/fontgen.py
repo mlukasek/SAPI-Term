@@ -16,7 +16,7 @@ SRC = os.path.join(ROOT, 'fonts', 'sapiterm4x8.txt')
 
 
 def parse(path=SRC):
-    """{'cp437': {code: [8 rows of '#.']}, 'koi8cs': {...}}"""
+    """{'cp437': {code: [8 rows of '#.']}, 'koi8cs': {...}}; glyphs 4 dots wide (or 8 in fonts/c64.txt etc.)."""
     banks, bank, codes, row = {}, None, None, 0
     for n, line in enumerate(open(path, encoding='utf-8'), 1):
         line = line.rstrip('\n')
@@ -28,7 +28,7 @@ def parse(path=SRC):
             codes = None
             continue
         tokens = line.split()
-        if all(re.fullmatch(r'[#.]{4}', t) for t in tokens):
+        if all(re.fullmatch(r'[#.]{4}|[#.]{8}', t) for t in tokens):
             if codes is None or row >= 8 or len(tokens) != len(codes):
                 sys.exit('%s:%d: glyph row without a header or with %d glyphs' % (path, n, len(tokens)))
             for c, t in zip(codes, tokens):

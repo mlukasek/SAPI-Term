@@ -15,6 +15,9 @@
 1. generátory do `build\`:
    - `tools\fontgen.py`: font z `fonts\sapiterm4x8.txt` → `font4x8.inc` (`--preview SOUBOR.png` uloží náhled);
    - `tools\tables.py`: převod CP437 → AND-1V, vzdálenosti barev, adresy řádků CGA → `tables.inc`;
+   - `tools\petfont.py`, `tools\atafont.py`, `tools\mzfont.py`: písma 8×8 C64 (PETSCII), Atari (ATASCII) a
+     Sharp MZ-700 (ANSI ve 40 sloupcích) z `fonts\c64.txt`, `atari.txt`, `mz700.txt` → `font_pet.inc`,
+     `font_ata.inc`, `font_mz.inc`, s mapami pro AND-1V;
    - `tools\texts.py`: texty UI z `src\texts.txt` (UTF-8) v KOI-8čs2 → `texts.inc`;
    - `tools\mkart.py`: testovací soubory ANSI → `build\art\*.ANS` (každá doména nejvýš 16 dvojic, hlídá
      `tools\ansiref.py`), používá je i `tools\testbbs.py`;
@@ -23,6 +26,21 @@
    `SAVE n SAPITERM.COM`;
 4. `tools\cpmdisk.py` (převzatý z SAPI-Bad-Apple): `build\ramdisk.bin` = RAM disk CP/M sestavy V
    se `SAPITERM.COM` a testovacími soubory `*.ANS`.
+
+### Písma z ROM
+
+`fonts\c64.txt`, `atari.txt` a `mz700.txt` jsou v repu. Dělá je jednorázově `tools\romfont.py` z ROM, které
+v repu nejsou (`work\roms`, git je ignoruje). Skript kontroluje CRC32 a ROM MZ-700 otáčí (bit 0 = levý bod).
+
+| Písmo | Soubor (CRC32) | Odkud |
+|---|---|---|
+| C64 | `chargen-901225-01.bin` (EC4272EE) | VICE, `data/C64` (zrcadlo SVN na GitHubu `VICE-Team/svn-mirror`) |
+| Atari | `ATARIOSB.ROM` (3E28A1FE), písmo na E000h | `xf25.zip` (PC Xformer 2.5) v projektu Atari800 na SourceForge |
+| MZ-700 | `mz700fon.int` (42B9E8FB) | sada MAME 0.221 `mz700.zip` (archive.org, `mame-0.221-roms-merged`) |
+
+```
+python tools\romfont.py --c64 work\roms\c64\chargen-901225-01.bin --atari work\roms\atari\ATARIOSB.ROM --mz work\roms\mz700-mame\mz700fon.int
+```
 
 ## Emulátor
 

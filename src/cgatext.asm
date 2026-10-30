@@ -12,7 +12,7 @@
 DOMAINS         equ 7
 
 ; glyph_addr: A = character, B = flags (EXT_KOI: KOI-8cs2 C0-FF from font_koi, EXT_8X8: font_pet, EXT_ATA:
-; font_ata, else CP437)
+; font_ata, else CP437: in 40 columns 20h-7Fh from font_mz, the font of the Sharp MZ-700, the rest doubled)
 ; -> HL = glyph. Changes A.
 glyph_addr:
         bit 3,b
@@ -24,6 +24,12 @@ glyph_addr:
         bit 0,b
         jr nz,ga_koi
         ld l,a
+        ld a,(cga_wide)
+        or a
+        ld a,l
+        jr nz,ga_wide
+ga_cp437:
+        ld l,a
         ld h,0
         add hl,hl
         add hl,hl
@@ -32,6 +38,25 @@ glyph_addr:
         add a,high font_cp437
         ld h,a
         ret
+ga_wide:                        ; 40 columns: 8 dots a line from font_mz (after font_pet: drawn as it is)
+        sub 20h
+        cp 60h
+        jr nc,ga_wide_437
+        ld l,a
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld a,l
+        add a,low font_mz
+        ld l,a
+        ld a,h
+        adc a,high font_mz
+        ld h,a
+        ret
+ga_wide_437:
+        add a,20h
+        jr ga_cp437
 ga_ata:                         ; 8 dots a line (ata.asm), after font_pet: drawn as it is too
         ld l,a
         ld h,0
@@ -197,7 +222,7 @@ cga_draw_wide:
         ld a,e
         cp SCR_COLS/2
         ret nc
-        ld a,h                  ; a glyph of font_pet: 8 dots, not doubled
+        ld a,h                  ; a glyph of font_pet or after it: 8 dots, not doubled
         cp high font_pet
         jr nc,cga_draw_8
         push hl

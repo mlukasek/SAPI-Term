@@ -1,6 +1,6 @@
 # SAPI-Term – stav a další kroky
 
-## Shrnutí (2026-10-30, `SAPITERM.COM` 0.8, 31,4 KB)
+## Shrnutí (2026-10-30, `SAPITERM.COM` 0.8, 32,2 KB)
 
 - **Hotové fáze 0–8,** zbývá fáze 9: zkouška na skutečném SAPI-1 s autorem (`docs/hw-otazky.md`).
 - **Terminál ANSI-BBS a VT100:**
@@ -15,7 +15,8 @@
   - Z sada (CP437, UTF-8, LATIN2, CP1250, CP852, KAMENICKY, KOI8, PETSCII, ATASCII, VIEWDATA);
   - R rychlost linky, S 80/40 sloupců, U do adresáře, L záznam relace, D stažení XMODEM/YMODEM, H historie,
     N telnet / raw TCP.
-- **Terminály C64 (PETSCII), Atari (ATASCII) a Prestel (Viewdata)** s vlastními písmy a barvami.
+- **Terminály C64 (PETSCII), Atari (ATASCII) a Prestel (Viewdata)** s písmy C64 a Atari z jejich ROM a jejich
+  barvami. ANSI ve 40 sloupcích má písmo Sharp MZ-700.
 - **Dál:**
   - blikání, zvonek na MPH-1V;
   - historie 93 řádků ve stránce B CGA-1V;
@@ -171,6 +172,13 @@
       není: zbylo by jediné volné místo. Připojit adresou, v menu Z zvolit VIEWDATA, U ji uloží.
   - **Paměť:** `SAPITERM.CFG` se čte a píše po záznamech 128 B (dřív celý soubor v bufferu 2,7 KB). Buffery
     a zásobník končí na B5AAh, pod C000h zbývá 2,6 KB. Historie bez CGA-1V má 48 řádků.
+- **Písma 8×8 z původních strojů:** `SAPITERM.COM` 0.8 (32,2 KB).
+  - PETSCII má písmo C64, ATASCII a Viewdata písmo Atari 400/800, ANSI ve 40 sloupcích písmo Sharp MZ-700 pro
+    znaky 20h–7Fh (ostatní znaky zdvojené 4×8).
+  - Zdroje a převod: `tools/romfont.py` → `fonts/*.txt`, `docs/vyvoj.md` (Písma z ROM).
+  - Ověřeno: `tools/emu/phase6.py` (40 sloupců proti modelu s písmem MZ-700) a `phase8.py` (PETSCII, ATASCII,
+    Viewdata) procházejí, modely berou písma ze stejných předloh.
+  - Buffery a zásobník končí na B9AAh, pod C000h zbývá 1,6 KB. Historie bez CGA-1V má 42 řádků.
 
 ## Plán (schválený 2026-10-30, rozhodnutí v `docs/rozhodnuti.md`)
 

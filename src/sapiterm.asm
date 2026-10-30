@@ -1474,6 +1474,8 @@ cfg_fcb:        defs 36
         defs (256 - ($ & 0FFh)) & 0FFh
         include "../build/font_pet.inc"
         include "../build/font_ata.inc"
+        defs (8 - ($ & 7)) & 7
+        include "../build/font_mz.inc"
 
 PROGRAM_END:
 
