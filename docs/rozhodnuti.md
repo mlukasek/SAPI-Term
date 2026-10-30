@@ -120,3 +120,37 @@ Nové rozhodnutí dopsat s datem a důvodem.
 - **Paleta po dávkách:** nejvýš 16 dvojic na jedno VBI, zbytek v dalších. Zápis dvojice jedné domény trvá asi
   460 T, VBI 4 ms = 8000 T při 2 MHz. Emulátor (`palette_writes_visible`) ukázal zápisy mimo VBI, když se paleta
   psala celá najednou.
+
+## 2026-10-30: fáze 4, síť a telnet
+
+- **Spuštění podle argumentu:** existuje-li soubor (BDOS OPEN na FCB z CCP), zobrazí se, jinak je argument adresa
+  BBS. Bez argumentu se program zeptá na adresu. CCP převede argument na velká písmena, DNS na tom nezáleží.
+- **Telnet:**
+  - na volbu se odpovídá jen při změně jejího stavu (zkrácený RFC 1143), tedy bez smyček;
+  - klient udělá TTYPE (`ANSI`, Synchronet a další tak poznají ANSI-BBS), NAWS, BINARY, SGA, ostatní WONT;
+  - server smí ECHO, SGA, BINARY, ostatní DONT;
+  - Enter se posílá jako CR NUL (RFC 854), v binárním režimu jen CR.
+- **NAWS podle karty terminálu:** 80×25 na CGA-1V, 64×20 na AND-1V. Po výměně karet v menu se pošle znovu.
+- **Příjem:**
+  - v jednom kole nejvýš 8 × TCPRECV po 253 B, dokud karta má data a v bufferu je místo;
+  - telnet je filtruje rovnou do vstupního bufferu, takže skokové rolování vidí čistá data.
+  - Bez dat se jednou za 0,5 s ověří TCPSTATUS (konec spojení).
+  - Na skutečné kartě každý přístup po příkazu TCP čeká na jádro 0 (až asi 8 ms). Pro EKL-1 to nevadí.
+- **Paleta se zapíše po každém zpracovaném bloku dat** (ve VBI), nejen v klidu. Jinak by nové barvy během dlouhého
+  proudu dat zůstaly špatně až do konce.
+- **Klávesy na BBS:**
+  - šipky ESC[A–D, Home ESC[H, End ESC[K, PgUp ESC[V, Ins ESC[@ (jako SyncTERM), Del 7Fh;
+  - PgDn z EKL-1 (03h) zůstává Ctrl+C, na BBS je důležitější;
+  - česká písmena se zatím neposílají (fáze 5).
+- **Menu Ctrl+]** je na stavové kartě, aby nerušilo obrazovku BBS. Bez druhé karty Ctrl+] rovnou odpojí.
+- **iCE přes `ESC [ ? 33 h/l`** (CTerm, SyncTERM): BBS tak zapínají jasná pozadí pro ANSI art. Je i v modelu.
+- **Testovací BBS `tools/testbbs.py`** (jen standardní knihovna) vyjedná telnet jako běžná BBS, posílá testovací
+  soubory a vše, co klient pošle, zapisuje do JSON. Test pak ověří odpovědi i obraz.
+- **`add_hl_a` a `add_de_a` zachovávají A.** Tři místa počítala s původním A jako s délkou a rozbila odesílání
+  (za každým bajtem nuly).
+- **Klávesnice Consul bez úpravy 7474:**
+  - čtení klávesnice přidané do dlouhých smyček (plnění řádků po 80 B, `fill` po 256 B, přesuny dvojic po
+    úsecích, zápis palety po dvojici);
+  - stavová obrazovka se obnovuje až v klidu, ne po každé klávese.
+  - Test na Consulu běží ve výchozím režimu emulátoru, věrný režim `strict` občas klávesu ztratí
+    (`docs/stav.md`).

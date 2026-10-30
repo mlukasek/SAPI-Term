@@ -4,32 +4,32 @@
 
 - **Fáze 0–2 hotové:** kostra, start a návrat do CP/M, výstup na CGA-1V (80×25, vlastní font 4×8) a AND-1V
   (64×20), stavová obrazovka, testovací obrazovka.
-- **Fáze 3 hotová:** `SAPITERM.COM` 0.3 (12 KB), terminál ANSI.
-  - **Parser ANSI-BBS a VT100** (`src/ansi.asm`, seznam sekvencí v hlavičce):
-    - SGR včetně jasných barev 90–97 a 100–107 a iCE;
-    - pohyb kurzoru, mazání, vkládání a mazání znaků a řádků;
-    - oblast rolování, uložení a obnova kurzoru, režimy ?7 a ?25;
-    - odpovědi na DSR a DA (zatím nikam).
-  - **Prohlížeč souborů ANSI:** `SAPITERM SOUBOR.ANS` zobrazí soubor z disku CP/M. iCE barvy zapne podle záznamu
-    SAUCE. Pak se dá psát, Ctrl+] = konec.
-  - **Dvojice barev po doménách:** 16 dvojic na každé 4 řádky (až 7×16 na obrazovku). Řádek, který rolováním
-    přejde do jiné domény, dostane dvojice tam a zachová si číslo slotu, když to jde.
-  - **Skokové rolování:** se 2KB vstupním bufferem se odroluje o všechny konce řádků, které čekají ve vstupu,
-    najednou. Výsledek je stejný jako po jednom řádku.
-  - **Paleta po dávkách:** nejvýš 16 dvojic na jedno VBI, aby zápis nikdy nepřesáhl zatemnění (ani při 2 MHz).
-  - **Ověřeno** v SAPIemu 0.7.0-beta skriptem `tools/emu/phase3.py`: čtyři testovací soubory z `tools/mkart.py`.
-    - Stínová obrazovka (2000 buněk, kurzor) sedí přesně s referenčním modelem `tools/ansiref.py`.
-    - Snímek CGA-1V sedí s modelem vykresleným fontem bod po bodu.
-    - Žádný zápis palety mimo VBI.
-    - Fáze 2 (`phase2.py`) prochází dál.
-  - **Rychlost při 4 MHz** (soubor z RAM disku včetně čtení přes BDOS):
-
-    | Soubor | Velikost | Čas |
-    |---|---|---|
-    | ANSITEST.ANS | 1,2 KB | 1,2 s |
-    | MENU.ANS | 1,1 KB | 1,2 s |
-    | SUNSET.ANS (2000 půlbloků, hodně SGR) | 8,9 KB | 3,0 s |
-    | SCROLL.ANS (75 barevných řádků) | 5,8 KB | 4,2 s, dřív bez skokového rolování 11,2 s |
+- **Fáze 3 hotová:** parser ANSI-BBS a VT100, prohlížeč `SAPITERM SOUBOR.ANS` (iCE podle SAUCE), dvojice barev po
+  doménách, skokové rolování, paleta po dávkách ve VBI. Podrobně v `docs/rozhodnuti.md` a `docs/technika.md`.
+- **Fáze 4 hotová:** `SAPITERM.COM` 0.4 (15 KB), terminál pro BBS po síti přes DPI-1L.
+  - **Spuštění:**
+    - `SAPITERM` nabídne zadání adresy (prázdný Enter = testovací obrazovka);
+    - `SAPITERM HOST[:PORT]` se rovnou připojí (port 23, když chybí);
+    - `SAPITERM SOUBOR.ANS` zobrazí soubor, existuje-li.
+  - **Síť:** DNS, TCP (jedno spojení), příjem po 253 B do 2KB bufferu (skokové rolování), odesílání s opakováním
+    při chybě 5.
+  - **Telnet:**
+    - zahodí IAC a odpoví jen na změnu stavu volby;
+    - TTYPE `ANSI`, NAWS 80×25 nebo 64×20 (po výměně karet znovu), ECHO, SGA, BINARY;
+    - Enter = CR NUL, odpovědi parseru (CPR, DA) jdou do sítě.
+  - **Klávesy:** šipky, Home, End, PgUp, Ins, Del jako sekvence ANSI. EKL-1 je posílá kódy WordStar, Consul C1–C4.
+    Typ klávesnice se přepíná v menu.
+  - **Menu Ctrl+]** na stavové kartě: odpojit, konec, Tab (výměna obrazovek a NAWS), typ klávesnice.
+  - **Konec spojení** od BBS, chyby (neznámé jméno, odmítnuté spojení, vypršení) se ukážou na úvodní obrazovce.
+  - **iCE barvy** zapíná i `ESC [ ? 33 h` (CTerm), jak to dělají BBS.
+  - **Ověřeno** skriptem `tools/emu/phase4.py` proti místní testovací BBS `tools/testbbs.py`:
+    - vyjednání telnetu, odpovědi CPR a DA, odeslané klávesy;
+    - tři stránky ANSI po síti přesně podle modelu (stín i obraz bod po bodu);
+    - NAWS po výměně karet;
+    - konec spojení od BBS, odmítnutý port, neznámé jméno.
+    - Fáze 2 a 3 procházejí dál, i na sestavě s Consulem.
+  - **Rychlost při 4 MHz** (soubory z RAM disku): SUNSET 3,6 s, SCROLL 4,8 s. Častější čtení klávesnice kvůli
+    Consulu je zpomalilo asi o 15 %.
 
 ## Plán (schválený 2026-10-30, rozhodnutí v `docs/rozhodnuti.md`)
 
@@ -37,12 +37,12 @@
 1. ~~Start a návrat~~
 2. ~~Výstup: font 4×8, CGA 80×25, AND-1V 64×20, stavová obrazovka, testovací obrazovka, české texty~~
 3. ~~Parser ANSI, prohlížeč `.ANS`, dvojice barev po doménách, skokové rolování~~
-4. **Síť:**
-   - DNS, TCP, telnet (IAC, NAWS, TTYPE, ECHO, SGA, BINARY);
-   - příjem do vstupního bufferu (skokové rolování), odpovědi parseru (CPR, DA) do sítě;
-   - host:port, seznam BBS, volba typu klávesnice;
-   - `tools/testbbs.py`.
-5. **Skutečné BBS:** ověřený seznam, doladění, UTF-8 → CP437 a čeština.
+4. ~~Síť: DNS, TCP, telnet, zadání adresy, menu, `tools/testbbs.py`~~
+5. **Skutečné BBS:**
+   - ověřený seznam BBS a adresář v souboru (`SAPITERM.CFG` na A: nebo na SD kartě DPI);
+   - nastavení (typ klávesnice, výchozí karta) uložené;
+   - UTF-8 → CP437 a čeština (psaní z EKL-1 v kódování BBS);
+   - doladění podle skutečných BBS.
 6. **ANSI art a animace:**
    - rychlost modemu, blikání (SGR 5 bez iCE), režim 40×25 8×8;
    - rychlejší kreslení znaků (teď asi 1 ms na znak s pomocnými operacemi).
@@ -52,13 +52,19 @@
 
 ## Další krok
 
-Fáze 4: síť přes DPI-1L (`src/dpi.asm`: DNS, TCP), telnet (`src/telnet.asm`), místní testovací server
-`tools/testbbs.py` a jednoduché zadání adresy BBS.
+Fáze 5: skutečné BBS. Sestavit a v emulátoru vyzkoušet seznam BBS vhodných pro 8bitové počítače (Synchronet,
+Mystic, retro BBS), adresář a nastavení v souboru, UTF-8 a češtinu.
 
 ## Otevřené drobnosti
 
 - **EKL-1 a Consul se nedají rozlišit.** Velká česká písmena z EKL-1 (KOI XOR 20h: Á = C1h, Č = C3h, Ď = C4h)
-  mají stejné kódy jako šipky Consulu (C1–C4). Program je teď bere jako šipky. Typ klávesnice bude volba (fáze 4).
+  mají stejné kódy jako šipky Consulu (C1–C4).
+  - Na BBS rozhoduje typ klávesnice v menu (výchozí EKL-1).
+  - Psací stroj (bez spojení) zatím bere C1–C4 jako šipky.
+  - Typ se zatím neukládá (fáze 5).
+- **Consul 262.3 bez úpravy 7474 věrně jako HW (`strict`):** při rolování se může ztratit klávesa. Některé smyčky
+  pořád trvají až asi 2 ms a impuls STROBE je jen 1 ms. Výchozí sestava V v emulátoru impuls zopakuje.
+  EKL-1 (autorova) drží znak do potvrzení, jí se to netýká.
 - **Velká písmena s diakritikou** mají ve fontu 4×8 výšku malých písmen (`docs/rozhodnuti.md`). Autor je viděl
   a souhlasí (2026-10-30).
 - **BEL** zatím nepípá, blikání (SGR 5 bez iCE) se neukazuje.

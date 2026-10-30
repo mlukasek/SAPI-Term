@@ -64,7 +64,7 @@ scr_offset:
         inc h
         ret
 
-; fill: BC bytes at HL with A (BC > 0). Changes BC, DE, HL.
+; fill: BC bytes at HL with A (BC > 0), the keyboard polled after every 256 bytes. Changes A, BC, DE, HL.
 fill:
         ld (hl),a
         dec bc
@@ -74,6 +74,21 @@ fill:
         ld d,h
         ld e,l
         inc de
+fl_chunk:
+        ld a,b
+        or a
+        jr z,fl_last
+        push bc
+        ld bc,256
+        ldir
+        pop bc
+        dec b
+        call kbd_scan
+        jr fl_chunk
+fl_last:
+        ld a,c
+        or a
+        ret z
         ldir
         ret
 
@@ -233,6 +248,9 @@ ss_cga:
         call pair_unref
         ld a,(ss_att)
         call pair_get
+        push af
+        call kbd_scan           ; a new pair may have taken a scan of 256 attributes
+        pop af
         ld c,a                  ; slot
         ld a,(ss_ext)
         ld b,a
@@ -631,6 +649,7 @@ ru_last:
         ld hl,(sl_off)
         ld b,SCR_COLS
         call scr_blank
+        call kbd_scan
         ld a,(ru_left)
         dec a
         ld (ru_left),a
@@ -844,6 +863,7 @@ cells_unref_n:
         ld de,scr_att
         add hl,de
 cu_run:
+        call kbd_scan
         ld a,(hl)
         ld c,0
 cu_len:
@@ -859,6 +879,7 @@ cu_end:
         ld e,c
         ld d,0
         call pair_sub
+        call kbd_scan
         pop hl
         pop bc
         ld a,b
@@ -1115,17 +1136,24 @@ ica_cell:
         jr nz,ica_cell
         ret
 
+; add_hl_a: HL + A. add_de_a: DE + A. A and the flags stay.
 add_hl_a:
+        push af
         add a,l
         ld l,a
-        ret nc
+        jr nc,aha_done
         inc h
+aha_done:
+        pop af
         ret
 add_de_a:
+        push af
         add a,e
         ld e,a
-        ret nc
+        jr nc,ada_done
         inc d
+ada_done:
+        pop af
         ret
 
 ; scr_shift: the shadow only (no card): all 25 rows move up by A (> 0), the rows that come in at the bottom

@@ -87,33 +87,39 @@ cga_cursor_xor:
         ret
 
 ; cga_fill_rows: text rows D to D + E - 1 filled with the byte A (slot A, no dots). MAP_CGA. The keyboard is
-; polled after each row. Changes A, BC, DE, HL.
+; polled after every line of 80 bytes (0.5 ms at 4 MHz). Changes A, BC, DE, HL.
 cga_fill_rows:
         ld (cf_byte),a
         ld a,e
         or a
         ret z
-        ld (cf_count),a
+        add a,a
+        add a,a
+        add a,a
+        ld (cf_count),a         ; lines
         ld e,0
         call cga_cell_addr
-cfr_row:
         ld a,(cf_byte)
-        ld (hl),a
+        ld (hl),a               ; the first byte, then each line copies the one before it
         ld d,h
         ld e,l
         inc de
-        ld bc,639
+        ld bc,79
         ldir
-        ex de,hl                ; HL = start of the next row
+        jr cfr_next
+cfr_line:
+        ld bc,80
+        ldir
+cfr_next:
         call kbd_scan
         ld a,(cf_count)
         dec a
         ld (cf_count),a
-        jr nz,cfr_row
+        jr nz,cfr_line
         ret
 
-; cga_fill_cells: B cells from D = row, E = column filled with the byte A (all 8 lines). MAP_CGA.
-; Changes A, BC, DE, HL.
+; cga_fill_cells: B cells from D = row, E = column filled with the byte A (all 8 lines), the keyboard polled
+; after each line. MAP_CGA. Changes A, BC, DE, HL.
 cga_fill_cells:
         ld (cf_byte),a
         ld a,b
@@ -134,6 +140,7 @@ cfc_byte:
         pop hl
         ld de,80
         add hl,de
+        call kbd_scan
         dec c
         jr nz,cfc_line
         ret
@@ -220,7 +227,8 @@ ccr_piece:
         jp nz,ccr_piece
         ret
 
-; cga_fix_cells: B cells of row D from column E get slot C (the dots stay). MAP_CGA. Changes A, B, E, HL.
+; cga_fix_cells: B cells of row D from column E get slot C (the dots stay), the keyboard polled after each
+; line. MAP_CGA. Changes A, B, E, HL.
 cga_fix_cells:
         ld a,b
         or a
@@ -246,6 +254,7 @@ cfx_cell:
         jr nc,cfx_next
         inc h
 cfx_next:
+        call kbd_scan           ; a line of 80 cells takes up to 1 ms at 4 MHz
         dec e
         jr nz,cfx_line
         ret
@@ -455,20 +464,31 @@ pair_sub:
         ld (hl),a
         ret
 
-; pair_unmap: attributes that have slot A in the domain lose it. Changes HL.
+; pair_unmap: attributes that have slot A in the domain lose it; the keyboard is polled every 64 entries (the
+; whole scan is 1.3 ms at 4 MHz). Changes E, HL.
 pair_unmap:
         push af
         ld a,(pd_page)
         ld h,a
         pop af
         ld l,0
+        ld e,64
 pu_loop:
         cp (hl)
         jr nz,pu_next
         ld (hl),0FFh
 pu_next:
         inc l
+        ret z
+        dec e
         jr nz,pu_loop
+        ld e,64
+        call kbd_scan_a
+        jr pu_loop
+kbd_scan_a:                     ; kbd_scan keeping A
+        push af
+        call kbd_scan
+        pop af
         ret
 
 ; pair_nearest: A = attribute -> A = the slot of the domain whose pair is the nearest (colour distance of the
@@ -555,6 +575,7 @@ pus_next:
         jr c,pus_less
         ld e,a
 pus_less:
+        call kbd_scan
         dec d
         jr nz,pus_dom
         ld a,e
@@ -595,6 +616,7 @@ pm_end:
         ld (pm_left),a
         ld a,c
         ld (pm_n),a
+        call kbd_scan
         ld a,(pm_from)
         call pair_setdom
         ld a,(pm_att)
@@ -608,6 +630,7 @@ pm_end:
         ld d,0
         ld a,(pm_att)
         call pair_sub
+        call kbd_scan
         ld a,(pm_to)
         call pair_setdom
         ld a,(pm_old)
@@ -615,6 +638,7 @@ pm_end:
         ld a,(pm_att)
         call pair_get_hint
         ld (pm_new),a
+        call kbd_scan
         ld a,(pm_n)
         dec a
         ld e,a
@@ -639,6 +663,7 @@ pm_end:
         ld a,MAP_CPM
         out (MAPREG),a
 pm_same:
+        call kbd_scan           ; a run takes up to 0.3 ms
         ld a,(pm_col)
         ld hl,pm_n
         add a,(hl)
@@ -732,6 +757,7 @@ pf_write:
         pop bc
         push bc
         call pal_slot
+        call kbd_scan
         pop bc
         pop hl
 pf_skip:

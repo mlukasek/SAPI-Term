@@ -1,8 +1,8 @@
 // SAPI-1 machine description for SAPI-Term tests (based on machines/sapi1v_BomberNet.sapi of SAPIemu 0.7.0-beta).
 // Relative paths are relative to the emulator data folder (roms/, media/, work/), the SAPI-Term ones are absolute.
 {
-    "name": "SAPI-Term: SAPI-1 V s Consul 262.3 věrně jako HW (JPR-1V, RAM-1V, AND-1V, DSM-1V, ZRD-1V, DPI-1L, CGA-1V; ECMON + CP/M)",
-    "description": "Sestava pro vývoj terminálu SAPI-Term, varianta jako sestavy V z emulátoru: klávesnice Consul 262.3 bez úpravy 7474 (STROBE jen impuls 1 ms) věrně jako HW (strict, klávesy se mohou ztratit), bez MPH-1V; JPR-1V (TURBO 4 MHz), RAM-1V (MAP 63h), AND-1V na F800 při MAP1 = L, DSM-1V (10h, 14h; bez ní ECMON přepne konzoli na sériovou linku a stojí na portu 11h), RAM disk ZRD-1V rev 1.1 s obrazem build/ramdisk.bin z build.cmd (neukládá se), DPI-1L na B0h (SD karta ve work/sdcard repa SAPI-Term), CGA-1V na C000 při MAP1 = MAP2 = H. Po startu ECMONu volba 3 (CP/M z RAM disku A:), pak SAPITERM.",
+    "name": "SAPI-Term: SAPI-1 V s Consul 262.3 (JPR-1V, RAM-1V, AND-1V, DSM-1V, ZRD-1V, DPI-1L, CGA-1V; ECMON + CP/M)",
+    "description": "Sestava pro vývoj terminálu SAPI-Term, varianta jako sestavy V z emulátoru: klávesnice Consul 262.3 bez úpravy 7474 (STROBE jen impuls 1 ms; emulátor přehlédnutý impuls zopakuje, jako ve výchozí sestavě V; s volbou strict se klávesy při rolování mohou ztratit jako na HW), bez MPH-1V; JPR-1V (TURBO 4 MHz), RAM-1V (MAP 63h), AND-1V na F800 při MAP1 = L, DSM-1V (10h, 14h; bez ní ECMON přepne konzoli na sériovou linku a stojí na portu 11h), RAM disk ZRD-1V rev 1.1 s obrazem build/ramdisk.bin z build.cmd (neukládá se), DPI-1L na B0h (SD karta ve work/sdcard repa SAPI-Term), CGA-1V na C000 při MAP1 = MAP2 = H. Po startu ECMONu volba 3 (CP/M z RAM disku A:), pak SAPITERM.",
     "main_display": "CGA-1V",
     "bus": {
         "type": "ARB-1C-8",
@@ -16,7 +16,7 @@
             "bios": "open",
             "turbo": true,
             "osc_hz": 8000000,
-            "keyboard": { "type": "Consul 262.3", "latch_mod": false, "strict": true }
+            "keyboard": { "type": "Consul 262.3", "latch_mod": false }
         },
         {
             "slot": 2,

@@ -5,8 +5,8 @@
 ; index, ESC M reverse index, ESC E next line, ESC c reset; ESC ( ) * + # % skip one byte.
 ; CSI (ESC [): A B C D E F G ` a d e H f (cursor), J K (erase, J 2 also homes like ANSI-BBS), L M (lines),
 ; @ P X (characters), S T (scroll), m (SGR), r (scroll region), s u (save, restore), n c (replies),
-; ? 7 h/l (wrap), ? 25 h/l (cursor). Other sequences are swallowed. tools/ansiref.py does exactly the same in
-; Python for the tests.
+; ? 7 h/l (wrap), ? 25 h/l (cursor), ? 33 h/l (iCE colours, CTerm). Other sequences are swallowed.
+; tools/ansiref.py does exactly the same in Python for the tests.
 
 ANS_NORMAL      equ 0
 ANS_ESC         equ 1
@@ -667,10 +667,17 @@ cp_set:                         ; C = 1 for reset ('l')
         ret
 cp_25:
         cp 25
-        ret nz
+        jr nz,cp_33
         ld a,c
         ld (cur_off),a
         ret
+cp_33:
+        cp 33                   ; CTerm (SyncTERM): ?33h = iCE colours (blink = bright background)
+        ret nz
+        ld a,c
+        xor 1
+        ld (ice_mode),a
+        jp sgr_apply
 
 ; csi_dsr: 6 = cursor position (ESC [ row ; column R), 5 = status (ESC [ 0 n).
 csi_dsr:

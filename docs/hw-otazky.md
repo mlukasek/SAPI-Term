@@ -22,6 +22,14 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 2. **Rychlost:** SCROLL.ANS při 4 MHz asi 4 s, SUNSET.ANS asi 3 s (v emulátoru). Na skutečném HW s čekáním
    CGA-1V by mělo vyjít stejně (čekání je změřené a emulované).
 
+## SAPITERM 0.4 (fáze 4)
+
+1. **Spojení přes DPI-1L a Wi-Fi:** `SAPITERM` a zadat BBS (seznam přijde ve fázi 5; zatím třeba známá
+   Synchronet BBS). Má se ukázat úvodní obrazovka BBS a BBS má poznat ANSI a velikost 80×25.
+2. **Rychlost a plynulost příjmu** se skutečným čekáním DPI (WAIT po příkazech TCP): rolování a kreslení ANSI artu
+   z BBS.
+3. **Klávesy EKL-1 na BBS:** šipky v menu BBS, Enter, Backspace, Ctrl+C.
+
 ## Na později
 
 - **Čekání DPI-1L (WAIT) při TCP:** jak dlouho drží Z80 jeden TCPRECV a TCPSTATUS při běžném provozu

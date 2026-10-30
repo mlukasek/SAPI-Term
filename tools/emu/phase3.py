@@ -83,18 +83,25 @@ def one(name, sym, font):
     cur = (emu.read(sym['cur_row'], 1)[0], emu.read(sym['cur_col'], 1)[0])
     check(cur == (model.row, model.col), '%s: cursor %s (model %s)' % (name, cur, (model.row, model.col)))
     path = os.path.join(PREVIEW, 'f3_%s.png' % name.lower())
-    emu.screenshot(path, display='CGA-1V')
-    w, h, got = ansiref.png_rgb(path)
-    want = ansiref.render(model, font)
-    if not model.cur_off:                       # the cursor cell may blink: not compared
-        want = bytearray(want)
-        got = bytearray(got)
-        for y in range(16):
-            for x in range(8):
-                p = ((model.row * 8 * 2 + y) * 640 + model.col * 8 + x) * 3
-                want[p:p + 3] = got[p:p + 3]
-    diff = sum(1 for i in range(0, len(want), 3) if want[i:i + 3] != got[i:i + 3])
-    check((w, h) == (640, 400) and diff == 0, '%s: CGA-1V picture equals the model (%d dots differ)' % (name, diff))
+    want0 = ansiref.render(model, font)
+    for t in range(15):                         # the palette shows a frame after the VBI it was written in
+        emu.screenshot(path, display='CGA-1V')
+        w, h, got = ansiref.png_rgb(path)
+        want = want0
+        if not model.cur_off:                   # the cursor cell may blink: not compared
+            want = bytearray(want)
+            got = bytearray(got)
+            for y in range(16):
+                for x in range(8):
+                    p = ((model.row * 8 * 2 + y) * 640 + model.col * 8 + x) * 3
+                    want[p:p + 3] = got[p:p + 3]
+        diff = sum(1 for i in range(0, len(want), 3) if want[i:i + 3] != got[i:i + 3])
+        if diff == 0:
+            break
+        mcp.call('run_for', ms=200)
+        mcp.call('pause')
+    check((w, h) == (640, 400) and diff == 0, '%s: CGA-1V picture equals the model (%d dots differ, after %d ms)'
+          % (name, diff, 100 + t * 200))
     mcp.call('resume')
     mcp.call('type_text', text='\x1d', run_ms=1500)
     res = mcp.call('run_until', screen_text='A>', timeout_ms=5000)

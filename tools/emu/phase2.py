@@ -64,11 +64,12 @@ def main():
     res = mcp.call('run_until', screen_text='Ctrl+]  konec', timeout_ms=15000)
     check(res.get('stopped') != 'timeout', 'SAPITERM started, status on the AND-1V')
     mcp.call('run_for', ms=600)
+    mcp.call('type_text', text='\r', run_ms=2500)   # the prompt for a BBS: empty Enter = the test screen
     mcp.call('pause')
     status = mcp.call('screen_text')
     check('Terminál na:  CGA-1V, 80x25 znaků' in status, 'status: terminal on the CGA-1V')
     check(('MPH-1V  není' if consul else 'MPH-1V  ano') in status, 'status: MPH-1V')
-    check(sh.row(0).startswith('SAPI-Term 0.3 - test v?stupu'), 'shadow row 0: title (KOI letters)')
+    check(sh.row(0).startswith('SAPI-Term 0.4 - test v?stupu'), 'shadow row 0: title (KOI letters)')
     check(sh.raw(2)[:35] == b'00 ' + bytes(range(32)), 'shadow row 2: CP437 table 00-1F')
     check(sh.byte('pal_dirty') == 0, 'palette written (no pairs waiting)')
     emu.screenshot(os.path.join(PREVIEW, 'f2_cga.png'), display='CGA-1V')
@@ -98,7 +99,7 @@ def main():
     keys('\x0c', 1500)
     check(all(sh.row(r).strip() == '' for r in (0, 12, 24)), 'Ctrl+L clears the screen')
     keys('\x14', 2000)
-    check(sh.row(0).startswith('SAPI-Term 0.3 - test'), 'Ctrl+T draws the test screen again')
+    check(sh.row(0).startswith('SAPI-Term 0.4 - test'), 'Ctrl+T draws the test screen again')
 
     keys('\x1d', 1500)
     res = mcp.call('run_until', screen_text='A>', timeout_ms=5000)

@@ -17,7 +17,7 @@
    - `tools\tables.py`: převod CP437 → AND-1V, vzdálenosti barev, adresy řádků CGA → `tables.inc`;
    - `tools\texts.py`: texty UI z `src\texts.txt` (UTF-8) v KOI-8čs2 → `texts.inc`;
    - `tools\mkart.py`: testovací soubory ANSI → `build\art\*.ANS` (každá doména nejvýš 16 dvojic, hlídá
-     `tools\ansiref.py`);
+     `tools\ansiref.py`), používá je i `tools\testbbs.py`;
 2. pasmo → `build\sapiterm.com`, `.sym` a `.hex` (Intel HEX od 0100h);
 3. `tools\check_build.py`: rozložení paměti (vše pod C000h, tabulky zarovnané na stránku), vypíše
    `SAVE n SAPITERM.COM`;
@@ -48,6 +48,7 @@
 |---|---|
 | `phase2.py [--consul]` | fáze 2: SAPITERM z disku, stavová obrazovka, stínová obrazovka v paměti (titulek, tabulka CP437), psaní a rolování, Tab na AND-1V a zpět, Ctrl+L, Ctrl+T, Ctrl+] a `DIR` po návratu; snímky `build/preview/f2_*.png` |
 | `phase3.py [JMÉNO...]` | fáze 3: každý testovací soubor `SAPITERM JMÉNO.ANS`, stínová obrazovka a kurzor proti `tools/ansiref.py`, snímek CGA-1V proti modelu vykreslenému fontem (bod po bodu), žádný zápis palety mimo VBI; snímky `build/preview/f3_*.png` |
+| `phase4.py` | fáze 4: spustí `tools/testbbs.py` (127.0.0.1:6023), `SAPITERM 127.0.0.1:6023`; vyjednání telnetu, tři stránky po síti proti modelu (stín i obraz), CPR a DA, odeslané klávesy, NAWS po Tab, konec spojení od BBS, odmítnutý port, neznámé jméno |
 | `emu.py` | společné: sestava, kontrolní bod CP/M, příkaz CP/M, čtení paměti, symboly, snímek obrazovky |
 | `sapimcp.py` | klient MCP (`python tools\emu\sapimcp.py NÁSTROJ "{json}"`) |
 | `sapiemu.cmd [consul\|gui]` | spustí release emulátor s MCP |
@@ -84,4 +85,7 @@
   režimu CRLF, proto `newline='\n'`. Cesty s `\` v řetězcích Pythonu psát jako `r'...'`, jinak z `\f` a `\t`
   vzniknou řídicí znaky (tak se rozbil `build.cmd`).
 - **Bash nástroj a dlouhý heredoc** občas skončí chybou „unexpected EOF“ a neprovede nic. Delší úpravy psát jako
-  skript do scratchpadu a spustit ho.
+  skript do scratchpadu a spustit ho. Pozor také na `\r` v heredocu: do souboru se dostal skutečný znak CR.
+- **Windows a soubor, který jiný proces čte:** `os.replace` na něj hlásí „Access is denied“. `tools/testbbs.py` to
+  zkouší znovu, test čte přes `with open`.
+- **Sestava `.sapi` je JSON:** uvozovky v textu popisu ho rozbijí („syntax error in machine file“).

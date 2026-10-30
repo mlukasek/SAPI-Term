@@ -260,6 +260,9 @@ class Term:
             self.wrap_pend = 0
         elif self.par[0] == 25:
             self.cur_off = c
+        elif self.par[0] == 33:
+            self.ice = not c
+            self.apply()
 
     def command(self, f):
         p0 = self.par[0]

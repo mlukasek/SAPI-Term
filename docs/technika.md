@@ -183,6 +183,31 @@ nenapodobí (`docs/rozhodnuti.md`).
   ho jádro nevyřídí: obvykle do 7–8 ms, při zátěži 61–220 ms. Emulátor odpoví hned.
 - **Vzor kódu:** `..\SAPI-BomberNet\sapi\uc_sapi.c`, `..\BomberNet\c\common\netdev_card.c`.
 
+## Síť a telnet (`src/dpi.asm`, `src/telnet.asm`, `src/online.asm`)
+
+- **Repository API:**
+  - `dpi_cmd`: příkaz a parametry přes `OTIR`, pak `dpi_status` (4 bajty stavu, NZ při ERROR, A = kód | 80h);
+  - `dpi_output`: výstup přes `INIR`.
+- **DNS a TCP:**
+  - `net_dns`: DNSREQ a dotazování DNSRES jednou za tik, limit 6 s;
+  - `net_open`: TCPIP, TCPPORT, TCPOPEN a TCPSTATUS jednou za tik, limit 12 s;
+  - v obou Esc nebo Ctrl+] zastaví;
+  - `net_recv` (TCPRECV), `net_send` (TCPSEND s bitem 15), `net_status`.
+- **Telnet:**
+  - `tn_filter`: stavy data, IAC, volba, SB, IAC v SB;
+  - `tn_us` / `tn_them`: stav voleb 0–31;
+  - TTYPE SEND → `IAC SB 24 0 "ANSI" IAC SE`, NAWS → `IAC SB 31 0 cols 0 rows IAC SE`.
+- **Odesílání:**
+  - `tx_buf` (128 B): `tx_data` zdvojí FFh a za CR dá NUL, `tx_raw` posílá beze změny;
+  - `tx_flush` posílá přes TCPSEND, při chybě 5 to zkouší další tiky až 2 s.
+- **Online smyčka (`online`):**
+  1. klávesa → `key_send` (tabulky `keys_ekl`, `keys_consul`);
+  2. `tx_flush`;
+  3. `net_rx` (až 8 × 253 B přes telnet do `in_buf`) → `feed_input` (parser ANSI) → paleta;
+  4. v klidu kurzor, tik a jednou za 30 tiků TCPSTATUS.
+- **Režimy (`mode`):** 0 místní (testovací obrazovka, psací stroj), 1 soubor, 2 na lince. Podle nich vypadá stavová
+  obrazovka.
+
 ## Návrat do CP/M (`quit` v `src/sapiterm.asm`)
 
 1. TCPCLOSE (je-li DPI-1L);

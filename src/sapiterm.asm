@@ -1,10 +1,12 @@
 ; SAPI-Term - terminal for internet BBS (telnet) for the Tesla SAPI-1, set V, as a CP/M program SAPITERM.COM.
 ; Copyright (C) 2026 Martin Lukasek, GPLv3. Assembler pasmo 0.5.3 (build.cmd), docs in docs/.
 ;
-; Phase 3: the ANSI terminal (ANSI-BBS and VT100) on the screen: text 80x25 on the CGA-1V (own font 4x8, pairs
-; of colours per domain) or 64x20 on the AND-1V, the status on the other card. "SAPITERM FILE.ANS" shows an ANSI
-; file (iCE colours from its SAUCE record); without a file a test screen. Then typing on the keyboard (a local
-; typewriter) until Ctrl+].
+; Phase 4: the terminal for BBS. Text 80x25 on the CGA-1V (own font 4x8, pairs of colours per domain) or 64x20
+; on the AND-1V, the status on the other card, ANSI-BBS and VT100, telnet through the DPI-1L.
+;   SAPITERM               asks for the address of a BBS (empty: the test screen and a local typewriter)
+;   SAPITERM HOST[:PORT]   connects to the BBS (port 23 when none)
+;   SAPITERM FILE.ANS      shows an ANSI file (iCE colours from its SAUCE record), then the typewriter
+; Ctrl+] is the menu on line, else it quits.
 ;
 ; Memory: the program, its data and the stack stay below C000h (MAP_CGA hides the RAM and CP/M above it). The
 ; whole program runs with interrupts disabled (an interrupt acknowledged with PC in the window of a video card
@@ -15,7 +17,7 @@
         org 0100h
 
         jp start
-        defb 0Dh,0Ah,'SAPI-Term 0.3',0Dh,0Ah,1Ah
+        defb 0Dh,0Ah,'SAPI-Term 0.4',0Dh,0Ah,1Ah
 
 start:
         ld (cpm_sp),sp
@@ -68,12 +70,34 @@ st_screens:
         call ansi_reset
         ld a,(CMD_TAIL)
         or a
-        jr z,st_test
+        jr z,st_prompt
+        ld de,FCB               ; an existing file is shown, anything else is the address of a BBS
+        ld c,B_OPEN
+        call BDOS
+        inc a
+        jr z,st_address
+        ld a,MODE_VIEW
+        ld (mode),a
         call stat_screen
         call view_file
         call stat_screen
         jr st_main
+st_address:
+        call tail_to_line
+        ld a,(has_dpi)
+        or a
+        jr z,st_prompt
+st_online:
+        call online
+st_prompt:
+        call ui_prompt
+        cp 2
+        jp z,quit
+        cp 1
+        jr nz,st_online
 st_test:
+        xor a
+        ld (mode),a
         call test_screen
         call stat_screen
 st_main:
@@ -87,11 +111,20 @@ main_loop:
         pop af
         call handle_key
         call cur_restart
-        call stat_update
+        ld a,1                  ; the status follows when idle
+        ld (stat_dirty),a
         jr main_loop
 ml_idle:
         call tick_poll
-        call nz,cur_tick
+        jr z,ml_flush
+        call cur_tick
+        ld a,(stat_dirty)       ; the status is updated in a quiet tick, not after every key
+        or a
+        jr z,ml_flush
+        xor a
+        ld (stat_dirty),a
+        call stat_update
+ml_flush:
         call pal_pending        ; new pairs of colours go to the palette in the next VBI
         jr z,main_loop
         call scr_flush
@@ -761,9 +794,11 @@ sst_term:
         ld a,(dpi_minor)
         call stat_dec8
 sst_keys:
-        ld a,(CMD_TAIL)
-        or a
-        jr z,sst_pairs
+        ld a,(mode)
+        cp MODE_ONLINE
+        jp z,sst_online
+        cp MODE_VIEW
+        jr nz,sst_pairs
         ld de,10*256+0          ; the file: name, iCE, state
         ld hl,t_file
         call ss_text
@@ -820,6 +855,71 @@ sst_pairs:
         ld de,19*256+2
         ld hl,t_key5
         call ss_text
+        jp stat_update
+sst_online:                     ; on line: the BBS, the keys
+        ld de,10*256+0
+        ld hl,t_bbs
+        call ss_text
+        ld hl,net_host
+        call stat_puts
+        ld a,':'
+        call stat_putc
+        ld hl,(net_port)
+        call stat_dec16
+        ld de,11*256+0
+        ld hl,t_pairs
+        call ss_text
+        ld de,12*256+0
+        ld hl,t_last_key
+        call ss_text
+        ld de,14*256+0
+        ld hl,t_keys
+        call ss_text
+        ld de,15*256+2
+        ld hl,t_okey1
+        call ss_text
+        ld de,16*256+2
+        ld hl,t_okey2
+        call ss_text
+        call show_kbd
+        jr stat_update
+
+; stat_dec16: HL in decimal without leading zeros. Changes A, BC, DE, HL.
+stat_dec16:
+        ld de,10000
+        xor a
+        ld (ad_lead),a
+        call sd16_digit
+        ld de,1000
+        call sd16_digit
+        ld de,100
+        call sd16_digit
+        ld de,10
+        call sd16_digit
+        ld a,l
+        add a,'0'
+        jp stat_putc
+sd16_digit:
+        ld b,'0'-1
+sd16_sub:
+        inc b
+        or a
+        sbc hl,de
+        jr nc,sd16_sub
+        add hl,de
+        ld a,b
+        cp '0'
+        jr nz,sd16_put
+        ld a,(ad_lead)
+        or a
+        ret z
+        ld a,'0'
+sd16_put:
+        call stat_putc
+        ld a,1
+        ld (ad_lead),a
+        ret
+
 ; stat_update: the changing values: pairs of colours in use, the last key.
 stat_update:
         ld a,(stat_dev)
@@ -869,6 +969,36 @@ ssc_put:
         call stat_puts
         ld a,' '
         jp stat_putc
+
+; tail_to_line: the arguments of the command line (CP/M made them capitals) to ui_line without spaces.
+; Changes A, B, DE, HL.
+tail_to_line:
+        ld hl,CMD_TAIL
+        ld b,(hl)
+        inc hl
+        ld de,ui_line
+        xor a
+        ld (ui_len),a
+ttl_char:
+        ld a,b
+        or a
+        jr z,ttl_end
+        dec b
+        ld a,(hl)
+        inc hl
+        cp ' '+1
+        jr c,ttl_char
+        ld (de),a
+        inc de
+        ld a,(ui_len)
+        inc a
+        ld (ui_len),a
+        cp LINE_MAX
+        jr c,ttl_char
+ttl_end:
+        xor a
+        ld (de),a
+        ret
 
 ; detect: has_and, has_cga, has_mph, has_dpi = 1 for the cards that answer. Changes A, BC, DE, HL.
 detect:
@@ -964,6 +1094,8 @@ bdos_puts:
         include "cgatext.asm"
         include "screen.asm"
         include "ansi.asm"
+        include "telnet.asm"
+        include "online.asm"
         include "mph.asm"
         include "dpi.asm"
 
@@ -1141,6 +1273,30 @@ ru_left:        defb 0
 ru_lastrow:     defb 0
 pm_col:         defb 0          ; pair_move_row
 pf_budget:      defb 0          ; pal_flush: pairs left in this VBI
+stat_dirty:     defb 0          ; the status card waits for an update
+mode:           defb 0          ; MODE_LOCAL, MODE_VIEW, MODE_ONLINE
+kbd_type:       defb 0          ; 0 EKL-1, 1 Consul 262.3
+ui_len:         defb 0          ; the typed address
+ui_line:        defs LINE_MAX+1
+ui_msg:         defw 0          ; how the last connection ended (KOI text, 0 none)
+net_host:       defs LINE_MAX+1
+net_port:       defw 23
+net_ip:         defs 4
+net_wait:       defw 0          ; ticks left
+net_st:         defs 10         ; TCPSTATUS
+dpi_st:         defs 4          ; status of the card
+dpi_res:        defs 5          ; DNSRES
+rx_chunks:      defb 0
+ol_idle:        defb 0          ; ticks without data
+tn_state:       defb 0          ; telnet
+tn_verb:        defb 0
+tn_sb_len:      defb 0
+tn_sb_buf:      defs TN_SB_MAX
+tn_us:          defs TN_OPTS    ; options we do (agreed)
+tn_them:        defs TN_OPTS    ; options the server does (agreed)
+tx_len:         defb 0
+tx_tries:       defb 0
+tx_buf:         defs TX_SIZE
 ar_ptr:         defw 0          ; and_render
 cf_byte:        defb 0          ; cga_fill_rows, cga_scroll
 cf_count:       defb 0
@@ -1172,6 +1328,7 @@ slot_ref        equ slot_att + 16*DOMAINS       ; 7 x 16 words: cells using each
 rec_buf         equ slot_ref + 32*DOMAINS       ; 128: a record of the file
 in_buf          equ rec_buf + 128               ; IN_RECORDS * 128: input (file, later the BBS)
 sauce_buf       equ in_buf + 128*IN_RECORDS     ; 256: the last two records (SAUCE)
+rx_raw          equ sauce_buf                   ; 253: a TCPRECV (SAUCE is not used on line)
 STACK_TOP       equ sauce_buf + 256 + 256
 BSS_END         equ STACK_TOP
 
