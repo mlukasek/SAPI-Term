@@ -385,6 +385,9 @@ txt_sauce:
 ; quit: cards to a quiet state, MAP_CPM, the console cleared, interrupts as they were, warm boot.
 quit:
         ld sp,STACK_TOP
+        ld a,MAP_CPM
+        out (MAPREG),a
+        call log_stop
         ld a,(has_dpi)
         or a
         call nz,dpi_close
@@ -938,12 +941,18 @@ sst_online:                     ; on line: the BBS, the keys
         call stat_at
         call show_speed
         ld de,15*256+0
+        ld hl,t_log
+        call ss_text
+        ld de,15*256+23
+        call stat_at
+        call show_log
+        ld de,16*256+0
         ld hl,t_keys
         call ss_text
-        ld de,16*256+2
+        ld de,17*256+2
         ld hl,t_okey1
         call ss_text
-        ld de,17*256+2
+        ld de,18*256+2
         ld hl,t_okey2
         call ss_text
         call show_kbd
@@ -1163,6 +1172,7 @@ bdos_puts:
         include "online.asm"
         include "config.asm"
         include "charset.asm"
+        include "xfer.asm"
         include "mph.asm"
         include "dpi.asm"
 
@@ -1388,6 +1398,31 @@ pace_t0:        defw 0          ; the MPH-1V counter 0 at the last pace_elapsed
 vf_eof:         defb 0          ; view_file: 1Ah in the buffer (in_end is there)
 cols40:         defb 0          ; COLUMNS=40: the CGA-1V has 40 columns on line
 cga_wide:       defb 0          ; the CGA-1V shows 40 columns now (term_size)
+tn_cr:          defb 0          ; telnet: the last data byte was CR
+log_on:         defb 0          ; session log (xfer.asm)
+log_num:        defb 0          ; LOGnn.ANS
+log_ptr:        defw 0          ; next byte in log_buf
+log_fcb:        defs 36
+xm_logged:      defb 0          ; xm_run: the log was on
+xm_result:      defb 0
+xm_files:       defb 0
+xm_open:        defb 0
+xm_pstate:      defb 0          ; 0 between blocks, 1 in a block
+xm_ymodem:      defb 0
+xm_tries:       defb 0
+xm_cans:        defb 0
+xm_recs:        defw 0          ; records of the file written
+xm_crcmode:     defb 0
+xm_hdr:         defb 0          ; the next block starts a file
+xm_wait:        defw 0          ; ticks left
+xm_psize:       defw 0          ; data bytes of the block
+xm_pleft:       defw 0          ; bytes of the block still to come
+xm_pptr:        defw 0
+xm_expect:      defb 0          ; the block number expected
+xm_left:        defs 4          ; bytes of the file still to write (FFFFFFFFh unknown)
+xm_fcb:         defs 36
+pd_out:         defw 0          ; put_dec16
+msg_buf:        defs 64         ; a message made up (xm_run, xm_progress)
 cfg_fcb:        defs 36
 
 ; font and tables, page aligned
@@ -1416,7 +1451,9 @@ sauce_buf       equ in_buf + 128*IN_RECORDS     ; 256: the last two records (SAU
 rx_raw          equ sauce_buf                   ; 253: a TCPRECV (SAUCE is not used on line)
 book            equ sauce_buf + 256             ; BOOK_MAX entries of the address book
 cfg_buf         equ book + BOOK_ENTRY*BOOK_MAX  ; CFG_BUF_SIZE: the text of SAPITERM.CFG
-STACK_TOP       equ cfg_buf + CFG_BUF_SIZE + 256
+log_buf         equ cfg_buf + CFG_BUF_SIZE      ; 128: a record of the session log
+xm_pkt          equ log_buf + 128               ; 1030: a block of XMODEM / YMODEM
+STACK_TOP       equ xm_pkt + 1030 + 256
 BSS_END         equ STACK_TOP
 
         end start

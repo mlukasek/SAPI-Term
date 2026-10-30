@@ -1,8 +1,8 @@
 """Texts of the SAPI-Term user interface: src/texts.txt (UTF-8) -> build/texts.inc (KOI-8cs2).
 
 src/texts.txt: one text per line, "name text" (name = asm label, the text after one space, may contain
-anything that KOI-8cs2 has); "\\" at the end of a line continues the text on the next one; lines starting
-with "#" are comments. Each text becomes "name: defb ...,0". The codes C0-FF are Czech letters: the AND-1V
+anything that KOI-8cs2 has); "\\" at the end of a line continues the text on the next one, "\\s" at
+the end is a space; lines starting with "#" are comments. Each text becomes "name: defb ...,0". The codes C0-FF are Czech letters: the AND-1V
 shows them as they are, the CGA-1V takes them from font_koi.
   python tools/texts.py
 """
@@ -43,7 +43,9 @@ def main():
             n0 = n
         else:
             text += line
-        if text.endswith('\\'):
+        if text.endswith('\\s'):
+            text = text[:-2] + ' '              # a space at the end (editors and tools drop a plain one)
+        elif text.endswith('\\'):
             text = text[:-1]
             continue
         codes = encode(text, 'src/texts.txt:%d' % n0) + [0]

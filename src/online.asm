@@ -5,8 +5,8 @@
 ; received bytes through telnet into the input buffer and the ANSI terminal (jump scroll looks ahead in it).
 ; Bytes 80h-FFh go through the character set of the BBS (charset.asm). The speed of a modem (menu R) lets
 ; the bytes to the terminal at that speed, as ANSI animations expect. Ctrl+] opens the menu on the status
-; card: disconnect, quit, swap the cards, keyboard type, character set, into the book. The connection ends when
-; the BBS closes it.
+; card: disconnect, quit, swap the cards, keyboard type, character set, speed, columns, into the book, the
+; session log, a download (xfer.asm). The connection ends when the BBS closes it.
 
 MODE_LOCAL      equ 0               ; test screen, typewriter
 MODE_VIEW       equ 1               ; a file shown
@@ -462,6 +462,7 @@ ol_end:
         call cur_hide
         call tx_flush
         call dpi_close
+        call log_stop
         xor a
         ld (js_enable),a
         ld (mode),a
@@ -521,13 +522,20 @@ om_cols:
         ld hl,t_menu_book
         call ss_text
         ld de,10*256+2
+        ld hl,t_menu_log
+        call ss_text
+        call show_log
+        ld de,11*256+2
+        ld hl,t_menu_dl
+        call ss_text
+        ld de,12*256+2
         ld hl,t_menu_back
         call ss_text
         ld hl,(om_msg)          ; what the last choice did
         ld a,h
         or l
         jr z,om_key
-        ld de,12*256+0
+        ld de,14*256+0
         call ss_text
 om_key:
         call kbd_get
@@ -542,11 +550,15 @@ om_key:
         cp 'U'
         jr z,om_book
         cp 'Z'
-        jr z,om_cs
+        jp z,om_cs
         cp 'R'
-        jr z,om_speed
+        jp z,om_speed
         cp 'S'
         jr z,om_width
+        cp 'L'
+        jr z,om_log
+        cp 'D'
+        jr z,om_download
         cp 09h                  ; Tab (09h stays 09h)
         jr z,om_swap
         cp 1Bh
@@ -577,6 +589,27 @@ om_book:                        ; this BBS and its set into the book (its host a
 om_said:
         ld (om_msg),hl
         jp om_show
+om_log:                         ; the session log on or off
+        ld a,(log_on)
+        or a
+        jr nz,om_log_off
+        call log_start
+        ld hl,t_log_fail
+        or a
+        jr nz,om_said
+        jr om_log_said
+om_log_off:
+        call log_stop
+om_log_said:
+        ld hl,0
+        jr om_said
+om_download:                    ; XMODEM, YMODEM (the BBS was told to send first)
+        call stat_cls
+        ld de,0*256+0
+        ld hl,t_xm_title
+        call ss_text
+        call xm_run
+        jr om_said
 om_width:                       ; 80 or 40 columns on the CGA-1V, kept in the file
         ld a,(cols40)
         xor 1
@@ -770,6 +803,16 @@ nr_done:
         sbc hl,de
         ld a,h
         or l
+        ret z
+        ld a,(log_on)           ; into the session log too
+        or a
+        jr z,nr_data
+        ld b,h
+        ld c,l
+        ld hl,in_buf
+        call log_data
+nr_data:
+        or 1                    ; NZ: data
         ret
 
 ; feed_input: the input buffer through the ANSI terminal. Changes all.

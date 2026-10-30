@@ -28,6 +28,7 @@ tn_reset:
         xor a
         ld (tn_state),a
         ld (tx_len),a
+        ld (tn_cr),a
         ld hl,tn_us
         ld b,2*TN_OPTS
 tr_clear:
@@ -58,6 +59,26 @@ tn_byte:
         cp TN_IAC
         jr z,tb_state1
 tb_data:
+        ld a,c                  ; CR NUL from a server not in binary mode: the NUL is not data (RFC 854)
+        or a
+        jr nz,tb_store
+        ld a,(tn_cr)
+        or a
+        jr z,tb_store
+        ld a,(tn_them+OPT_BINARY)
+        or a
+        jr nz,tb_store
+        xor a
+        ld (tn_cr),a
+        ret
+tb_store:
+        ld a,c
+        sub 0Dh
+        jr z,tb_cr
+        ld a,1
+tb_cr:
+        xor 1
+        ld (tn_cr),a
         ld hl,(in_end)
         ld (hl),c
         inc hl

@@ -11,10 +11,13 @@ Keys of the menu:
   M the menu again, Q goodbye and close, X close at once;
   text in a character set (CHARSET_TEXT, the screen cleared first): U UTF-8 (with more Unicode), L Latin-2,
   W CP1250, P CP852, K Kamenicky, O KOI-8cs2;
-  B blinking text (SGR 5 and 100-107 without iCE), I the same with iCE (bright backgrounds).
+  B blinking text (SGR 5 and 100-107 without iCE), I the same with iCE (bright backgrounds);
+  downloads (binary mode first): Y YMODEM batch of YMODEM_FILES, X XMODEM (128 byte blocks, CRC) of
+  XMODEM_FILE; the result goes to the log as xfer ('ok' or what failed).
   python tools/testbbs.py [--port 6023] [--log build/testbbs.json]
 """
 import argparse
+import binascii
 import json
 import os
 import socket
@@ -37,6 +40,15 @@ KOI = {'á': 0xC1, 'č': 0xC3, 'ď': 0xC4, 'ě': 0xC5, 'ŕ': 0xC6, 'ü': 0xC8, '
        'Ŕ': 0xE6, 'Ü': 0xE8, 'Í': 0xE9, 'Ů': 0xEA, 'Ĺ': 0xEB, 'Ľ': 0xEC, 'Ö': 0xED, 'Ň': 0xEE, 'Ó': 0xEF,
        'Ô': 0xF0, 'Ä': 0xF1, 'Ř': 0xF2, 'Š': 0xF3, 'Ť': 0xF4, 'Ú': 0xF5, 'É': 0xF7, 'À': 0xF8, 'Ý': 0xF9,
        'Ž': 0xFA}
+
+
+SOH, STX, EOT, ACK, NAK, CAN = 1, 2, 4, 6, 0x15, 0x18
+YMODEM_FILES = [('sunset-down.ans', 'SUNSET'), ('menu.ans', 'MENU')]   # name sent, test file
+XMODEM_FILE = 'ANSITEST'
+
+
+def art_file(name):
+    return open(os.path.join(ROOT, 'build', 'art', name + '.ANS'), 'rb').read()
 
 
 def blink_bytes(ice):
@@ -146,6 +158,91 @@ class Session:
                 self.menu()
                 menu_sent = True
 
+    # --- downloads (the server sends) ---
+    def binary(self):
+        """Binary mode both ways (as BBS do before a transfer); the answers are read by the transfer."""
+        self.cmd(IAC, WILL, BINARY, IAC, DO, BINARY)
+
+    def rx(self, timeout=20):
+        """The next data byte of the client (telnet commands skipped)."""
+        end = time.time() + timeout
+        while time.time() < end:
+            if not self.pending:
+                try:
+                    self.pending = bytearray(self.conn.recv(4096))
+                except socket.timeout:
+                    continue
+                if not self.pending:
+                    raise OSError('the client closed')
+            b = self.pending.pop(0)
+            if self.tstate == 0:
+                if b == IAC:
+                    self.tstate = 1
+                    continue
+                return b
+            if self.tstate == 1:
+                if b == IAC:
+                    self.tstate = 0
+                    return b
+                self.tstate = 3 if b == SB else (2 if b >= WILL else 0)
+            elif self.tstate == 2:
+                self.tstate = 0
+            elif self.tstate == 3 and b == IAC:
+                self.tstate = 4
+            elif self.tstate == 4:
+                self.tstate = 0 if b == SE else 3
+        raise ValueError('no answer')
+
+    def wait(self, *wanted):
+        while True:
+            b = self.rx()
+            if b in wanted:
+                return b
+            if b == CAN:
+                raise ValueError('the client cancelled')
+
+    def block(self, num, data, size, pad=b'\x1a'):
+        data = data.ljust(size, pad)
+        crc = binascii.crc_hqx(data, 0)
+        pkt = bytes([SOH if size == 128 else STX, num & 255, 255 - (num & 255)]) + data + bytes([crc >> 8, crc & 255])
+        for _ in range(10):
+            self.send(pkt)
+            if self.wait(ACK, NAK) == ACK:
+                return
+        raise ValueError('block %d not taken' % num)
+
+    def eot(self):
+        for _ in range(10):
+            self.cmd(EOT)
+            if self.wait(ACK, NAK) == ACK:
+                return
+        raise ValueError('EOT not taken')
+
+    def ymodem(self, files):
+        """YMODEM batch: block 0 with the name and the size, 1K blocks (the last one 128 when it fits)."""
+        self.pending, self.tstate = bytearray(), 0
+        for name, data in files:
+            self.wait(ord('C'))
+            self.block(0, name.encode() + b'\0' + str(len(data)).encode() + b' 0 0\0', 128, b'\0')
+            self.wait(ord('C'))
+            pos, num = 0, 1
+            while pos < len(data):
+                size = 128 if len(data) - pos <= 128 else 1024
+                self.block(num, data[pos:pos + size], size)
+                pos += size
+                num += 1
+            self.eot()
+        self.wait(ord('C'))
+        self.block(0, b'', 128, b'\0')              # block 0 filled with NUL: no name, the end
+
+    def xmodem(self, data):
+        """XMODEM with 128 byte blocks and CRC."""
+        self.pending, self.tstate = bytearray(), 0
+        self.wait(ord('C'))
+        for i in range(0, len(data), 128):
+            self.block(i // 128 + 1, data[i:i + 128], 128)
+        self.eot()
+
     def menu(self):
         self.send(MENU)
         self.log['menu'] += 1
@@ -220,7 +317,20 @@ class Session:
                 self.send(bytes([b]))
             return None
         c = chr(b).upper()
-        if c in 'BI':
+        if c in 'YX':
+            self.log['xfer'] = None
+            self.save()
+            try:
+                self.binary()
+                if c == 'Y':
+                    self.ymodem([(n, art_file(f)) for n, f in YMODEM_FILES])
+                else:
+                    self.xmodem(art_file(XMODEM_FILE))
+                self.log['xfer'] = 'ok'
+            except (OSError, ValueError) as e:
+                self.log['xfer'] = str(e)
+            self.save()
+        elif c in 'BI':
             data = blink_bytes(c == 'I')
             self.send(data)
             self.log['sent'].append({'page': 'BLINK' + (' ICE' if c == 'I' else ''), 'bytes': len(data)})

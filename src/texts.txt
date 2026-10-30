@@ -1,5 +1,6 @@
 # Texts of the SAPI-Term user interface, UTF-8. tools/texts.py converts them to KOI-8cs2 (build/texts.inc).
-# One text per line: the asm label, one space, the text. A "\" at the end continues on the next line.
+# One text per line: the asm label, one space, the text. A "\" at the end continues on the next line,
+# "\s" at the end is a space (a plain space at the end of a line gets lost in editors and tools).
 
 t_title SAPI-Term 0.6 - terminál pro BBS (vývojová verze, fáze 6)
 t_terminal Terminál na:
@@ -39,14 +40,14 @@ t_ui_title SAPI-Term 0.6 - terminál pro BBS
 t_ui_help1 Adresa BBS: jméno nebo IP, za dvojtečkou port (bez něj 23).
 t_ui_help2 Číslo = BBS z adresáře, -číslo = smazat ji z adresáře.
 t_ui_help3 Prázdný Enter = test, Tab = druhá obrazovka, Ctrl+] = konec.
-t_book Adresář BBS v 
+t_book Adresář BBS v\s
 t_book_empty  je prázdný (U v menu na BBS ji přidá).
 t_no_number Takové číslo v adresáři není.
 t_saved Uloženo do SAPITERM.CFG.
 t_save_fail SAPITERM.CFG se nepodařilo zapsat.
 t_book_full Adresář je plný (16 BBS).
 t_no_dpi Chybí karta DPI-1L, síť nejde.
-t_ui_prompt BBS: 
+t_ui_prompt BBS:\s
 t_looking Hledám adresu...
 t_connecting Připojuji...
 t_connected Připojeno. Ctrl+] = menu.
@@ -60,17 +61,29 @@ t_menu_title Menu (Ctrl+])
 t_menu_off O  odpojit
 t_menu_quit K  konec programu (odpojí)
 t_menu_swap Tab  výměna obrazovek
-t_menu_kbd T  klávesnice: 
-t_menu_cs Z  znaková sada BBS: 
-t_menu_speed R  rychlost linky:
-t_menu_cols S  sloupců na CGA-1V:
+t_menu_kbd T  klávesnice:\s
+t_menu_cs Z  znaková sada BBS:\s
+t_menu_speed R  rychlost linky:\s
+t_menu_cols S  sloupců na CGA-1V:\s
 t_menu_book U  uložit BBS (i se sadou) do adresáře
+t_menu_log L  záznam relace:\s
+t_menu_dl D  stáhnout soubor (XMODEM, YMODEM)
+t_log_off vypnutý
+t_log_fail Záznam se nepodařilo založit.
+t_log Záznam relace:
+t_xm_title Stahování (XMODEM, YMODEM), Esc = přerušit
+t_xm_getting Stahuji:\s
+t_xm_done Staženo:\s
+t_xm_stopped Stahování přerušeno.
+t_xm_cancel BBS stahování zrušila.
+t_xm_timeout Stahování se nepodařilo, BBS neposílá.
+t_xm_disk Soubor se nepodařilo zapsat.
 t_menu_back Esc, Ctrl+]  zpět k BBS
 t_kbd_ekl EKL-1
 t_kbd_consul Consul 262.3
-t_bbs BBS: 
-t_okey1 Ctrl+]  menu: odpojit, konec, Tab, klávesnice, sada, rychlost
-t_okey2 Klávesnice: 
+t_bbs BBS:\s
+t_okey1 Ctrl+]  menu: odpojit, Tab, sada, rychlost, záznam, stáhnout
+t_okey2 Klávesnice:\s
 t_charset Znaková sada:
 t_speed Rychlost linky:
 t_speed_max bez omezení
