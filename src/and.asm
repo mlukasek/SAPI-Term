@@ -12,6 +12,128 @@ and_cls:
         ldir
         ret
 
+; --- the terminal in a window of 64x20 (view_x, view_y = its top left cell of the screen) ---
+
+; and_char: A = character of the shadow, B = its flags -> A = code for the AND-1V (KOI-8cs2 letters as they
+; are, CP437 through and_map_cp437). Changes HL.
+and_char:
+        bit 0,b
+        ret nz
+        ld l,a
+        ld h,high and_map_cp437
+        ld a,(hl)
+        ret
+
+; and_cell: code A at the screen cell D = row, E = column, when it is in the window. Changes A, HL.
+and_cell:
+        push bc
+        push de
+        ld c,a
+        ld a,(view_y)
+        ld b,a
+        ld a,d
+        sub b
+        jr c,ac_done
+        cp AND_ROWS
+        jr nc,ac_done
+        ld d,a
+        ld a,(view_x)
+        ld b,a
+        ld a,e
+        sub b
+        jr c,ac_done
+        cp AND_COLS
+        jr nc,ac_done
+        ld e,a
+        ld l,d
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld a,l
+        or e
+        ld l,a
+        ld a,h
+        add a,high AND_VRAM
+        ld h,a
+        ld (hl),c
+ac_done:
+        pop de
+        pop bc
+        ret
+
+; and_render: the whole window from the shadow (cells outside the 80x25 screen are spaces). Changes all.
+and_render:
+        ld hl,AND_VRAM
+        ld (ar_ptr),hl
+        ld a,(view_y)
+        ld d,a
+        ld b,AND_ROWS
+ar_row:
+        push bc
+        ld a,(view_x)
+        ld e,a
+        ld b,AND_COLS
+ar_col:
+        push bc
+        push de
+        ld a,d
+        cp SCR_ROWS
+        jr nc,ar_space
+        ld a,e
+        cp SCR_COLS
+        jr nc,ar_space
+        call scr_offset
+        push hl
+        ld bc,scr_ext
+        add hl,bc
+        ld b,(hl)
+        pop hl
+        ld de,scr_chr
+        add hl,de
+        ld a,(hl)
+        call and_char
+        jr ar_put
+ar_space:
+        ld a,' '
+ar_put:
+        ld hl,(ar_ptr)
+        ld (hl),a
+        inc hl
+        ld (ar_ptr),hl
+        pop de
+        pop bc
+        inc e
+        djnz ar_col
+        call kbd_scan
+        pop bc
+        inc d
+        djnz ar_row
+        ret
+
+; and_scroll: after the shadow scrolled. A window at 0,0 over 20 rows moves its VRAM up and gets a row of
+; spaces, anything else is drawn again. Changes all.
+and_scroll:
+        ld a,(view_y)
+        ld b,a
+        ld a,(view_x)
+        or b
+        jr nz,and_render
+        ld a,(term_rows)
+        cp AND_ROWS
+        jr nz,and_render
+        ld hl,AND_VRAM+AND_COLS
+        ld de,AND_VRAM
+        ld bc,AND_COLS*(AND_ROWS-1)
+        ldir
+        ld hl,AND_VRAM+AND_COLS*(AND_ROWS-1)
+        ld bc,AND_COLS
+        ld a,' '
+        jp fill
+
 ; and_at: D = row, E = column; the next and_putc writes there. Changes A.
 and_at:
         push hl

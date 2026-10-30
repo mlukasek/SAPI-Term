@@ -53,3 +53,35 @@ Nové rozhodnutí dopsat s datem a důvodem.
   a stojí v čekání na port 11h (F326: `IN A,(11h)`, `AND 40h`). Autorovo SAPI V ji má.
 - **Testy jen v SAPIemu-release, MCP zapínám parametrem** (`sapiemu-cli --mcp --mcp-port 8595`, GUI
   `--mcp-port 8596`), bez změny nastavení release emulátoru. Port 8580 patří vývojovému SAPIemu.
+
+## 2026-10-30: fáze 2, výstup terminálu
+
+- **Vlastní font 4×8** (`fonts/sapiterm4x8.txt`, mřížka upravitelná v editoru, `tools/fontgen.py`). Cizí fonty ne
+  (MZ CGROM je chráněný, licence jiných nejisté).
+  - Verzálky a číslice mají řádky 0–5. Malá písmena mají střední výšku v řádcích 2–5 a dotahy v řádcích 6–7.
+    Sloupec 3 je mezera mezi písmeny.
+  - Rámečky: jednoduchá čára ve sloupci 1 a řádku 3, dvojitá ve sloupcích 0 a 2 a řádcích 2 a 4. U dvojité svislé
+    čáry nejde vidět rameno doleva (╢ vypadá jako ║), na šířku 4 body se nevejde.
+  - **Velká písmena s diakritikou mají výšku malých** (tvar verzálky v řádcích 2–5) a stejné dvouřádkové
+    znaménko jako malá písmena. Znaménko v jediném řádku nad plnou verzálkou splývalo s písmenem a nebylo vidět.
+    Plná verzálka, mezera a znaménko se do 8 řádků nevejdou.
+- **Dvě sady glyfů:** CP437 (256) a KOI-8čs2 C0–FF (64 českých písmen, jak je má AND-1V). Buňka nese příznak
+  sady (`EXT_KOI`). Texty programu jsou v KOI-8čs2 (`src/texts.txt`, `tools/texts.py`). AND-1V je zobrazí přímo,
+  CGA-1V je vezme z druhé sady.
+- **Stínová obrazovka 80×25** (znak, atribut, příznak; 6 KB). Rolování posouvá jen tabulku řádků. Slouží
+  k překreslení po výměně karet, pro okno AND-1V a pro počty dvojic barev.
+- **Atribut jako na PC:** `pozadí << 4 | popředí`, barvy v pořadí CGA (0 černá, 1 modrá … 15 bílá). ANSI SGR 30–37
+  jde v jiném pořadí, převede ho parser.
+- **Dvojice barev na CGA-1V:**
+  - 16 slotů (pozadí, popředí) se přidělují za běhu a u každého se počítají buňky, které ho používají;
+  - volný slot (počet 0) dostane nový atribut a jeho barvy jdou do palety v příštím VBI;
+  - když volný není, vezme se nejbližší dvojice (vzdálenost barev popředí + 2× pozadí, `tools/tables.py`).
+  - Zatím společně pro celou obrazovku. Dvojice po doménách (7×16) přijdou ve fázi 3, protože 16 dvojic
+    na menu a ANSI art BBS nestačí.
+- **Odložené zalomení řádku** jako VT100: znak v posledním sloupci nechá kurzor tam, zalomí až další znak. Řádky
+  ANSI artu s přesně 80 znaky a CR LF pak nedělají prázdné řádky navíc.
+- **Výměna karet (Tab):** stínová obrazovka zůstává. Při zmenšení z 25 na 20 řádků se posune nahoru, aby kurzor
+  zůstal na posledním řádku, jako u terminálu na PC.
+- **Kurzor:** na CGA-1V podtržení (XOR posledního řádku buňky), na AND-1V znak 7Fh. Bliká po 20 tikách (1/3 s).
+  Tik 60 Hz dává MPH-1V, bez ní VBI CGA-1V, bez obou počítání průchodů smyčkou.
+- **Testovací obrazovka se vejde do 64×20**, aby šla na obě karty.

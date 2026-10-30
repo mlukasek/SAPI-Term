@@ -12,9 +12,14 @@
 ## Překlad
 
 `build.cmd`:
-1. pasmo → `build\sapiterm.com`, `.sym` a `.hex` (Intel HEX od 0100h);
-2. `tools\check_build.py`: rozložení paměti (vše pod C000h), vypíše `SAVE n SAPITERM.COM`;
-3. `tools\cpmdisk.py` (převzatý z SAPI-Bad-Apple): `build\ramdisk.bin` = RAM disk CP/M sestavy V
+1. generátory do `build\`:
+   - `tools\fontgen.py`: font z `fonts\sapiterm4x8.txt` → `font4x8.inc` (`--preview SOUBOR.png` uloží náhled);
+   - `tools\tables.py`: převod CP437 → AND-1V, vzdálenosti barev, adresy řádků CGA → `tables.inc`;
+   - `tools\texts.py`: texty UI z `src\texts.txt` (UTF-8) v KOI-8čs2 → `texts.inc`;
+2. pasmo → `build\sapiterm.com`, `.sym` a `.hex` (Intel HEX od 0100h);
+3. `tools\check_build.py`: rozložení paměti (vše pod C000h, tabulky zarovnané na stránku), vypíše
+   `SAVE n SAPITERM.COM`;
+4. `tools\cpmdisk.py` (převzatý z SAPI-Bad-Apple): `build\ramdisk.bin` = RAM disk CP/M sestavy V
    se `SAPITERM.COM`.
 
 ## Emulátor
@@ -39,7 +44,7 @@
 
 | Skript | Co dělá |
 |---|---|
-| `phase1.py [--consul]` | fáze 1: SAPITERM z disku, detekce karet, VBI a tik 60 Hz, klávesy, snímek CGA-1V (`build/phase1_cga.png`), Ctrl+] a `DIR` po návratu |
+| `phase2.py [--consul]` | fáze 2: SAPITERM z disku, stavová obrazovka, stínová obrazovka v paměti (titulek, tabulka CP437), psaní a rolování, Tab na AND-1V a zpět, Ctrl+L, Ctrl+T, Ctrl+] a `DIR` po návratu; snímky `build/preview/f2_*.png` |
 | `emu.py` | společné: sestava, kontrolní bod CP/M, příkaz CP/M, čtení paměti, symboly, snímek obrazovky |
 | `sapimcp.py` | klient MCP (`python tools\emu\sapimcp.py NÁSTROJ "{json}"`) |
 | `sapiemu.cmd [consul\|gui]` | spustí release emulátor s MCP |
@@ -51,6 +56,7 @@
   - operand začínající závorkou je adresa: `ld a,(X+3) & 0FFh` nejde, použít `low`/`high` nebo `0+(…)`;
   - ALIGN není: `defs (256 - ($ & 0FFh)) & 0FFh`;
   - návěští `.x` jsou globální, `DEFL` v `REPT` nefunguje.
+- **`jr` přes rozvinutou smyčku** (`rept 80 / ldi`) nedosáhne, pasmo hlásí „Relative jump out of range“.
 - **Rutiny, které mění A** (`and_at`, `and_putc`…): před voláním si příznak v A uložit. Na tom se spálila první
   verze `show_yes_no`.
 - **MCP:**
@@ -59,7 +65,10 @@
   - `run_until` s textem, který už na obrazovce je (starý `A>`), skončí hned. `emu.command` proto nejdřív
     nechá běžet dobu psaní.
   - Consul bez úpravy 7474 dostává z `type_text` znak po 20 ms.
-  - Výpis `screen_text` obsahuje znaky mimo cp1252 (kurzor ▒): `PYTHONIOENCODING=utf-8`.
+  - Výpis `screen_text` obsahuje znaky mimo cp1252 (kurzor ▒, čeština). `python -I` proměnnou
+    `PYTHONIOENCODING` ignoruje, skripty proto volají `sys.stdout.reconfigure(encoding='utf-8')`.
+  - Kodek `cp437` v Pythonu dává pro 00–1F řídicí znaky, ne ☺☻. Testy porovnávají kódy znaků.
 - **ECMON bez DSM-1V** přepne konzoli na sériovou linku a visí na portu 11h. Sestavy proto DSM-1V mají.
 - **Konce řádků:** soubory v gitu s LF, `.cmd` s CRLF (`.gitattributes`). Python na Windows píše v textovém
-  režimu CRLF, proto `newline='\n'`.
+  režimu CRLF, proto `newline='\n'`. Cesty s `\` v řetězcích Pythonu psát jako `r'...'`, jinak z `\f` a `\t`
+  vzniknou řídicí znaky (tak se rozbil `build.cmd`).

@@ -1,0 +1,30 @@
+# Texts of the SAPI-Term user interface, UTF-8. tools/texts.py converts them to KOI-8cs2 (build/texts.inc).
+# One text per line: the asm label, one space, the text. A "\" at the end continues on the next line.
+
+t_title SAPI-Term 0.2 - terminál pro BBS (vývojová verze, fáze 2)
+t_terminal Terminál na:
+t_cga_size CGA-1V, 80x25 znaků
+t_and_size AND-1V, 64x20 znaků
+t_cards Karty v sestavě:
+t_yes ano
+t_no není
+t_firmware firmware
+t_pairs Dvojice barev CGA-1V:
+t_last_key Poslední klávesa:
+t_keys Klávesy:
+t_key1 Tab     výměna obrazovek (CGA-1V a AND-1V)
+t_key2 Ctrl+T  testovací obrazovka, Ctrl+L smazat
+t_key3 Ctrl+P  barva písma, Ctrl+O barva pozadí
+t_key4 šipky   pohyb kurzoru, ostatní klávesy píšou
+t_key5 Ctrl+]  konec, návrat do CP/M
+t_no_and SAPI-Term: chybí karta AND-1V i CGA-1V.
+
+t_test_title SAPI-Term 0.2 - test výstupu (80x25 na CGA-1V, 64x20 na AND-1V)
+t_test_fg Popředí 0-F:
+t_test_bg Pozadí 0-F (nad 16 dvojic nejbližší):
+t_test_blocks Bloky:
+t_test_double Dvojitý rámeček
+t_test_single Jednoduchý rámeček
+t_cz_lower Příliš žluťoučký kůň úpěl ďábelské ódy.
+t_cz_upper PŘÍLIŠ ŽLUŤOUČKÝ KŮŇ ÚPĚL ĎÁBELSKÉ ÓDY.
+t_test_help Piš na klávesnici. Tab = druhá obrazovka, Ctrl+] = konec.

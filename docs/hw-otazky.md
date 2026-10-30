@@ -2,14 +2,18 @@
 
 Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 
-## Fáze 1 (SAPITERM 0.1)
+## SAPITERM 0.2 (fáze 1 a 2)
 
-1. **Start a detekce:** spustit `SAPITERM` na SAPI-1 V. Na AND-1V má ukázat CGA-1V ano, MPH-1V ano, DPI-1L ano
-   a verzi firmwaru (0.5). Na CGA-1V 16 barevných pruhů (černý, modrý … bílý).
-   - Ověřuje, že detekce nespoléhá na nic, co se na skutečné sběrnici chová jinak než v emulátoru.
-2. **Počítadla:** VBI CGA-1V i tik MPH-1V mají přibývat zhruba o 3Ch (60) za sekundu.
-3. **Klávesnice EKL-1:** kód klávesy `a` = 61, šipka nahoru = 05, Ctrl+] vrátí do CP/M. Po návratu je CGA-1V
-   černá, AND-1V smazaná s `A>` nahoře a `DIR` funguje.
+1. **Start a detekce:** `SAPITERM` na SAPI-1 V. Stavová obrazovka na AND-1V ukáže CGA-1V, AND-1V, MPH-1V
+   a DPI-1L „ano“ a firmware 0.5. Ověřuje, že detekce nespoléhá na nic, co se na skutečné sběrnici chová jinak než
+   v emulátoru.
+2. **Čitelnost fontu 4×8** na skutečném monitoru VGA přes CGA-1V: malá písmena, číslice, rámečky a velká písmena
+   s diakritikou, která mají výšku malých (`docs/rozhodnuti.md`).
+3. **Barvy:** testovací obrazovka (Ctrl+T) má bílý nadpis, žlutou tabulku, azurové rámečky a zelenou nápovědu.
+   Při psaní nesmí na obraze blikat rušení (sníh Bt476).
+4. **Klávesnice EKL-1:** psaní, šipky (pohyb kurzoru), Ctrl+P/Ctrl+O barvy, Tab výměna karet. Kurzor bliká asi
+   1,5× za sekundu.
+5. **Návrat Ctrl+]:** CGA-1V černá, AND-1V smazaná s `A>` nahoře, `DIR` funguje.
 
 ## Na později
 
@@ -17,4 +21,5 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
   (rychlost příjmu, plynulost kreslení). V emulátoru se to nedá zjistit.
 - **TCPSEND chyba 5** (plné odesílání lwIP) a odmítnuté spojení (stav 3 hned).
 - **RTC DPI-1L (60–63h):** vrací UTC, nebo místní čas? (`repo.c` čte časovač AON, který podle `systime.h` drží UTC.)
-- **Sníh palety Bt476** při zápisu mimo VBI a při 2 MHz (zápis 112 dvojic trvá 6,8 ms, víc než VBI).
+- **Sníh palety Bt476** při 2 MHz: zápis barev jedné dvojice (7 domén) trvá asi 0,4 ms, všech 16 asi 6 ms, víc
+  než VBI (4 ms).

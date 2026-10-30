@@ -24,6 +24,10 @@ def main():
     # everything must stay below C000h: MAP_CGA puts the CGA-1V there
     if s['BSS_END'] > 0xC000:
         errors.append(f'buffers and stack up to {s["BSS_END"]:04X}h, over C000h')
+    # tables indexed by the low byte of the address
+    for name in ('font_cp437', 'font_koi', 'and_map_cp437', 'col_dist', 'cga_rows', 'att_slot'):
+        if name in s and s[name] & 0xFF:
+            errors.append(f'{name} at {s[name]:04X}h is not page aligned')
     if errors:
         sys.exit('\n'.join(errors))
     pages = (size + 255) // 256

@@ -8,6 +8,10 @@ if "%PASMO%"=="" set PASMO=E:\SAPI_GIT\Tools\pasmo-0.5.3\pasmo.exe
 if "%CPM_IMAGE%"=="" set CPM_IMAGE=E:\SAPI_GIT\SAPIemu-release\media\zrmd-1\SAPI_CPM_Martin_2019-10-07.bin
 if not exist build mkdir build
 
+python tools\fontgen.py || exit /b 1
+python tools\tables.py || exit /b 1
+python tools\texts.py || exit /b 1
+
 pushd src
 "%PASMO%" --bin sapiterm.asm ..\build\sapiterm.com ..\build\sapiterm.sym || (popd & exit /b 1)
 "%PASMO%" --hex sapiterm.asm ..\build\sapiterm.hex || (popd & exit /b 1)
