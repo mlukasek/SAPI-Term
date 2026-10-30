@@ -15,7 +15,7 @@ Terminal emulator (telnet BBS client) for the vintage Czech TESLA SAPI-1 compute
 - rychlost linky pro ANSI animace, blikání a režim 40×25;
 - záznam relace, historie odrolovaných řádků, stahování XMODEM a YMODEM;
 - PETSCII, ATASCII a Viewdata (terminály C64, Atari a Prestel s jejich písmy a barvami); ANSI ve 40 sloupcích
-  s písmem Sharp MZ-700.
+  s písmem Sharp MZ-800 a českými písmeny z jeho CP/M.
 
 Další na řadě je zkouška na skutečném SAPI-1. Plán a stav jsou v [docs/stav.md](docs/stav.md).
 
@@ -28,5 +28,6 @@ v [docs/vyvoj.md](docs/vyvoj.md).
 
 GPLv3, viz [LICENSE](LICENSE). Autor: Martin Lukášek.
 
-Výjimka: písma 8×8 v `fonts/c64.txt`, `fonts/atari.txt` a `fonts/mz700.txt` jsou převzatá ze znakových ROM
-Commodore 64, Atari 400/800 a Sharp MZ-700 a patří jejich vlastníkům (`docs/rozhodnuti.md`).
+Výjimka: písma 8×8 v `fonts/c64.txt`, `fonts/atari.txt` a `fonts/mz800.txt` jsou převzatá ze znakových ROM
+Commodore 64, Atari 400/800 a Sharp MZ-800 a patří jejich vlastníkům. Česká písmena v `fonts/mz800cs.txt` skládá
+z písma MZ-800 a znamének českého CP/M pro MZ-800 (`docs/rozhodnuti.md`).

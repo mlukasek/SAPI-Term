@@ -16,8 +16,8 @@
    - `tools\fontgen.py`: font z `fonts\sapiterm4x8.txt` → `font4x8.inc` (`--preview SOUBOR.png` uloží náhled);
    - `tools\tables.py`: převod CP437 → AND-1V, vzdálenosti barev, adresy řádků CGA → `tables.inc`;
    - `tools\petfont.py`, `tools\atafont.py`, `tools\mzfont.py`: písma 8×8 C64 (PETSCII), Atari (ATASCII) a
-     Sharp MZ-700 (ANSI ve 40 sloupcích) z `fonts\c64.txt`, `atari.txt`, `mz700.txt` → `font_pet.inc`,
-     `font_ata.inc`, `font_mz.inc`, s mapami pro AND-1V;
+     Sharp MZ-800 (ANSI ve 40 sloupcích) z `fonts\c64.txt`, `atari.txt`, `mz800.txt` a `mz800cs.txt` →
+     `font_pet.inc`, `font_ata.inc`, `font_mz.inc`, s mapami pro AND-1V;
    - `tools\texts.py`: texty UI z `src\texts.txt` (UTF-8) v KOI-8čs2 → `texts.inc`;
    - `tools\mkart.py`: testovací soubory ANSI → `build\art\*.ANS` (každá doména nejvýš 16 dvojic, hlídá
      `tools\ansiref.py`), používá je i `tools\testbbs.py`;
@@ -29,17 +29,19 @@
 
 ### Písma z ROM
 
-`fonts\c64.txt`, `atari.txt` a `mz700.txt` jsou v repu. Dělá je jednorázově `tools\romfont.py` z ROM, které
-v repu nejsou (`work\roms`, git je ignoruje). Skript kontroluje CRC32 a ROM MZ-700 otáčí (bit 0 = levý bod).
+`fonts\c64.txt`, `atari.txt`, `mz800.txt` a `mz800cs.txt` jsou v repu. Dělá je jednorázově `tools\romfont.py`
+z ROM a z BIOSu českého CP/M, které v repu nejsou (`work\roms`, git je ignoruje). Skript kontroluje CRC32 a ROM
+MZ otáčí (bit 0 = levý bod).
 
 | Písmo | Soubor (CRC32) | Odkud |
 |---|---|---|
 | C64 | `chargen-901225-01.bin` (EC4272EE) | VICE, `data/C64` (zrcadlo SVN na GitHubu `VICE-Team/svn-mirror`) |
 | Atari | `ATARIOSB.ROM` (3E28A1FE), písmo na E000h | `xf25.zip` (PC Xformer 2.5) v projektu Atari800 na SourceForge |
-| MZ-700 | `mz700fon.int` (42B9E8FB) | sada MAME 0.221 `mz700.zip` (archive.org, `mame-0.221-roms-merged`) |
+| MZ-800 | `CGROM.ROM` (2A62D77E) | od autora; MZ-700 pro srovnání: `mz700fon.int` ze sady MAME 0.221 `mz700.zip` |
+| čeština MZ | `BIOS.mac`, blok „BIOS CG ZNAKY“ (C28F2248) | české CP/M pro MZ-800 (Lamač), `Cpm_v41` od autora |
 
 ```
-python tools\romfont.py --c64 work\roms\c64\chargen-901225-01.bin --atari work\roms\atari\ATARIOSB.ROM --mz work\roms\mz700-mame\mz700fon.int
+python tools\romfont.py --c64 work\roms\c64\chargen-901225-01.bin --atari work\roms\atari\ATARIOSB.ROM --mz work\roms\mz800\CGROM.ROM --cpm work\roms\CPM_gen\Cpm_v41\BIOS.mac
 ```
 
 ## Emulátor

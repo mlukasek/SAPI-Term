@@ -1,41 +1,62 @@
-"""Fonts 8x8 of the original machines for SAPI-Term: ROM dumps -> fonts/c64.txt, fonts/atari.txt, fonts/mz700.txt
+"""Fonts 8x8 of the original machines for SAPI-Term: ROM dumps -> fonts/c64.txt, fonts/atari.txt, fonts/mz800.txt
 (the sources of tools/petfont.py, tools/atafont.py and tools/mzfont.py; docs/rozhodnuti.md "Písma 8x8").
 
 Run by hand only when a source changes; the ROMs are not in the repository (work/roms, docs/vyvoj.md).
-  python tools/romfont.py --c64 chargen-901225-01.bin --atari ATARIOSB.ROM --mz mz700fon.int
+  python tools/romfont.py --c64 chargen-901225-01.bin --atari ATARIOSB.ROM --mz CGROM.ROM --cpm BIOS.mac
 Sources (checked by their CRC32):
   C64    chargen-901225-01.bin of VICE (data/C64), 4096 B: screen codes 00-7F of the upper case set at 000h, of
          the lower case set at 800h (the inverse halves are not used: SAPI-Term swaps the colours).
   Atari  ATARIOSB.ROM (OS rev. B, D800-FFFF) of PC Xformer 2.5 (xf25.zip of the Atari800 project at
          SourceForge), the font at E000h = offset 800h in the internal order: 00-3F = ATASCII 20-5F,
          40-5F = 00-1F, 60-7F = 60-7F. The 800XL has the same font.
-  MZ     mz700fon.int (MZ-700, the European CGROM) of MAME, 4096 B, dots D0 (left) to D7: ASCII 20-5D as the
-         monitor 1Z-013A converts them to display codes (its table at 0A92h + the code), a-z = display codes
-         81-9A, _ and | its lines 3C and 79; ^ ` { } ~ and the house 7F (CP437) the MZ-700 lacks are drawn here
-         in its style (dots one wide, capitals rows 0-6).
+  MZ     CGROM.ROM of the MZ-800 (from the author), 4096 B, dots D0 (left) to D7; the European CGROM of the
+         MZ-700 (mz700fon.int of MAME) differs only in A C D G 4 5 9 and the comma. ASCII 20-5D as the monitor
+         1Z-013A of the MZ-700 converts them to display codes (its table at 0A92h + the code), a-z = display
+         codes 81-9A, the rest as the Czech CP/M of the MZ-800 converts them (_ BF, ^ BE, ` A4, { BC, | 80,
+         } 40, ~ A5); only the house 7F of CP437, which the MZ lacks, is drawn here in its style (dots one wide,
+         capitals rows 0-6). Section cp437: the characters of CP437 outside ASCII the MZ has (MZ_CP437).
+  CP/M   BIOS.mac of the Czech CP/M of the MZ-800 (Lamač; Cpm_v41 from the author), its block "BIOS CG ZNAKY"
+         (cpm_block): the Czech and Slovak letters of KOI-8cs2 as it shows them with the ROM font, its two
+         accent rows over the rows 2-7 of the base letter of the ROM -> fonts/mz800cs.txt (with --mz).
 """
 import os
+import re
 import sys
 import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CRC = {'c64': 0xEC4272EE, 'atari': 0x3E28A1FE, 'mz': 0x42B9E8FB}
+CRC = {'c64': 0xEC4272EE, 'atari': 0x3E28A1FE, 'mz': 0x2A62D77E, 'cpm': 0xC28F2248}
 
-# MZ-700: ASCII -> display code (the monitor's table for 20-5D, a-z, two of its lines)
+# MZ: ASCII -> display code (the monitor's table for 20-5D, a-z, the rest as the Czech CP/M of the MZ-800)
 MZ_CODES = {0x20: 0x00, 0x21: 0x61, 0x22: 0x62, 0x23: 0x63, 0x24: 0x64, 0x25: 0x65, 0x26: 0x66, 0x27: 0x67,
             0x28: 0x68, 0x29: 0x69, 0x2A: 0x6B, 0x2B: 0x6A, 0x2C: 0x2F, 0x2D: 0x2A, 0x2E: 0x2E, 0x2F: 0x2D,
             0x3A: 0x4F, 0x3B: 0x2C, 0x3C: 0x51, 0x3D: 0x2B, 0x3E: 0x57, 0x3F: 0x49, 0x40: 0x55, 0x5B: 0x52,
-            0x5C: 0x59, 0x5D: 0x54, 0x5F: 0x3C, 0x7C: 0x79}
+            0x5C: 0x59, 0x5D: 0x54, 0x5E: 0xBE, 0x5F: 0xBF, 0x60: 0xA4, 0x7B: 0xBC, 0x7C: 0x80, 0x7D: 0x40,
+            0x7E: 0xA5}
 MZ_CODES.update({0x30 + i: 0x20 + i for i in range(10)})
 MZ_CODES.update({0x41 + i: 0x01 + i for i in range(26)})
 MZ_CODES.update({0x61 + i: 0x81 + i for i in range(26)})
 MZ_HAND = {
-    0x5E: ['...##...', '..#..#..', '.#....#.', '........', '........', '........', '........', '........'],
-    0x60: ['..#.....', '...#....', '....#...', '........', '........', '........', '........', '........'],
-    0x7B: ['....##..', '...#....', '...#....', '..#.....', '...#....', '...#....', '....##..', '........'],
-    0x7D: ['..##....', '....#...', '....#...', '.....#..', '....#...', '....#...', '..##....', '........'],
-    0x7E: ['........', '........', '..##..#.', '.#..##..', '........', '........', '........', '........'],
     0x7F: ['........', '...##...', '..#..#..', '.#....#.', '.#....#.', '.#....#.', '.######.', '........'],
+}
+# MZ: CP437 -> display code for the characters outside ASCII it has (the ROM has no divide sign)
+MZ_CP437 = {0x03: 0x53, 0x04: 0x44, 0x05: 0x46, 0x06: 0x41, 0x07: 0x47, 0x09: 0x48, 0x18: 0x50, 0x19: 0x58,
+            0x1A: 0x5A, 0x1B: 0x45, 0x81: 0xAB, 0x84: 0x9B, 0x8E: 0xAE, 0x94: 0xAC, 0x99: 0xAF, 0x9A: 0xAD,
+            0x9C: 0x1B, 0x9D: 0xCD, 0xE1: 0xAA, 0xE3: 0x60}
+
+CP437_LOW = {0x03: '♥', 0x04: '♦', 0x05: '♣', 0x06: '♠', 0x07: '•', 0x09: '○', 0x18: '↑', 0x19: '↓', 0x1A: '→',
+             0x1B: '←'}
+
+# KOI-8cs2 C0-FF as the AND-1V has it (- none); the CP/M has also ë Ë (C2, E2)
+KOI_NAMES = ('-á-čďěŕ-üíůĺľöňóôäřšťú-éàýž-ˇ-¬-'
+             '´Á-ČĎĚŔ-ÜÍŮĹĽÖŇÓÔÄŘŠŤÚ-ÉÀÝŽ-----')
+# the CP/M letters fixed (rows 0-1): Ň had a zigzag, ô a bar instead of the circumflex
+CPM_FIX = {0xEE: ['...#.#..', '.##...#.'], 0xD0: ['...##...', '..#..#..']}
+# the signs of KOI-8cs2 the CP/M has not, drawn in the style of the MZ
+CPM_HAND = {
+    0xDC: ['........', '..#..#..', '...##...', '........', '........', '........', '........', '........'],
+    0xDE: ['........', '........', '........', '.######.', '......#.', '........', '........', '........'],
+    0xE0: ['........', '....#...', '...#....', '........', '........', '........', '........', '........'],
 }
 
 C64_TEXT = '@ABCDEFGHIJKLMNOPQRSTUVWXYZ[£]↑← !"#$%&\'()*+,-./0123456789:;<=>?'
@@ -115,26 +136,77 @@ def atari(path):
         'inverse).']) + section('atascii', font, {c: printable(c) for c in range(128)}))
 
 
-def mz700(path):
+def cpm_block(path):
+    """The block "BIOS CG ZNAKY" of BIOS.mac, 1216 B: ASCII 20-7F -> display code (96 B), 80-BF -> display code
+    (64 B), the base letters of KOI C0-DF (32 B), its own font for ASCII 20-7F (768 B), the two accent rows of each
+    KOI code C0-FF for its font (128 B) and for the ROM font (128 B, dots D0 left)."""
+    lines = open(path, encoding='latin-1').read().splitlines()
+    first = next(n for n, line in enumerate(lines) if 'BIOS CG ZNAKY' in line)
+    data = bytearray()
+    for line in lines[first + 2:]:
+        m = re.match(r'(?:\w+:)?\s*DB\s+([^;]*)', line, re.I)
+        if m:
+            data += bytes(int(v.strip().rstrip('Hh'), 16) for v in m.group(1).split(',') if v.strip())
+        elif line.strip() and not line.strip().startswith(';'):
+            break
+    if zlib.crc32(data) != CRC['cpm']:
+        sys.exit('%s: the block BIOS CG ZNAKY has CRC32 %08X, expected %08X' % (path, zlib.crc32(data), CRC['cpm']))
+    return bytes(data)
+
+
+def cpm_letters(block, font):
+    """{KOI code: glyph} of the letters as the CP/M composes them with the ROM font (font: ASCII -> rows)."""
+    base, accents = block[160:192], block[1088:1216]
+    out = {}
+    for n, name in enumerate(KOI_NAMES):
+        code = 0xC0 + n
+        if code in CPM_HAND:
+            out[code] = CPM_HAND[code]
+            continue
+        if name == '-':
+            continue
+        letter = base[n & 0x1F]
+        assert letter != 0x20, name
+        letter |= 0x20 if code < 0xE0 else 0
+        out[code] = CPM_FIX.get(code, rows(accents, 2 * n, mirror=True)[:2]) + font[letter][2:8]
+    return out
+
+
+def mz800(path, cpm=None):
     data = load(path, 'mz')
     font = {c: rows(data, MZ_CODES[c] * 8, mirror=True) for c in MZ_CODES}
     font.update(MZ_HAND)
     names = {c: printable(c) for c in range(0x20, 0x80)}
     names[0x7F] = '⌂'
-    write('mz700.txt', header('Font 8x8 of the Sharp MZ-700 (its character ROM), for ANSI in 40 columns in SAPI-Term.', [
-        'Copied from mz700fon.int of MAME by tools/romfont.py, (c) Sharp; in SAPI-Term by the decision of its',
-        'author (docs/rozhodnuti.md). Section ascii 20-7F: ^ ` { } ~ and 7F (the house of CP437) are drawn for',
-        'SAPI-Term in the style of the MZ-700, which lacks them; the rest is the ROM.']) +
-        section('ascii', font, names))
+    extra = {c: rows(data, MZ_CP437[c] * 8, mirror=True) for c in MZ_CP437}
+    write('mz800.txt', header('Font 8x8 of the Sharp MZ-800 (its character ROM), for ANSI in 40 columns in SAPI-Term.', [
+        'Copied from CGROM.ROM of the MZ-800 by tools/romfont.py, (c) Sharp; in SAPI-Term by the decision of its',
+        'author (docs/rozhodnuti.md). Section ascii 20-7F: 7F (the house of CP437) is drawn for SAPI-Term in the',
+        'style of the MZ, which lacks it; the rest is the ROM. Section cp437: the characters of CP437 outside',
+        'ASCII the MZ has. The Czech and Slovak letters are in fonts/mz800cs.txt.']) +
+        section('ascii', font, names) +
+        section('cp437', extra, {c: CP437_LOW.get(c) or bytes([c]).decode('cp437') for c in MZ_CP437}))
+    if cpm:
+        letters = cpm_letters(cpm_block(cpm), font)
+        write('mz800cs.txt', header('Czech and Slovak letters of KOI-8cs2 in the font of the Sharp MZ-800, for ANSI '
+                                    'in 40 columns.', [
+            'As the Czech CP/M of the MZ-800 (Lamač) shows them with the ROM font: its two accent rows (with the top',
+            'row of a capital) over the rows 2-7 of the base letter of fonts/mz800.txt; made by tools/romfont.py from',
+            'BIOS.mac of the CP/M. Fixed for SAPI-Term: Ň (row 1 was a zigzag), ô (a bar instead of the',
+            'circumflex); the signs ˇ ¬ ´ are drawn in the style of the MZ.']) +
+            section('koi8cs', letters, {c: KOI_NAMES[c - 0xC0] for c in letters}))
 
 
 def main():
     args = sys.argv[1:]
     done = False
-    for opt, fn in (('--c64', c64), ('--atari', atari), ('--mz', mz700)):
+    for opt, fn in (('--c64', c64), ('--atari', atari)):
         if opt in args:
             fn(args[args.index(opt) + 1])
             done = True
+    if '--mz' in args:
+        mz800(args[args.index('--mz') + 1], args[args.index('--cpm') + 1] if '--cpm' in args else None)
+        done = True
     if not done:
         sys.exit(__doc__)
 

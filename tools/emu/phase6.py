@@ -4,7 +4,8 @@ With the local test BBS (tools/testbbs.py, started here): the blink page without
 100-107) on the shadow screen as the model says, the CGA-1V picture seen in both phases of the blink (each equal
 to the model drawn with the text shown or hidden); with iCE the same page has bright backgrounds and does not
 blink. BEL (R of the test BBS): a tone of the MPH-1V recorded. Menu S: 40 columns on the CGA-1V (NAWS 40x25, the MENU page equal to a model of 40 columns, the picture
-in the font of the MZ-700 for ASCII, the rest in the font 4x8 with its dots doubled), S again 80. Menu R to 2400 Bd: the MENU page takes its time at 240 bytes a second and ends equal to the model. Back
+in the font of the MZ-800 for ASCII, the rest in the font 4x8 with its dots doubled; Z to UTF-8, page U: the Czech
+letters in the style of the MZ-800, Z round to CP437), S again 80. Menu R to 2400 Bd: the MENU page takes its time at 240 bytes a second and ends equal to the model. Back
 in CP/M "SAPITERM MENU.ANS" shows the file at the same speed (SPEED=2400 in SAPITERM.CFG). Needs the emulator
 with MCP (tools/emu/sapiemu.cmd) and build.cmd. Screenshots to build/preview/f6_*.png.
   python tools/emu/phase6.py
@@ -26,6 +27,7 @@ import mzfont  # noqa: E402
 import testbbs  # noqa: E402
 from phase3 import shadow  # noqa: E402
 from phase4 import check, failed, keys, log, run_until, screen_matches, LOG, PORT  # noqa: E402
+from phase5 import expect_glyphs, row_glyphs  # noqa: E402
 
 PREVIEW = os.path.join(emu.REPO, 'build', 'preview')
 CPS_2400 = 240
@@ -79,16 +81,36 @@ def blink(sym, font):
 
 
 def render40(t, font):
-    """RGB of 640x400 for a model of 40 columns: ASCII in the font of the MZ-700, the rest with each dot of the font
-    4x8 doubled (a cell is 8x8 CGA dots)."""
+    """RGB of 640x400 for a model of 40 columns (render_cells40)."""
+    return render_cells40([[(t.chr[r][c], t.att[r][c], 0) for c in range(40)] for r in range(25)], font)
+
+
+def shadow_cells(sym):
+    """The shadow of the emulator as 25 rows of 40 cells (character, attribute, flags)."""
+    offs = emu.read(sym['row_off'], 50)
+    chars, atts, ext = (emu.read(sym[n], 2000) for n in ('scr_chr', 'scr_att', 'scr_ext'))
+    rows = []
+    for r in range(25):
+        o = offs[2 * r] | offs[2 * r + 1] << 8
+        rows.append(list(zip(chars[o:o + 40], atts[o:o + 40], ext[o:o + 40])))
+    return rows
+
+
+def render_cells40(rows, font):
+    """RGB of 640x400 for 40 columns: ASCII, the CP437 characters the MZ-800 has and the KOI letters (flag bit 0)
+    in its font (tools/mzfont.py), the rest with each dot of the font 4x8 doubled (a cell is 8x8 CGA dots)."""
     pal = [tuple((v << 2 | v >> 4) for v in c) for c in ansiref.RGB6]
     mz = mzfont.build()
     out = bytearray(640 * 400 * 3)
     for r in range(25):
         for c in range(40):
-            code = t.chr[r][c]
-            g = mz[code] if code in mz else [[row[x // 2] == '#' for x in range(8)] for row in font[code]]
-            a = t.att[r][c]
+            code, a, ext = rows[r][c]
+            if ext & 1:
+                g = mz['koi'].get(code, mz['koi'][0xC0])
+            elif code in mz['cp437']:
+                g = mz['cp437'][code]
+            else:
+                g = [[row[x // 2] == '#' for x in range(8)] for row in font[code]]
             fg, bg = pal[a & 15], pal[a >> 4]
             for y in range(8):
                 for x in range(8):
@@ -117,8 +139,20 @@ def wide40(sym, font):
     ok = run_until(lambda: all(r[0][:40] == m and r[1][:40] == a
                                for r, m, a in zip(shadow(sym), model.chr, model.att)), ms=10000)
     check(ok, 'MENU in 40 columns: shadow equals the model of 40x25')
-    want0 = render40(model, font)
-    path = os.path.join(PREVIEW, 'f6_menu_40.png')
+    diff = compare40(sym, render40(model, font), 'f6_menu_40.png')
+    check(diff == 0, 'MENU in 40 columns: CGA-1V picture equals the model with the MZ-800 font (%d dots differ)' % diff)
+    czech40(sym, font)
+    keys('\x1d', 500)
+    keys('s', 3000)
+    check(emu.read(sym['cga_wide'], 1)[0] == 0 and emu.read(sym['term_cols'], 1)[0] == 80, 'S again: 80 columns')
+    check(run_until(lambda: log().get('naws', [])[-1:] == [[80, 25]], ms=5000), 'S again: NAWS 80x25')
+    keys('\x1b', 1000)
+
+
+def compare40(sym, want0, name):
+    """Dots of the CGA-1V screenshot (build/preview/name) that differ from want0 (the cursor cell not compared),
+    the best of a few tries while the screen settles."""
+    path = os.path.join(PREVIEW, name)
     for _ in range(10):
         mcp.call('run_for', ms=200)
         mcp.call('pause')
@@ -133,12 +167,31 @@ def wide40(sym, font):
         diff = sum(1 for i in range(0, len(want), 3) if want[i:i + 3] != got[i:i + 3])
         if diff == 0:
             break
-    check(diff == 0, 'MENU in 40 columns: CGA-1V picture equals the model with the MZ-700 font (%d dots differ)' % diff)
+    return diff
+
+
+def czech40(sym, font):
+    """40 columns, menu Z to UTF-8, page U: the Czech letters, ß and π in the font of the MZ-800, box drawing and
+    the rest doubled; the picture equals one drawn from the shadow. Then Z round to CP437 again."""
     keys('\x1d', 500)
-    keys('s', 3000)
-    check(emu.read(sym['cga_wide'], 1)[0] == 0 and emu.read(sym['term_cols'], 1)[0] == 80, 'S again: 80 columns')
-    check(run_until(lambda: log().get('naws', [])[-1:] == [[80, 25]], ms=5000), 'S again: NAWS 80x25')
-    keys('\x1b', 1000)
+    keys('z', 800)
+    keys('\x1b', 800)
+    check(emu.read(sym['cs_type'], 1)[0] == 1, '40 columns: Z to UTF-8')
+    want = [expect_glyphs(t, 'UTF-8') for t in testbbs.charset_lines('U')]
+    keys('U', 100)
+    ok = run_until(lambda: all(row_glyphs(sym, r)[:len(w)] == w for r, w in enumerate(want)), ms=10000)
+    check(ok, '40 columns: the UTF-8 page in the shadow')
+    diff = compare40(sym, render_cells40(shadow_cells(sym), font), 'f6_utf8_40.png')
+    check(diff == 0, '40 columns: the UTF-8 page in the font of the MZ-800 with its Czech letters (%d dots differ)'
+          % diff)
+    keys('\x1d', 500)
+    for _ in range(12):
+        if emu.read(sym['cs_type'], 1)[0] == 0:
+            break
+        keys('z', 1500)
+    keys('\x1b', 800)
+    check(emu.read(sym['cs_type'], 1)[0] == 0 and emu.read(sym['cga_wide'], 1)[0] == 1,
+          'Z round: CP437 in 40 columns again')
 
 
 def bell():

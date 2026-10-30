@@ -33,8 +33,8 @@ Terminál pro internetové BBS (telnet klient) pro Tesla SAPI-1, sestavu V z Lib
   `docs/hw-otazky.md`. Před akcí na hardwaru říct, co se stane.
 - **„Dvakrát měř, jednou řež“:** na nejasné se zeptat, doporučení dávat jako první možnost.
 - **Autorská práva:** žádné cizí ROM, fonty ani obrázky bez ověřené licence.
-  - Výjimka z rozhodnutí autora (2026-10-30): písma 8×8 z ROM C64, Atari a Sharp MZ-700 (`fonts/c64.txt`,
-    `atari.txt`, `mz700.txt`, `docs/rozhodnuti.md`).
+  - Výjimka z rozhodnutí autora (2026-10-30): písma 8×8 z ROM C64, Atari a Sharp MZ-800 a česká písmena z CP/M
+    pro MZ-800 (`fonts/c64.txt`, `atari.txt`, `mz800.txt`, `mz800cs.txt`, `docs/rozhodnuti.md`).
   - Písmo 4×8 a testovací ANSI art jsou vlastní.
 - **Dokumentace:** důležité poznatky zapisovat do `docs/` (pracuje se z více počítačů).
 - **Git:** lokální commity průběžně, push jen na výslovné vyžádání. Na konec commitu řádek Co-Authored-By.

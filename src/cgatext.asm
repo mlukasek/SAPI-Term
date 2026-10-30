@@ -12,8 +12,8 @@
 DOMAINS         equ 7
 
 ; glyph_addr: A = character, B = flags (EXT_KOI: KOI-8cs2 C0-FF from font_koi, EXT_8X8: font_pet, EXT_ATA:
-; font_ata, else CP437: in 40 columns 20h-7Fh from font_mz, the font of the Sharp MZ-700, the rest doubled)
-; -> HL = glyph. Changes A.
+; font_ata, else CP437). In 40 columns ASCII, the CP437 characters of mz_extra and the KOI letters are from
+; font_mz (the font of the Sharp MZ-800), the rest of CP437 is doubled. -> HL = glyph. Changes A.
 glyph_addr:
         bit 3,b
         jp nz,ga_vdt            ; Viewdata (vdt.asm): made in vdt_glyph
@@ -39,9 +39,12 @@ ga_cp437:
         ld h,a
         ret
 ga_wide:                        ; 40 columns: 8 dots a line from font_mz (after font_pet: drawn as it is)
+        cp 20h
+        jr c,gw_extra
+        cp 80h
+        jr nc,gw_extra
         sub 20h
-        cp 60h
-        jr nc,ga_wide_437
+ga_mz:                          ; A = glyph of font_mz
         ld l,a
         ld h,0
         add hl,hl
@@ -54,9 +57,30 @@ ga_wide:                        ; 40 columns: 8 dots a line from font_mz (after 
         adc a,high font_mz
         ld h,a
         ret
-ga_wide_437:
-        add a,20h
+gw_extra:                       ; the CP437 characters the MZ has (mz_extra), box drawing and blocks doubled at once
+        cp 0B0h
+        jr c,gw_find
+        cp 0E0h
+        jr c,ga_cp437
+gw_find:
+        push bc
+        ld c,a
+        ld hl,mz_extra
+        ld b,MZ_EXTRA_N
+gw_next:
+        ld a,(hl)
+        inc hl
+        cp c
+        jr z,gw_found
+        inc hl
+        djnz gw_next
+        ld a,c
+        pop bc
         jr ga_cp437
+gw_found:
+        ld a,(hl)
+        pop bc
+        jr ga_mz
 ga_ata:                         ; 8 dots a line (ata.asm), after font_pet: drawn as it is too
         ld l,a
         ld h,0
@@ -83,6 +107,9 @@ ga_koi:
         xor a                   ; not a KOI letter: the empty glyph C0h
 ga_koi_ok:
         ld l,a
+        ld a,(cga_wide)
+        or a
+        jr nz,ga_koi_mz
         ld h,0
         add hl,hl
         add hl,hl
@@ -91,6 +118,15 @@ ga_koi_ok:
         add a,high font_koi
         ld h,a
         ret
+ga_koi_mz:                      ; 40 columns: the letter in the style of the MZ (mz_koi)
+        ld a,l
+        add a,low mz_koi
+        ld l,a
+        ld a,0
+        adc a,high mz_koi
+        ld h,a
+        ld a,(hl)
+        jr ga_mz
 
 ; cga_cell_addr: D = row, E = column -> HL = VRAM address of the first line of the cell (in 40 columns a cell
 ; is 2 bytes). Changes A.

@@ -325,16 +325,30 @@ Autor byl stále pryč, rozhodoval jsem sám.
   a „Písmo 8×8 vlastní“):
   - PETSCII: písmo C64 (znaková ROM 901225-01, obě sady);
   - ATASCII: písmo Atari 400/800 (OS rev. B, v 800XL stejné), z něj i písmena Viewdata;
-  - ANSI ve 40 sloupcích: písmo Sharp MZ-700 (oblíbené autorem).
-- **Jsou v programu i v repu** (`fonts/c64.txt`, `atari.txt`, `mz700.txt`). Riziko autorských práv (Commodore,
-  Atari, Sharp) nese autor. ROM samotné v repu nejsou (`work/roms`, `docs/vyvoj.md`). Atari dalo autorům
-  PC Xformer svolení ROM šířit, u C64 a MZ-700 svolení nemáme.
+  - ANSI ve 40 sloupcích: písmo Sharp MZ (oblíbené autorem), nakonec z ROM MZ-800 (níže).
+- **Jsou v programu i v repu** (`fonts/c64.txt`, `atari.txt`, `mz800.txt`, `mz800cs.txt`). Riziko autorských práv
+  (Commodore, Atari, Sharp, autor českého CP/M) nese autor. ROM a CP/M samotné v repu nejsou (`work/roms`,
+  `docs/vyvoj.md`). Atari dalo autorům PC Xformer svolení ROM šířit, u ostatních svolení nemáme.
 - **Vlastní písma 8×8 končí.** Generátory po nich jsou v historii gitu (do commitu bcdd256).
-- **MZ-700 jen pro znaky 20h–7Fh** (96 glyfů, 768 B):
+- **MZ-800, ne MZ-700:** ROM `CGROM.ROM` od autora. Evropská ROM MZ-700 (MAME) se liší jen v A C D G 4 5 9
+  a čárce, MZ-800 je má užší a kulatější. Autor vybral MZ-800.
+- **Znaky ASCII 20h–7Fh** (96 glyfů):
   - ASCII 20h–5Dh podle převodní tabulky monitoru 1Z-013A, malá písmena jsou kódy obrazovky 81h–9Ah;
-  - ``^ ` { } ~`` a ⌂ (7Fh) MZ-700 nemá, jsou nakreslené v jeho stylu (tahy 1 bod, verzálky v řádcích 0–6);
-  - ostatní znaky CP437 (rámečky, bloky, písmena s diakritikou) i česká písmena KOI-8čs2 jsou ve 40 sloupcích dál
-    písmo 4×8 se zdvojenými body. Vedle tenkého písma MZ jsou tučnější.
+  - ``^ _ ` { | } ~`` jako je převádí české CP/M pro MZ-800 (BEh, BFh, A4h, BCh, 80h, 40h, A5h; `_` je
+    podtržení na úrovni řádku písmen, ne čára přes celou buňku);
+  - jen ⌂ (7Fh) MZ nemá, je nakreslený v jeho stylu.
+- **Znaky CP437, které MZ má** (20 glyfů z ROM): £ ä ö ü ß Ä Ö Ü ¥ π ♠ ♥ ♦ ♣ ● ○ ↑ ↓ ← →. Dělítko ÷ v ROM
+  není. Rámečky, bloky a ostatní znaky CP437 jsou ve 40 sloupcích dál písmo 4×8 se zdvojenými body, aby na sebe
+  navazovaly. `glyph_addr` je hledá v tabulce `mz_extra` (20 dvojic), rámečky a bloky B0h–DFh přeskočí hned.
+- **Česká a slovenská písmena jako v českém CP/M pro MZ-800 (Lamač):** jeho BIOS je s písmem ROM skládá ze dvou
+  řádků znaménka (u verzálky i s jejím horním řádkem) a řádků 2–7 základního písmene. Verzálky tak mají plnou
+  výšku a znaménko jeden řádek. `tools/romfont.py --cpm` tabulku znamének čte přímo z `BIOS.mac`.
+  - Opravené chyby CP/M: Ň měl v řádku 1 cikcak, ô měl místo stříšky vodorovnou čárku.
+  - ˇ ¬ ´ (DCh, DEh, E0h) CP/M nemá, jsou nakreslené ve stylu MZ.
+  - Vlastní písmo BIOSu CP/M (tučné ASCII) není písmo Sharp, nepoužívá se.
+  - Varianta s vlastními znaménky ve dvou řádcích a verzálkami na 5 řádků (jako písmo 4×8) byla čitelnější,
+    autor vybral podobu z CP/M.
 - **Viewdata:** £ je z písma C64, ½ ¼ ÷ zůstávají zdvojené z 4×8, ¾ ‖ ■ nakreslené.
-- **Paměť:** písma C64 a Atari mají stejnou velikost jako vlastní. MZ-700 přidalo 768 B: program má 32 184 B,
-  buffery a zásobník končí na B9AAh, do C000h zbývá 1,6 KB. Historie bez CGA-1V má 42 řádků.
+- **Paměť:** písma C64 a Atari mají stejnou velikost jako vlastní. MZ-800 přidalo 165 glyfů a tabulky (1,4 KB):
+  program má 32 840 B, buffery a zásobník končí na BCAAh, do C000h zbývá 853 B. Historie bez CGA-1V má 37
+  řádků.
