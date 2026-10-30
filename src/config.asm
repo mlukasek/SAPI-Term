@@ -7,9 +7,9 @@
 ; The file is text (CR LF, 1Ah at the end), lines "KEY=value", ";" starts a comment:
 ;   KEYBOARD=EKL-1 or CONSUL
 ;   SCREEN=CGA or AND             the card of the terminal when both are there
-;   BBS=name,host[:port][,set]    at most BOOK_MAX, in this order on the start screen; set = the character set
-;                                 of the BBS (charset.asm: CP437 when none, UTF-8, LATIN2, CP1250, CP852,
-;                                 KAMENICKY, KOI8)
+;   BBS=name,host[:port][,set]    at most BOOK_MAX, in this order on the start screen (no ',' in the name);
+;                                 set = the character set of the BBS (charset.asm: CP437 when none, UTF-8,
+;                                 LATIN2, CP1250, CP852, KAMENICKY, KOI8)
 ; Saving writes the file anew from the settings and the book (comments and unknown lines are not kept).
 
 BOOK_MAX        equ 16
@@ -592,8 +592,9 @@ cfs_failed:
 cfg_header:
         defb '; SAPI-Term: nastaveni a adresar BBS. Lezi vedle SAPITERM.COM, SAPI-Term ho prepisuje.',0Dh,0Ah
         defb '; KEYBOARD=EKL-1 nebo CONSUL, SCREEN=CGA nebo AND (terminal na karte),',0Dh,0Ah
-        defb '; BBS=jmeno,adresa[:port][,sada] (nejvys 16, poradi jako na uvodni obrazovce), sada znaku BBS:',0Dh,0Ah
-        defb ';   CP437 (bez udani), UTF-8, LATIN2, CP1250, CP852, KAMENICKY, KOI8.',0Dh,0Ah,0
+        defb '; BBS=jmeno,adresa[:port][,sada] (nejvys 16, poradi jako na uvodni obrazovce, jmeno bez carky),'
+        defb 0Dh,0Ah
+        defb ';   sada znaku BBS: CP437 (bez udani), UTF-8, LATIN2, CP1250, CP852, KAMENICKY, KOI8.',0Dh,0Ah,0
 
 ; put_str: the text at HL (00h at the end) to DE, HL stays on its 00h. Changes A, DE, HL.
 put_str:

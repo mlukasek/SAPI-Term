@@ -112,8 +112,13 @@ def main():
         check(scr[BOOK_ROW].startswith('Adres?? BBS v A:SAPITERM.CFG:'), 'the book from A:SAPITERM.CFG')
         check(byte(sym, 'book_n') == 13, 'the book has the 13 BBS of the default file')
         check(scr[BOOK_ROW + 1].startswith(' 1 Vertrauen'), 'entry 1: %r' % scr[BOOK_ROW + 1].rstrip())
-        check(scr[BOOK_ROW + 2].startswith(' 2 Liane'), 'entry 2: %r' % scr[BOOK_ROW + 2].rstrip())
+        check(scr[BOOK_ROW + 2].startswith(' 2 Liane (CZ Liberec)'), 'entry 2: %r' % scr[BOOK_ROW + 2].rstrip())
+        entry = emu.read(sym['book'] + sym['BOOK_ENTRY'], sym['BOOK_ENTRY'])
+        name, addr, rest = entry.split(b'\0', 2)
+        check(addr == b'bbs.vslib.cz' and rest[0] == 0, 'entry 2: address %r, set %d' % (addr, rest[0]))
         check(scr[BOOK_ROW + 5][40:].startswith('13 Clutch'), 'entry 13 in the second column')
+        mcp.call('run_for', ms=300)             # the colours go to the palette in the next VBI
+        mcp.call('pause')
         emu.screenshot(os.path.join(PREVIEW, 'f5_prompt.png'), display='CGA-1V')
 
         keys('-13\r', 300)                      # delete the last one
