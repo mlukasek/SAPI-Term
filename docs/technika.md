@@ -262,9 +262,12 @@ nenapodobí (`docs/rozhodnuti.md`).
 
 ## Historie (`src/history.asm`)
 
-- Kruh `hist_buf` (= `STACK_TOP`, A298h) až po D5FFh, `HIST_LINES` = 77 řádků po `HIST_REC` = 170 B.
+- Kruh: s CGA-1V její stránka B (C000h, `CGA_SIZE` / `HIST_REC` = 93 řádků, `hist_ring_on` / `hist_ring_off`
+  nastaví MAP_CGA a CONFIG D1), bez ní `hist_buf` (= `STACK_TOP`) až po D5FFh (`HIST_LINES`). `hist_init` při
+  startu nastaví `hist_vram`, `hist_base`, `hist_cap`. Záznam `HIST_REC` = 171 B se skládá a čte v `hv_line`.
   - `hist_head` je další zapisovaný řádek, `hist_count` počet řádků.
-  - Záznam řádku: 80 znaků, 80 atributů, 10 B bitů EXT_KOI (buňka 0 v bitu 0).
+  - Záznam řádku: 80 znaků, 80 atributů, 10 B bitů EXT_KOI (buňka 0 v bitu 0), 1 B příznaků písma (EXT_8X8,
+    EXT_ATA).
 - `scr_region_upk` při horní hranici 0 volá `hist_push_top` (řádky 0 až `rg_k` − 1). Během prohlížení
   (`hv_on`) ne.
 - `hist_view`:

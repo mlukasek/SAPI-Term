@@ -38,6 +38,7 @@ st_di:
         call kbd_init
         call detect
         call cfg_load           ; settings and the address book (DMA not at 0080h: the arguments stay)
+        call hist_init
         ld a,(has_cga)
         or a
         jr nz,st_cards
@@ -1439,7 +1440,9 @@ hist_count:     defb 0          ; lines in it
 hv_on:          defb 0          ; hist_view: shown (scrolled rows do not go to the history)
 hv_top:         defb 0          ; the line of the history on the top row
 hv_total:       defb 0
-hv_rec:         defw 0
+hist_vram:      defb 0          ; history: 1 = the ring is the page B of the CGA-1V
+hist_base:      defw 0          ; history: the first record of the ring
+hist_cap:       defb 0          ; history: rows in the ring
 hv_cur:         defw 0          ; the terminal as it was: cursor row and column, attribute, wrap, region
 hv_att:         defb 0
 hv_wrap:        defb 0
@@ -1479,9 +1482,11 @@ cfg_buf         equ book + BOOK_ENTRY*BOOK_MAX  ; CFG_BUF_SIZE: the text of SAPI
 xm_pkt          equ cfg_buf                     ; 1030: a block of XMODEM / YMODEM (no download while the file
                                                 ; is written, no file while a download runs)
 log_buf         equ cfg_buf + CFG_BUF_SIZE      ; 128: a record of the session log
-STACK_TOP       equ log_buf + 128 + 256
+hv_line         equ log_buf + 128               ; HIST_REC: a row of the history put together or read back
+STACK_TOP       equ hv_line + HIST_REC + 256
 BSS_END         equ STACK_TOP
-hist_buf        equ STACK_TOP                   ; the history up to D5FFh (C000h and on with MAP_CPM only)
+hist_buf        equ STACK_TOP                   ; the history without a CGA-1V, up to D5FFh (C000h and on
+                                                ; with MAP_CPM only)
 HIST_LINES      equ (0D600h - hist_buf) / HIST_REC
 
         end start

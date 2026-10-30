@@ -67,9 +67,10 @@ def history(sym, font):
     keys('\x1b', 6000)
     check(screen_matches(sym, model), 'Esc: the screen as it was')
     check((emu.read(sym['cur_row'], 1)[0], emu.read(sym['cur_col'], 1)[0]) == cur, 'Esc: the cursor where it was')
-    left = min(count, sym['HIST_LINES'] - 25)   # a full ring lent its oldest rows to the screen
+    cap = emu.read(sym['hist_cap'], 1)[0]
+    left = min(count, cap - 25)                 # a full ring lent its oldest rows to the screen
     check(emu.read(sym['hist_count'], 1)[0] == left, 'Esc: the history has %d rows (%d before, %d at most)'
-          % (left, count, sym['HIST_LINES']))
+          % (left, count, cap))
     path = os.path.join(PREVIEW, 'f7_after_history.png')
     want_rgb = ansiref.render(model, font)
     for _ in range(10):

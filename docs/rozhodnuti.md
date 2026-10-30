@@ -288,3 +288,6 @@ Autor byl stále pryč, rozhodoval jsem sám.
   jako IAC. U vyzkoušených BBS to nevadilo. Volba raw pro BBS může přijít později.
 - **Historie si u řádku pamatuje písmo** (bajt příznaků EXT_8X8 a EXT_ATA, záznam 171 B). Jinak by se řádky
   PETSCII a ATASCII v historii ukázaly písmem CP437.
+- **Historie ve stránce B CGA-1V:** terminál kreslí jen do stránky A, stránka B (16 000 B) byla volná. Kruh je tam
+  93 řádků a nezmenšuje se, když program roste. Přístup přes MAP_CGA a CONFIG D1 (procesor na stránce B), potom
+  zpět A. Záznam se skládá a čte v bufferu `hv_line` v RAM. Bez CGA-1V zůstává kruh v RAM za zásobníkem.

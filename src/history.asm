@@ -1,10 +1,54 @@
-; SAPI-Term - the history: the rows that scroll off the top of the screen, in a ring of HIST_LINES lines from
-; hist_buf (after the stack up to D5FFh; C000h-D5FFh with MAP_CPM is the TPA of CP/M under its CCP, which the
-; warm boot loads again). hist_view shows it on the terminal; the screen itself goes to the end of the ring
+; SAPI-Term - the history: the rows that scroll off the top of the screen, in a ring of hist_cap rows. With a
+; CGA-1V the ring is its page B, which is never shown (16000 bytes: 93 rows; the CPU reaches it with MAP_CGA
+; and CONFIG D1). Without one it is the RAM after the stack up to D5FFh (HIST_LINES rows; C000h-D5FFh with
+; MAP_CPM is the TPA of CP/M under its CCP, which the warm boot loads again). A row is put together and read
+; back in hv_line. hist_view shows the history on the terminal; the screen itself goes to the end of the ring
 ; meanwhile and comes back from it.
 
 HIST_REC        equ 2*SCR_COLS+SCR_COLS/8+1 ; a row: characters, attributes, the KOI bits, the flags of its font
                                             ; (EXT_8X8, EXT_ATA of any cell; 171 bytes)
+
+; hist_init: the ring in the page B of the CGA-1V when there is one, else in the RAM. Changes A, HL.
+hist_init:
+        ld a,(has_cga)
+        ld (hist_vram),a
+        or a
+        ld hl,hist_buf
+        ld a,HIST_LINES
+        jr z,hin_set
+        ld hl,CGA_VRAM
+        ld a,CGA_SIZE/HIST_REC
+hin_set:
+        ld (hist_base),hl
+        ld (hist_cap),a
+        ret
+
+; hist_ring_on: the ring reachable: MAP_CGA and the page B for the CPU, or MAP_CPM. hist_ring_off: the page A
+; for the CPU again, MAP_CPM. Change A.
+hist_ring_on:
+        ld a,(hist_vram)
+        or a
+        ld a,MAP_CPM
+        jr z,hro_map
+        ld a,MAP_CGA
+        out (MAPREG),a
+        ld a,(cga_cfg)
+        or CFG_CPU_B
+        ld (CGA_CFG),a
+        ret
+hro_map:
+        out (MAPREG),a
+        ret
+hist_ring_off:
+        ld a,(hist_vram)
+        or a
+        jr z,hrf_map
+        ld a,(cga_cfg)
+        ld (CGA_CFG),a
+hrf_map:
+        ld a,MAP_CPM
+        out (MAPREG),a
+        ret
 
 ; hist_push_top: rows 0 to rg_k - 1 leave the screen at its top: into the history (not while it is shown).
 ; Changes A.
@@ -38,11 +82,7 @@ hist_push:
         inc hl
         ld d,(hl)
         push de                 ; the offset of the row in the shadow
-        ld a,MAP_CPM            ; the ring reaches above C000h
-        out (MAPREG),a
-        ld a,(hist_head)
-        call hist_addr
-        ex de,hl                ; DE = the record
+        ld de,hv_line           ; the record put together in hv_line
         pop hl
         push hl
         ld bc,scr_chr
@@ -89,15 +129,24 @@ hpu_font:
         pop de
         ld a,c
         ld (de),a
+        ld a,(hist_head)        ; into the ring
+        call hist_addr
+        ex de,hl
+        ld hl,hv_line
+        ld bc,HIST_REC
+        call hist_ring_on
+        ldir
+        call hist_ring_off
+        ld hl,hist_cap
         ld a,(hist_head)
         inc a
-        cp HIST_LINES
+        cp (hl)
         jr c,hpu_head
         xor a
 hpu_head:
         ld (hist_head),a
         ld a,(hist_count)
-        cp HIST_LINES
+        cp (hl)
         ret nc
         inc a
         ld (hist_count),a
@@ -106,17 +155,19 @@ hpu_head:
 ; hist_line: HL = the record of line A of the history (0 = the oldest). Changes A, B, DE, HL.
 hist_line:
         ld b,a
+        ld a,(hist_cap)
+        ld d,a
         ld a,(hist_head)
         ld hl,hist_count
         sub (hl)
         jr nc,hli_first
-        add a,HIST_LINES
+        add a,d
 hli_first:
         add a,b
-        cp HIST_LINES
+        cp d
         jr c,hist_addr
-        sub HIST_LINES
-; hist_addr: HL = hist_buf + A * HIST_REC (171 = 128 + 32 + 8 + 2 + 1). Changes DE, HL.
+        sub d
+; hist_addr: HL = hist_base + A * HIST_REC (171 = 128 + 32 + 8 + 2 + 1). Changes DE, HL.
 hist_addr:
         push af
         call ha_170
@@ -144,7 +195,7 @@ ha_170:
         add hl,hl
         add hl,hl               ; 128a
         add hl,de               ; 170a
-        ld de,hist_buf
+        ld de,(hist_base)
         add hl,de
         ret
 
@@ -292,7 +343,8 @@ hv_exit:
         ld a,(hist_head)
         sub b
         jr nc,hve_head
-        add a,HIST_LINES
+        ld hl,hist_cap
+        add a,(hl)
 hve_head:
         ld (hist_head),a
         xor a
@@ -338,20 +390,24 @@ hva_row:
 ; colours keep their counts). Changes all.
 hv_row:
         push de
-        call hist_line
+        call hist_line          ; the record to hv_line
+        ld de,hv_line
+        ld bc,HIST_REC
+        call hist_ring_on
+        ldir
+        call hist_ring_off
         pop de
-        ld (hv_rec),hl
         ld e,0
 hvr_cell:
         push de
-        ld hl,(hv_rec)          ; MAP_CPM here (scr_set leaves it)
+        ld hl,hv_line
         ld a,e
         call add_hl_a
         ld b,(hl)               ; the character
         ld a,SCR_COLS
         call add_hl_a
         ld c,(hl)               ; the attribute
-        ld hl,(hv_rec)
+        ld hl,hv_line
         ld a,e
         rrca
         rrca
@@ -372,9 +428,7 @@ hvr_bit:
         jr hvr_bit
 hvr_got:
         and EXT_KOI
-        ld hl,(hv_rec)          ; and the font of the row
-        ld bc,HIST_REC-1
-        add hl,bc
+        ld hl,hv_line+HIST_REC-1        ; and the font of the row
         or (hl)
         pop bc
         call scr_set

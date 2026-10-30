@@ -130,7 +130,8 @@
       klávesy;
     - skutečné BBS: AMIS (Southern Amis) a Clacker Works, správně (`build/preview/f8_ata_*.png`).
   - **Výchozí adresář má 15 BBS:** přibyla Southern Amis (Atari) se sadou ATASCII.
-  - **Historie** má 53 řádků. Řádek si pamatuje i písmo (PETSCII, ATASCII), záznam má 171 B.
+  - **Historie** je ve stránce B videopaměti CGA-1V, kterou terminál nezobrazuje: 93 řádků. Bez CGA-1V je v RAM
+    (53 řádků). Řádek si pamatuje i písmo (PETSCII, ATASCII), záznam má 171 B.
 
 ## Plán (schválený 2026-10-30, rozhodnutí v `docs/rozhodnuti.md`)
 
@@ -167,8 +168,7 @@ dávkově s autorem.
   ukazuje stále.
 - **Znaková sada BBS Liane** (`bbs.vslib.cz`) není známá: úvodní obrazovka je v ASCII a hlubší pohled chce
   přihlášení (BBS nabízí veřejný účet `guest`). V adresáři je zatím CP437. Na BBS se dá vyzkoušet Z a uložit U.
-- **Paměť:** program má 29,8 KB a historie se tím zmenšuje (53 řádků). Víc místa by dalo čtení a zápis
-  `SAPITERM.CFG` po záznamech místo celého souboru v paměti (2,7 KB) nebo písma PETSCII a ATASCII nahrávaná
-  ze souboru až při potřebě.
+- **Paměť:** program má 29,8 KB. Historie bez CGA-1V (v RAM) se s každým dalším kódem zmenšuje, teď 53 řádků.
+  Víc místa by dalo čtení a zápis `SAPITERM.CFG` po záznamech (2,7 KB) nebo písma nahrávaná ze souboru.
 - **Aleco Experience BBS** (Praha, Atari, `bbs.alecoexp.cz`) 2026-10-30 spojení na port 23 odmítala, web běží.
   Zkusit později a případně přidat.
