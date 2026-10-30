@@ -46,7 +46,7 @@ class Term:
     def apply(self):
         fg, bg, bold, blink, rev, bghi = self.sgr
         f = A2C[fg & 7] | (8 if bold else 0)
-        b = A2C[bg & 7] | (8 if bghi or (self.ice and blink) else 0)
+        b = A2C[bg & 7] | (8 if bghi or blink else 0)  # bit 7: blink, or a bright background with iCE
         if rev:
             f, b = b, f
         self.cur_att = b << 4 | f
@@ -433,8 +433,9 @@ def run(data):
     return t
 
 
-def render(t, font_cp437):
-    """RGB bytes of 640x400 (a CGA dot = 2x2), like the emulator's screenshot of the CGA-1V."""
+def render(t, font_cp437, blink_on=True):
+    """RGB bytes of 640x400 (a CGA dot = 2x2), like the emulator's screenshot of the CGA-1V. Without iCE bit 7
+    of the attribute is blink: the background 0-7, the foreground hidden when not blink_on."""
     pal = [tuple((v << 2 | v >> 4) for v in c) for c in RGB6]
     out = bytearray(640 * 400 * 3)
     for r in range(ROWS):
@@ -442,6 +443,9 @@ def render(t, font_cp437):
             g = font_cp437[t.chr[r][c]]
             a = t.att[r][c]
             fg, bg = pal[a & 15], pal[a >> 4]
+            if not t.ice and a & 0x80:
+                bg = pal[a >> 4 & 7]
+                fg = fg if blink_on else bg
             for y in range(8):
                 for x in range(4):
                     col = fg if g[y][x] == '#' else bg

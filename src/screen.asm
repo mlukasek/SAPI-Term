@@ -1247,8 +1247,9 @@ cur_restart:
         ld (cur_ticks),a
         jr cur_show
 
-; cur_tick: one tick of 60 Hz: blink. Changes all.
+; cur_tick: one tick of 60 Hz: blink of the cursor and of the blinking text. Changes all.
 cur_tick:
+        call blink_tick
         ld a,(cur_ticks)
         inc a
         ld (cur_ticks),a

@@ -7,6 +7,7 @@
 ; The file is text (CR LF, 1Ah at the end), lines "KEY=value", ";" starts a comment:
 ;   KEYBOARD=EKL-1 or CONSUL
 ;   SCREEN=CGA or AND             the card of the terminal when both are there
+;   SPEED=MAX or 38400 ... 300    the speed of a modem shown (bytes to the terminal tick by tick)
 ;   BBS=name,host[:port][,set]    at most BOOK_MAX, in this order on the start screen (no ',' in the name);
 ;                                 set = the character set of the BBS (charset.asm: CP437 when none, UTF-8,
 ;                                 LATIN2, CP1250, CP852, KAMENICKY, KOI8)
@@ -131,6 +132,9 @@ cl_line:                        ; HL = the start of a line
         ld de,key_screen
         call match_key
         jr z,cl_screen
+        ld de,key_speed
+        call match_key
+        jr z,cl_speed
         ld de,key_bbs
         call match_key
         jr z,cl_bbs
@@ -160,6 +164,28 @@ cl_screen:
 cl_scr_set:
         ld (cfg_term),a
         jr cl_next
+cl_speed:
+        ld de,speed_names
+        ld b,0
+csp_try:
+        push de
+        call match_key
+        pop de
+        jr z,csp_found
+csp_next:
+        ld a,(de)
+        inc de
+        or a
+        jr nz,csp_next
+        inc b
+        ld a,b
+        cp SPEED_COUNT
+        jr c,csp_try
+        jp cl_next              ; unknown: as it was
+csp_found:
+        ld a,b
+        ld (speed),a
+        jp cl_next
 cl_bbs:                         ; the name up to ',', then the address up to a space or the end of the line
         ld a,(book_n)
         cp BOOK_MAX
@@ -243,6 +269,8 @@ key_screen:
         defb 'SCREEN=',0
 key_bbs:
         defb 'BBS=',0
+key_speed:
+        defb 'SPEED=',0
 val_ekl:
         defb 'EKL-1',0
 val_consul:
@@ -500,6 +528,14 @@ cfs_kbd:
 cfs_scr:
         call put_str
         call put_crlf
+        ld hl,key_speed
+        call put_str
+        push de
+        ld a,(speed)
+        call speed_name
+        pop de
+        call put_str
+        call put_crlf
         xor a
 cfs_entry:
         ld hl,book_n
@@ -592,6 +628,7 @@ cfs_failed:
 cfg_header:
         defb '; SAPI-Term: nastaveni a adresar BBS. Lezi vedle SAPITERM.COM, SAPI-Term ho prepisuje.',0Dh,0Ah
         defb '; KEYBOARD=EKL-1 nebo CONSUL, SCREEN=CGA nebo AND (terminal na karte),',0Dh,0Ah
+        defb '; SPEED=MAX nebo rychlost linky 38400, 19200, 9600, 4800, 2400, 1200, 300 (ANSI animace),',0Dh,0Ah
         defb '; BBS=jmeno,adresa[:port][,sada] (nejvys 16, poradi jako na uvodni obrazovce, jmeno bez carky),'
         defb 0Dh,0Ah
         defb ';   sada znaku BBS: CP437 (bez udani), UTF-8, LATIN2, CP1250, CP852, KAMENICKY, KOI8.',0Dh,0Ah,0

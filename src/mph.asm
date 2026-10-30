@@ -1,4 +1,5 @@
-; SAPI-Term - MPH-1V: the 82C54 counter 2 as a 60 Hz tick (F2 in STATUS), polled, no interrupt.
+; SAPI-Term - MPH-1V: the 82C54 counter 2 as a 60 Hz tick (F2 in STATUS), polled, no interrupt. Counter 0
+; runs freely (divisor 65536, around in 1.17 s) as the clock of the speed of the line (pace_elapsed).
 
 ; mph_detect: start counter 2 (mode 2, TICK_DIV, gate open, no interrupt) and check that it counts: two latched
 ; values must be at most TICK_DIV and differ (an empty bus reads 52h 52h = 5252h). A = 1 when the card is there.
@@ -30,6 +31,13 @@ md_delay:
         or a
         sbc hl,bc
         jr nc,md_none
+        ld a,T0_MODE2           ; counter 0: free running
+        out (MPH_CTL),a
+        xor a
+        out (MPH_T0),a
+        out (MPH_T0),a
+        ld a,IEN_G2+IEN_G0
+        out (MPH_IEN),a
         ld a,1
         ret
 md_none:
@@ -44,6 +52,16 @@ t2_read:
         in a,(MPH_T2)
         ld l,a
         in a,(MPH_T2)
+        ld h,a
+        ret
+
+; t0_read: HL = latched value of counter 0 (it counts down at 55930 Hz). Changes A.
+t0_read:
+        ld a,T0_LATCH
+        out (MPH_CTL),a
+        in a,(MPH_T0)
+        ld l,a
+        in a,(MPH_T0)
         ld h,a
         ret
 

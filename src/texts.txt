@@ -61,11 +61,14 @@ t_menu_quit K  konec programu (odpojí)
 t_menu_swap Tab  výměna obrazovek
 t_menu_kbd T  klávesnice: 
 t_menu_cs Z  znaková sada BBS: 
+t_menu_speed R  rychlost linky:
 t_menu_book U  uložit BBS (i se sadou) do adresáře
 t_menu_back Esc, Ctrl+]  zpět k BBS
 t_kbd_ekl EKL-1
 t_kbd_consul Consul 262.3
 t_bbs BBS: 
-t_okey1 Ctrl+]  menu: odpojit, konec, Tab, klávesnice, sada, adresář
+t_okey1 Ctrl+]  menu: odpojit, konec, Tab, klávesnice, sada, rychlost
 t_okey2 Klávesnice: 
-t_charset Znaková sada:  
+t_charset Znaková sada:
+t_speed Rychlost linky:
+t_speed_max bez omezení

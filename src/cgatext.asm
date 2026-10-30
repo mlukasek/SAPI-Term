@@ -676,6 +676,63 @@ pm_same:
         pop de
         ret
 
+; blink_tick: one tick of 60 Hz: every BLINK_TICKS the blinking text (bit 7 of the attribute without iCE) is
+; shown or hidden through the palette (pal_flush writes it). Changes all.
+blink_tick:
+        ld a,(ice_mode)
+        or a
+        ret nz
+        ld a,(term_dev)
+        cp DEV_CGA
+        ret nz
+        ld a,(blink_ticks)
+        inc a
+        ld (blink_ticks),a
+        cp BLINK_TICKS
+        ret c
+        xor a
+        ld (blink_ticks),a
+        ld a,(blink_on)
+        xor 1
+        ld (blink_on),a
+; blink_mark: every slot with bit 7 in its attribute must get its colours again. Changes all.
+blink_mark:
+        ld a,(has_cga)
+        or a
+        ret z
+        ld hl,slot_att
+        ld c,0
+bm_dom:
+        ld de,0
+        ld b,16
+bm_slot:                        ; bit n of DE = slot n has bit 7
+        srl d
+        rr e
+        ld a,(hl)
+        inc hl
+        and 80h
+        or d
+        ld d,a
+        djnz bm_slot
+        push hl
+        ld a,c
+        add a,a
+        ld hl,pal_dirty
+        call add_hl_a
+        ld a,(hl)
+        or e
+        ld (hl),a
+        inc hl
+        ld a,(hl)
+        or d
+        ld (hl),a
+        pop hl
+        inc c
+        ld a,c
+        cp DOMAINS
+        jr nz,bm_dom
+        ret
+
 ; pal_mark: slot A of the domain must get its colours in the palette. Changes A, HL.
 pal_mark:
         push bc
@@ -707,9 +764,10 @@ pmk_set:
         ret
 
 ; pal_flush: when some slots got new pairs, wait for the VBI (the keyboard is polled) and write their
-; colours to the palette of their domains, at most PAL_PER_VBI pairs in one VBI (a pair of a domain takes about
-; 460 T; the VBI is 4 ms, 8000 T at 2 MHz), then the next VBI. MAP_CGA. Changes A, BC, DE, HL.
-PAL_PER_VBI     equ 16
+; colours to the palette of their domains, at most PAL_PER_VBI pairs in one VBI (a pair with the keyboard poll
+; takes about 1000 T with the waits of the card; the VBI is 125 lines, 3.97 ms, 15900 T at 4 MHz; 16 pairs
+; were just too many after the blink test in pal_slot), then the next VBI. MAP_CGA. Changes A, BC, DE, HL.
+PAL_PER_VBI     equ 14
 pal_flush:
         ld hl,pal_dirty
         ld b,DOMAINS*2
@@ -771,7 +829,8 @@ pf_next:
         ret
 
 ; pal_slot: palette entries 32 * C + 2 * B (background) and + 1 (foreground) from the pair of slot B in
-; domain C. MAP_CGA. Changes A, DE, HL.
+; domain C. Bit 7 of the attribute without iCE is blink: the background is 0-7 and in the hidden phase of
+; blink_on the foreground is the background. MAP_CGA. Changes A, DE, HL.
 pal_slot:
         ld a,c
         add a,a
@@ -784,6 +843,27 @@ pal_slot:
         ld hl,slot_att
         add hl,de
         ld a,(hl)
+        bit 7,a
+        jr z,ps_pair
+        ld l,a
+        ld a,(ice_mode)
+        or a
+        ld a,l
+        jr nz,ps_pair
+        and 7Fh                 ; blink
+        ld l,a
+        ld a,(blink_on)
+        or a
+        ld a,l
+        jr nz,ps_pair
+        and 0F0h                ; hidden: the foreground as the background
+        ld l,a
+        rrca
+        rrca
+        rrca
+        rrca
+        or l
+ps_pair:
         push af
         rrca
         rrca

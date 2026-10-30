@@ -681,6 +681,7 @@ cp_33:
         ld a,c
         xor 1
         ld (ice_mode),a
+        call blink_mark         ; bit 7 means something else now
         jp sgr_apply
 
 ; csi_dsr: 6 = cursor position (ESC [ row ; column R), 5 = status (ESC [ 0 n).
@@ -920,12 +921,9 @@ sa_bg:
         ld a,(sgr_bg)
         call ansi_to_cga
         ld c,a
-        ld a,(sgr_bghi)
-        or a
+        ld a,(sgr_bghi)         ; bit 7 of the attribute: blink, or a bright background with iCE (as the
+        or a                    ; attribute byte of a PC; pal_slot shows it by ice_mode)
         jr nz,sa_bright
-        ld a,(ice_mode)
-        or a
-        jr z,sa_rev
         ld a,(sgr_blink)
         or a
         jr z,sa_rev

@@ -10,7 +10,8 @@ Keys of the menu:
   E echo (everything typed comes back, ! ends it), C position report test, D device attributes test,
   M the menu again, Q goodbye and close, X close at once;
   text in a character set (CHARSET_TEXT, the screen cleared first): U UTF-8 (with more Unicode), L Latin-2,
-  W CP1250, P CP852, K Kamenicky, O KOI-8cs2.
+  W CP1250, P CP852, K Kamenicky, O KOI-8cs2;
+  B blinking text (SGR 5 and 100-107 without iCE), I the same with iCE (bright backgrounds).
   python tools/testbbs.py [--port 6023] [--log build/testbbs.json]
 """
 import argparse
@@ -36,6 +37,16 @@ KOI = {'á': 0xC1, 'č': 0xC3, 'ď': 0xC4, 'ě': 0xC5, 'ŕ': 0xC6, 'ü': 0xC8, '
        'Ŕ': 0xE6, 'Ü': 0xE8, 'Í': 0xE9, 'Ů': 0xEA, 'Ĺ': 0xEB, 'Ľ': 0xEC, 'Ö': 0xED, 'Ň': 0xEE, 'Ó': 0xEF,
        'Ô': 0xF0, 'Ä': 0xF1, 'Ř': 0xF2, 'Š': 0xF3, 'Ť': 0xF4, 'Ú': 0xF5, 'É': 0xF7, 'À': 0xF8, 'Ý': 0xF9,
        'Ž': 0xFA}
+
+
+def blink_bytes(ice):
+    """The blink page: SGR 5 and the bright backgrounds 100-107, without iCE (they blink) or with it."""
+    b = b'\x1b[?33h' if ice else b'\x1b[?33l'
+    b += b'\x1b[0m\x1b[2J Normal text \x1b[5;33;44m blinking yellow on blue \x1b[0m and \x1b[1;5;37;41m bright white on red '
+    b += b'\x1b[0m\r\n\r\n \x1b[30;105m 105: bright magenta background \x1b[0m \x1b[32mgreen, not blinking\x1b[0m\r\n'
+    for i in range(8):
+        b += b'\x1b[5;%d;4%dm blink %d \x1b[0m' % (30 + (7 - i), i, i)
+    return b + b'\r\n'
 
 
 def charset_lines(key):
@@ -209,7 +220,12 @@ class Session:
                 self.send(bytes([b]))
             return None
         c = chr(b).upper()
-        if c in CHARSET_PAGES:
+        if c in 'BI':
+            data = blink_bytes(c == 'I')
+            self.send(data)
+            self.log['sent'].append({'page': 'BLINK' + (' ICE' if c == 'I' else ''), 'bytes': len(data)})
+            self.save()
+        elif c in CHARSET_PAGES:
             data = charset_bytes(c)
             self.send(data)
             self.log['sent'].append({'page': CHARSET_PAGES[c], 'bytes': len(data)})

@@ -48,6 +48,7 @@ STAT_VBI        equ 80h         ; STATUS D7: VBI request
 
 ; MPH-1V (base 50h): 82C54 with CLK0 = CLK2 = 55930.4 Hz, YM3812
 MPH_BASE        equ 50h
+MPH_T0          equ MPH_BASE+0  ; 82C54 counter 0
 MPH_T2          equ MPH_BASE+2  ; 82C54 counter 2
 MPH_CTL         equ MPH_BASE+3  ; write: 82C54 control word, read: STATUS (D7 = F2, set by the rising edge of OUT2)
 MPH_IEN         equ MPH_BASE+4  ; write: gates G0-G2 (D3-D5) and interrupt enables (D7 F2, D6 F1, D0 YM)
@@ -56,7 +57,10 @@ MPH_YM_ADR      equ MPH_BASE+6
 MPH_YM_DAT      equ MPH_BASE+7
 T2_MODE2        equ 0B4h        ; control word: counter 2, LSB then MSB, mode 2 (rate generator), binary
 T2_LATCH        equ 80h         ; control word: latch counter 2
+T0_MODE2        equ 34h         ; control word: counter 0, LSB then MSB, mode 2, binary
+T0_LATCH        equ 00h         ; control word: latch counter 0
 IEN_G2          equ 20h         ; IEN: gate of counter 2 open, no interrupt
+IEN_G0          equ 08h         ; IEN: gate of counter 0 open
 TICK_DIV        equ 932         ; 55930.4 Hz / 932 = 60.01 Hz
 
 ; DPI-1L Repository API (docs/technika.md, ..\SAPI_DPI-firmware\docs\unicard.md)

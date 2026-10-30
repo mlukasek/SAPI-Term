@@ -188,8 +188,9 @@ vf_open:
         call view_sauce
         ld hl,0
         ld (vf_rec),hl
-        ld a,1                  ; the input is buffered: jump scroll can look ahead
-        ld (js_enable),a
+        xor a
+        ld (vf_eof),a
+        call js_by_speed        ; the input is buffered: jump scroll can look ahead (at full speed)
 vf_fill:                        ; up to IN_RECORDS records into in_buf
         ld hl,in_buf
         ld (in_ptr),hl
@@ -217,6 +218,10 @@ vf_read:
         ld (vf_count),a
         jr nz,vf_read
 vf_feed:
+        ld a,(speed)
+        or a
+        jr nz,vf_paced
+vf_fast:
         ld hl,(in_ptr)
         ld de,(in_end)
         ld a,l
@@ -232,7 +237,35 @@ vf_byte:
         inc hl
         ld (in_ptr),hl
         call ansi_putc
-        jr vf_feed
+        jr vf_fast
+vf_paced:                       ; the speed of the line: the bytes in their time, a key stops the file
+        call vf_cut_eof
+        call pace_reset
+vp_tick:
+        ld hl,(in_ptr)
+        ld de,(in_end)
+        or a
+        sbc hl,de
+        jr z,vp_done
+        call kbd_get
+        jr c,vp_key
+        call pace_due
+        or a
+        jr z,vp_tick
+        call pace_feed
+        call pal_pending
+        call nz,scr_flush
+        jr vp_tick
+vp_key:
+        ld (last_key),a
+        cp K_MENU
+        jp z,quit
+        jr vf_end
+vp_done:
+        ld a,(vf_eof)
+        or a
+        jr nz,vf_end
+        ld de,(in_end)
 vf_more:
         ld hl,in_buf            ; nothing read: the end of the file
         or a
@@ -240,7 +273,7 @@ vf_more:
         jr z,vf_end
         call scr_flush
         call kbd_get
-        jr nc,vf_fill
+        jp nc,vf_fill
         ld (last_key),a
         cp K_MENU
         jp z,quit
@@ -250,6 +283,30 @@ vf_end:
         call scr_flush
         ld a,1                  ; shown
         ld (view_state),a
+        ret
+
+; vf_cut_eof: in_end at the first 1Ah from in_ptr (the end of the art, SAUCE follows), vf_eof = 1 then.
+; Changes A, DE, HL.
+vf_cut_eof:
+        ld hl,(in_ptr)
+        ld de,(in_end)
+vce_loop:
+        ld a,l
+        cp e
+        jr nz,vce_byte
+        ld a,h
+        cp d
+        ret z
+vce_byte:
+        ld a,(hl)
+        cp 1Ah
+        jr z,vce_found
+        inc hl
+        jr vce_loop
+vce_found:
+        ld (in_end),hl
+        ld a,1
+        ld (vf_eof),a
         ret
 
 ; read_record: record vf_rec of the file to DE (128 bytes). NZ when it cannot be read. Changes all.
@@ -849,6 +906,12 @@ sst_ice:
         ld hl,t_not_found
 sst_view:
         call stat_puts
+        ld de,13*256+0
+        ld hl,t_speed
+        call ss_text
+        ld de,13*256+23
+        call stat_at
+        call show_speed
 sst_pairs:
         ld de,11*256+0
         ld hl,t_pairs
@@ -898,12 +961,18 @@ sst_online:                     ; on line: the BBS, the keys
         call stat_at
         call show_cs
         ld de,14*256+0
+        ld hl,t_speed
+        call ss_text
+        ld de,14*256+23
+        call stat_at
+        call show_speed
+        ld de,15*256+0
         ld hl,t_keys
         call ss_text
-        ld de,15*256+2
+        ld de,16*256+2
         ld hl,t_okey1
         call ss_text
-        ld de,16*256+2
+        ld de,17*256+2
         ld hl,t_okey2
         call ss_text
         call show_kbd
@@ -1283,6 +1352,8 @@ sv_row:         defb 0          ; saved cursor (ESC 7, CSI s)
 sv_col:         defb 0
 sv_sgr:         defs SGR_SIZE
 ice_mode:       defb 0          ; blink = bright background
+blink_on:       defb 1          ; blinking text shown (blink_tick)
+blink_ticks:    defb 0
 reply_hook:     defw 0          ; where answers to the BBS go (0 = nowhere)
 ans_reply:      defs 20
 view_state:     defb 0          ; 0 being shown, 1 shown, 2 no such file
@@ -1339,6 +1410,10 @@ book_n:         defb 0          ; entries in the address book
 cs_type:        defb 0          ; character set of the BBS (CS_*)
 utf_need:       defb 0          ; UTF-8: continuation bytes still to come
 utf_cp:         defw 0          ; UTF-8: the character so far
+speed:          defb 0          ; speed of the line (index of speed_rates, 0 = no limit)
+pace_acc:       defw 0          ; the speed of the line: counts of time not used yet
+pace_t0:        defw 0          ; the MPH-1V counter 0 at the last pace_elapsed
+vf_eof:         defb 0          ; view_file: 1Ah in the buffer (in_end is there)
 cfg_fcb:        defs 36
 
 ; font and tables, page aligned

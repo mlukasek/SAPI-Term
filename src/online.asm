@@ -3,7 +3,8 @@
 ; ui_prompt asks for "host[:port]" (port 23 when none) or a number of the address book on the terminal. online
 ; resolves the name (DNSREQ), opens TCP, then runs: keys to the BBS (arrows and the like as ANSI sequences),
 ; received bytes through telnet into the input buffer and the ANSI terminal (jump scroll looks ahead in it).
-; Bytes 80h-FFh go through the character set of the BBS (charset.asm). Ctrl+] opens the menu on the status
+; Bytes 80h-FFh go through the character set of the BBS (charset.asm). The speed of a modem (menu R) lets
+; the bytes to the terminal at that speed, as ANSI animations expect. Ctrl+] opens the menu on the status
 ; card: disconnect, quit, swap the cards, keyboard type, character set, into the book. The connection ends when
 ; the BBS closes it.
 
@@ -378,8 +379,7 @@ ol_open:
         ld hl,in_buf
         ld (in_ptr),hl
         ld (in_end),hl
-        ld a,1
-        ld (js_enable),a
+        call js_by_speed
         ld hl,t_connected
         call ol_say
         call ansi_reset
@@ -396,12 +396,36 @@ ol_loop:
         call key_send
 ol_net:
         call tx_flush
+        ld a,(speed)
+        or a
+        jr nz,ol_slow
         call net_rx
         jr z,ol_quiet
         call cur_hide
         call feed_input
         call pal_pending        ; new colours of this block to the palette (in the next VBI)
         call nz,scr_flush
+        xor a
+        ld (ol_idle),a
+        jp ol_loop
+ol_slow:                        ; the speed of a modem: the received bytes go to the terminal in their time
+        ld hl,(in_ptr)
+        ld de,(in_end)
+        or a
+        sbc hl,de
+        jr nz,ol_pace
+        call net_rx             ; all shown: the next ones
+        jr z,ol_quiet
+        call pace_reset         ; the time of the line starts with the data
+ol_pace:
+        call pace_due
+        or a
+        jp z,ol_loop
+        call cur_hide
+        call pace_feed
+        call pal_pending
+        call nz,scr_flush
+        call cur_show
         xor a
         ld (ol_idle),a
         jp ol_loop
@@ -421,12 +445,12 @@ ol_quiet:
         ld (ol_idle),a
         call net_status         ; still connected?
         cp TCP_CONNECTED
-        jr z,ol_loop
+        jp z,ol_loop
         cp TCP_CLOSED
         jr nz,ol_closed
         ld a,h                  ; closed by the BBS: read what is left first
         or l
-        jr nz,ol_loop
+        jp nz,ol_loop
 ol_closed:
         ld hl,t_closed
 ol_end:
@@ -473,23 +497,27 @@ om_show:
         call ss_text
         call show_cs
         ld de,7*256+2
+        ld hl,t_menu_speed
+        call ss_text
+        call show_speed
+        ld de,8*256+2
         ld hl,t_menu_book
         call ss_text
-        ld de,8*256+2
+        ld de,9*256+2
         ld hl,t_menu_back
         call ss_text
         ld hl,(om_msg)          ; what the last choice did
         ld a,h
         or l
         jr z,om_key
-        ld de,10*256+0
+        ld de,11*256+0
         call ss_text
 om_key:
         call kbd_get
         jr nc,om_key
         and 0DFh                ; letters as capitals
         cp 'O'
-        jr z,ol_user_end
+        jp z,ol_user_end
         cp 'K'
         jp z,quit
         cp 'T'
@@ -498,6 +526,8 @@ om_key:
         jr z,om_book
         cp 'Z'
         jr z,om_cs
+        cp 'R'
+        jr z,om_speed
         cp 09h                  ; Tab (09h stays 09h)
         jr z,om_swap
         cp 1Bh
@@ -527,6 +557,18 @@ om_book:                        ; this BBS and its set into the book (its host a
         jp om_show
 om_said:
         ld (om_msg),hl
+        jp om_show
+om_speed:                       ; the next speed (slower), kept in the file
+        ld a,(speed)
+        inc a
+        cp SPEED_COUNT
+        jr c,om_speed_set
+        xor a
+om_speed_set:
+        ld (speed),a
+        call js_by_speed
+        call pace_reset
+        call cfg_save_msg
         jp om_show
 om_cs:                          ; the next character set (U keeps it for the BBS)
         ld a,(cs_type)
@@ -558,6 +600,30 @@ show_kbd:
         ld hl,t_kbd_consul
 sk_put:
         jp stat_puts
+
+; show_speed: the speed of the line after the menu line. Changes all.
+show_speed:
+        ld a,(speed)
+        or a
+        ld hl,t_speed_max
+        jp z,stat_puts
+        call speed_name
+        call stat_puts
+        ld hl,txt_bd
+        jp stat_puts
+txt_bd:
+        defb ' Bd',0
+
+; js_by_speed: jump scroll on line only at full speed (a modem shows line by line). Changes A.
+js_by_speed:
+        ld a,(speed)
+        or a
+        ld a,1
+        jr z,jbs_set
+        xor a
+jbs_set:
+        ld (js_enable),a
+        ret
 
 ; show_cs: the character set of the BBS after the menu line. Changes all.
 show_cs:
@@ -693,6 +759,128 @@ fi_byte:
         ld (in_ptr),hl
         call ansi_putc
         jr feed_input
+
+; The speed of the line: pace_acc counts the time (in counts of 55930 Hz, the MPH-1V counter 0, without it
+; 932 a tick) a byte is due after speed_counts of it; the terminal gets the bytes in their time and catches up
+; after a slow operation (a scroll), as from a modem.
+SPEED_COUNT     equ 8
+PACE_MAX        equ 64              ; bytes at most in one pace_feed (the keyboard and the network go on)
+
+; pace_reset: the time of the line starts now. Changes A, HL.
+pace_reset:
+        ld hl,0
+        ld (pace_acc),hl
+        ld a,(has_mph)
+        or a
+        ret z
+        call t0_read
+        ld (pace_t0),hl
+        ret
+
+; pace_elapsed: HL = counts of 55930 Hz since the last call: the MPH-1V counter 0 (it counts down), else a tick
+; (tick_poll) = TICK_DIV. Changes A, DE, HL.
+pace_elapsed:
+        ld a,(has_mph)
+        or a
+        jr z,pe_tick
+        call t0_read
+        ld de,(pace_t0)
+        ld (pace_t0),hl
+        ex de,hl
+        or a
+        sbc hl,de
+        ret
+pe_tick:
+        call tick_poll
+        ld hl,0
+        ret z
+        ld hl,TICK_DIV
+        ret
+
+; pace_due: the time since the last call to pace_acc; A = 1 when a byte is due, else 0. Changes A, DE, HL.
+pace_due:
+        call pace_elapsed
+        ld de,(pace_acc)
+        add hl,de
+        jr nc,pd_acc
+        ld hl,0FFFFh
+pd_acc:
+        ld (pace_acc),hl
+        call pace_cpb
+        or a
+        sbc hl,de
+        ld a,0
+        ret c
+        inc a
+        ret
+
+; pace_cpb: DE = counts a byte at the speed. Changes A, DE, HL.
+pace_cpb:
+        ld a,(speed)
+        add a,a
+        ld hl,speed_counts
+        call add_hl_a
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        ld hl,(pace_acc)
+        ret
+
+; pace_feed: the bytes that are due (at most PACE_MAX) from in_ptr through the terminal. When the buffer is
+; empty the time left is dropped (a modem does not send faster later). Changes all.
+pace_feed:
+        ld b,PACE_MAX
+pc_byte:
+        push bc
+        call pace_cpb
+        or a
+        sbc hl,de
+        jr c,pc_done            ; its time has not come
+        ld (pace_acc),hl
+        ld hl,(in_ptr)
+        ld de,(in_end)
+        ld a,l
+        cp e
+        jr nz,pc_one
+        ld a,h
+        cp d
+        jr nz,pc_one
+        ld hl,0
+        ld (pace_acc),hl
+        jr pc_done
+pc_one:
+        ld a,(hl)
+        inc hl
+        ld (in_ptr),hl
+        call ansi_putc
+        pop bc
+        djnz pc_byte
+        ret
+pc_done:
+        pop bc
+        ret
+
+; speed_name: HL = the name of speed A (as in SAPITERM.CFG, 00h at the end). Changes A, HL.
+speed_name:
+        ld hl,speed_names
+sn_next:
+        or a
+        ret z
+        push af
+sn_end:
+        ld a,(hl)
+        inc hl
+        or a
+        jr nz,sn_end
+        pop af
+        dec a
+        jr sn_next
+
+; speeds of the line: counts of 55930 Hz a byte (10 bits a byte); MAX is not paced
+speed_counts:
+        defw 0, 15, 29, 58, 117, 233, 466, 1864
+speed_names:
+        defb 'MAX',0, '38400',0, '19200',0, '9600',0, '4800',0, '2400',0, '1200',0, '300',0
 
 ; key_send: key A to the BBS. Cursor keys and the like as ANSI sequences: EKL-1 sends them as WordStar codes
 ; (05 18 13 04, Home 1E, End 11, PgUp 12, Ins 16, Del 0B), the Consul 262.3 as C1-C4, Home 8D, keypad B0-B9
