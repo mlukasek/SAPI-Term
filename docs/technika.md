@@ -120,6 +120,8 @@ nenapodobí (`docs/rozhodnuti.md`).
 
 ## MPH-1V (báze 50h)
 
+- Čítač 0 běží od detekce volně (režim 2, dělitel 0 = 65536, hradlo G0, IEN = 28h) jako hodiny rychlosti linky.
+
 - 82C54: CLK0 = CLK2 = 55 930,4 Hz.
 - SAPI-Term spustí čítač 2 v režimu 2 s dělitelem 932 (60,01 Hz), hradlo G2 v IEN = 20h, bez přerušení.
 - Tik: STATUS (53h) D7 = F2, nuluje se `OUT 55h,80h`.
@@ -208,7 +210,7 @@ nenapodobí (`docs/rozhodnuti.md`).
 - **Režimy (`mode`):** 0 místní (testovací obrazovka, psací stroj), 1 soubor, 2 na lince. Podle nich vypadá stavová
   obrazovka.
 - **Menu Ctrl+] (`ol_menu`):** O odpojit, K konec, Tab výměna karet (a NAWS), T typ klávesnice, Z znaková sada,
-  U do adresáře, Esc zpět. Co volba udělala, ukáže řádek 10 (`om_msg`).
+  R rychlost linky, S 80/40 sloupců, U do adresáře, Esc zpět. Co volba udělala, ukáže řádek 12 (`om_msg`).
 
 ## Nastavení a adresář (`src/config.asm`)
 
@@ -226,6 +228,24 @@ nenapodobí (`docs/rozhodnuti.md`).
   1. text do `cfg_buf`, za ním 1Ah až do konce záznamu;
   2. B_DELETE, B_MAKE, B_WRITESEQ po 128 B, B_CLOSE.
   - A = 0 uloženo, jinak plný adresář nebo disk. Hlášení dá `cfg_save_msg` do `ui_msg` a `om_msg`.
+
+## Rychlost linky a blikání
+
+- **Rychlost:** `speed` (index do `speed_counts`, počet taktů 55 930 Hz na bajt; 0 = bez omezení).
+  - `pace_reset` (začátek dat), `pace_due` (přičte uplynulý čas k `pace_acc`, A = 1, když je bajt na řadě),
+    `pace_feed` (pošle splatné bajty, nejvýš 64);
+  - `pace_elapsed`: čítač 0 MPH-1V (`t0_read`, počítá dolů, rozdíl modulo 65536), bez MPH-1V tik = 932.
+  - Online smyčka (`ol_slow`) a prohlížeč (`vf_paced`, konec umění u 1Ah najde `vf_cut_eof`).
+- **Blikání:** `blink_on`, `blink_ticks`. `pal_slot` u atributu s bitem 7 bez iCE vezme pozadí `& 7` a ve
+  skryté fázi popředí = pozadí.
+
+## 40 sloupců na CGA-1V
+
+- `cols40` (nastavení) a `cga_wide` (teď platí). `term_size` je nastaví podle karty a režimu, `term_resize` pak
+  posune kurzor a překreslí.
+- `cga_cell_addr` násobí sloupec 2, `cga_draw_wide` kreslí 2 bajty na řádek glyfu (`wide_l`, `wide_r` podle
+  bajtu glyfu). `cga_clip` ořeže rozsah buněk na sloupce 0–39 a přepočte ho na bajty (vyplnění, oprava slotů),
+  `cga_move_cells` totéž pro posun.
 
 ## Znakové sady (`src/charset.asm`)
 

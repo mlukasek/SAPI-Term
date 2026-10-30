@@ -50,6 +50,8 @@
 | `phase3.py [JMÉNO...]` | fáze 3: každý testovací soubor `SAPITERM JMÉNO.ANS`, stínová obrazovka a kurzor proti `tools/ansiref.py`, snímek CGA-1V proti modelu vykreslenému fontem (bod po bodu), žádný zápis palety mimo VBI; snímky `build/preview/f3_*.png` |
 | `phase4.py` | fáze 4: spustí `tools/testbbs.py` (127.0.0.1:6023), `SAPITERM 127.0.0.1:6023`; vyjednání telnetu, tři stránky po síti proti modelu (stín i obraz), CPR a DA, odeslané klávesy, NAWS po Tab, konec spojení od BBS, odmítnutý port, neznámé jméno |
 | `phase5.py` | fáze 5: výchozí `SAPITERM.CFG`, adresář na úvodní obrazovce, mazání, chybné číslo; na testovací BBS všech šest znakových sad (stránka glyf po glyfu proti `tools/tables.py`, odeslaná „čŘ“), U, T; výběr číslem se sadou z adresáře, Tab na výzvě; `TYPE SAPITERM.CFG` po návratu; `SAPITERM 13` s AND-1V a Consulem ze souboru |
+| `phase6.py` | fáze 6: blikání (obraz v obou fázích proti modelu), iCE bez blikání, 40 sloupců (stín proti modelu 40×25, obraz proti zdvojenému písmu, NAWS), rychlost 2400 Bd na BBS a v prohlížeči, `SPEED=` v souboru |
+| `profile.py "PŘÍKAZ"` | statistický profil: PC každou emulovanou milisekundu, počty podle návěští z `.sym` |
 | `realbbs.py [ČÍSLO\|ADRESA…]` | skutečné BBS z adresáře nebo podle adresy: připojení, úvodní obrazovka (text a snímek `build/preview/bbs_*.png`), vyjednané volby telnetu, odpojení; bez přihlášení a bez kláves; čeká ve skutečném čase |
 | `emu.py` | společné: sestava, kontrolní bod CP/M, příkaz CP/M, čtení paměti, symboly, snímek obrazovky |
 | `sapimcp.py` | klient MCP (`python tools\emu\sapimcp.py NÁSTROJ "{json}"`) |
@@ -90,6 +92,9 @@
   skript do scratchpadu a spustit ho. Pozor také na `\r` v heredocu: do souboru se dostal skutečný znak CR.
 - **Windows a soubor, který jiný proces čte:** `os.replace` na něj hlásí „Access is denied“. `tools/testbbs.py` to
   zkouší znovu, test čte přes `with open`.
+- **Konzole ECMONu stránkuje:** když výstup zaplní obrazovku AND-1V, čeká na klávesu. `TYPE` delšího souboru
+  tak skončí bez `A>` a první znak dalšího příkazu se spotřebuje (příkaz pak chybí první písmeno).
+  `emu.command_lines` po 1 s beze změny stiskne Enter a sebere všechny řádky, které konzolí proběhly.
 - **Sestava `.sapi` je JSON:** uvozovky v textu popisu ho rozbijí („syntax error in machine file“).
 - **Escape sekvence ve skriptu v heredocu:** `'\x1b'` uvnitř `'''...'''` v Pythonu z heredocu se do souboru
   zapíše jako skutečný znak ESC (a `\r\n` jako konec řádku). Úpravy s escape sekvencemi dělat nástrojem Edit

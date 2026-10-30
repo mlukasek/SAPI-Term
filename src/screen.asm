@@ -18,21 +18,73 @@ BLINK_TICKS     equ 20              ; cursor on / off every 1/3 s
 ; cur_att. Changes all.
 scr_init:
         ld (term_dev),a
-        cp DEV_CGA
-        ld a,SCR_COLS
-        ld b,SCR_ROWS
-        jr z,si_size
-        ld a,AND_COLS
-        ld b,AND_ROWS
-si_size:
-        ld (term_cols),a
-        ld a,b
-        ld (term_rows),a
+        call term_size
         xor a
         ld (cur_vis),a
         ld (view_x),a
         ld (view_y),a
         jp scr_cls
+
+; term_size: term_cols, term_rows and cga_wide for the terminal card: the AND-1V 64x20, the CGA-1V 80x25, or
+; 40x25 on line with cols40 (COLUMNS=40). Changes A, B.
+term_size:
+        xor a
+        ld (cga_wide),a
+        ld a,(term_dev)
+        cp DEV_CGA
+        ld a,AND_COLS
+        ld b,AND_ROWS
+        jr nz,tsz_set
+        ld b,SCR_ROWS
+        ld a,(mode)
+        cp MODE_ONLINE
+        ld a,SCR_COLS
+        jr nz,tsz_set
+        ld a,(cols40)
+        ld (cga_wide),a
+        or a
+        ld a,SCR_COLS
+        jr z,tsz_set
+        ld a,SCR_COLS/2
+tsz_set:
+        ld (term_cols),a
+        ld a,b
+        ld (term_rows),a
+        ret
+
+; term_resize: after a change of term_size: the cursor into the screen, the screen drawn again from the shadow
+; (a smaller screen keeps the rows up to the cursor, like a resized terminal on a PC), the status screen.
+; Changes all.
+term_resize:
+        call term_size
+        ld a,(term_rows)
+        ld b,a
+        ld a,(cur_row)
+        cp b
+        jr c,trs_col
+        sub b
+        inc a
+        push bc
+        call scr_shift
+        pop bc
+        ld a,b
+        dec a
+        ld (cur_row),a
+trs_col:
+        ld a,(term_cols)
+        ld b,a
+        ld a,(cur_col)
+        cp b
+        jr c,trs_draw
+        ld a,b
+        dec a
+        ld (cur_col),a
+trs_draw:
+        xor a
+        ld (wrap_pend),a
+        call scr_reset_region
+        call scr_redraw
+        jp stat_screen
 
 ; scr_reset_region: the scroll region is the whole screen. Changes A.
 scr_reset_region:

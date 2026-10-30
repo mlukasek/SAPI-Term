@@ -54,6 +54,27 @@
     - adresář, mazání, uložení z menu, výběr číslem, Tab, obsah souboru po návratu (`TYPE`);
     - všech šest sad glyf po glyfu proti modelu v `tools/tables.py`, odeslaná písmena „čŘ“ v každé sadě.
     - Fáze 2 až 4 procházejí dál, i na sestavě s Consulem.
+- **Fáze 6 hotová:** `SAPITERM.COM` 0.5 (21,8 KB), ANSI art a animace.
+  - **Rychlost linky** (menu R, `SPEED=`): bez omezení, 38400, 19200, 9600, 4800, 2400, 1200 a 300 Bd.
+    - Bajty jdou do terminálu ve svém čase, na BBS i v prohlížeči `.ANS`, takže ANSI animace běží, jak mají.
+    - Čas měří volně běžící čítač 0 na MPH-1V (bez ní tiky 60 Hz). Co terminál nestihne (rolování), dožene.
+    - Ověřeno: MENU při 2400 Bd za 4,96 s místo 4,70 s, rozdíl je režie testu.
+  - **Blikání** (SGR 5 bez iCE) paletou každou 1/3 s. S iCE je to jasné pozadí jako dřív. Jasná pozadí
+    100–107 bez iCE blikají, stejně jako v textovém režimu PC.
+  - **40×25 na CGA-1V** (menu S, `COLUMNS=40`, jen na BBS):
+    - písmo 4×8 se zdvojenými body (8×8), NAWS 40×25;
+    - úvodní obrazovka a prohlížeč zůstávají 80×25.
+  - **Rychlejší kreslení** podle profilu (`tools/emu/profile.py`):
+    - rozskok CSI tabulkou;
+    - uvolnění dvojice barev bez procházení 256 atributů;
+    - buňka se stejným atributem bez přepočtu dvojic;
+    - rozvinuté kreslení glyfu.
+    - Výsledek: SUNSET 3,6 → 3,0 s, SCROLL 4,8 → 4,2 s, MENU a ANSITEST 1,8 → 1,2 s.
+  - **Ověřeno** skriptem `tools/emu/phase6.py`:
+    - blikání v obou fázích a iCE bez blikání (obraz proti modelu);
+    - 40 sloupců (stín proti modelu 40×25, obraz proti zdvojenému písmu, NAWS);
+    - rychlost 2400 Bd na BBS a v prohlížeči, `SPEED=2400` v souboru.
+    - Fáze 2 až 5 procházejí dál.
 
 ## Plán (schválený 2026-10-30, rozhodnutí v `docs/rozhodnuti.md`)
 
@@ -64,17 +85,14 @@
 4. ~~Síť: DNS, TCP, telnet, zadání adresy, menu, `tools/testbbs.py`~~
 5. ~~Skutečné BBS: ověřený seznam, adresář a nastavení v `SAPITERM.CFG` vedle `SAPITERM.COM`, znakové sady
    (UTF-8, Latin-2, CP1250, CP852, Kamenický, KOI-8čs) a čeština z EKL-1~~
-6. **ANSI art a animace:**
-   - rychlost modemu, blikání (SGR 5 bez iCE), režim 40×25 8×8;
-   - rychlejší kreslení znaků (teď asi 1 ms na znak s pomocnými operacemi).
+6. ~~ANSI art a animace: rychlost modemu, blikání, 40×25 (písmo 4×8 zdvojené), rychlejší kreslení~~
 7. **Historie a záznam relace**, stahování XMODEM/YMODEM (SD karta nebo A:).
 8. **PETSCII, ATASCII, Viewdata** (40 sloupců, vlastní fonty, případně overlay).
 9. **Skutečný HW** dávkově s autorem.
 
 ## Další krok
 
-Fáze 6: ANSI art a animace. Rychlost modemu (animace ANSI počítají s pomalou linkou), blikání (SGR 5 bez iCE),
-režim 40×25 s fontem 8×8 a rychlejší kreslení znaků.
+Fáze 7: historie a záznam relace, stahování souborů XMODEM/YMODEM (na SD kartu DPI-1L nebo na disk CP/M).
 
 ## Otevřené drobnosti
 
@@ -87,7 +105,9 @@ režim 40×25 s fontem 8×8 a rychlejší kreslení znaků.
   EKL-1 (autorova) drží znak do potvrzení, jí se to netýká.
 - **Velká písmena s diakritikou** mají ve fontu 4×8 výšku malých písmen (`docs/rozhodnuti.md`). Autor je viděl
   a souhlasí (2026-10-30).
-- **BEL** zatím nepípá, blikání (SGR 5 bez iCE) se neukazuje.
+- **BEL** zatím nepípá (MPH-1V má YM3812, přijde s historií nebo dřív).
+- **Blikání a kurzor stojí, když běží data:** tiky pro blikání se počítají jen v klidu. Při pomalé lince se kurzor
+  ukazuje stále.
 - **Znaková sada BBS Liane** (`bbs.vslib.cz`) není známá: úvodní obrazovka je v ASCII a hlubší pohled chce
   přihlášení (BBS nabízí veřejný účet `guest`). V adresáři je zatím CP437. Na BBS se dá vyzkoušet Z a uložit U.
 - **Aleco Experience BBS** (Praha, Atari, `bbs.alecoexp.cz`) 2026-10-30 spojení na port 23 odmítala, web běží.

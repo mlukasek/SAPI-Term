@@ -1,9 +1,10 @@
-"""Phase 6 check: blinking text and the speed of the line.
+"""Phase 6 check: blinking text, 40 columns and the speed of the line.
 
 With the local test BBS (tools/testbbs.py, started here): the blink page without iCE (SGR 5, backgrounds
 100-107) on the shadow screen as the model says, the CGA-1V picture seen in both phases of the blink (each equal
 to the model drawn with the text shown or hidden); with iCE the same page has bright backgrounds and does not
-blink. Menu R to 2400 Bd: the MENU page takes its time at 240 bytes a second and ends equal to the model. Back
+blink. Menu S: 40 columns on the CGA-1V (NAWS 40x25, the MENU page equal to a model of 40 columns, the picture
+in the font 4x8 with its dots doubled), S again 80. Menu R to 2400 Bd: the MENU page takes its time at 240 bytes a second and ends equal to the model. Back
 in CP/M "SAPITERM MENU.ANS" shows the file at the same speed (SPEED=2400 in SAPITERM.CFG). Needs the emulator
 with MCP (tools/emu/sapiemu.cmd) and build.cmd. Screenshots to build/preview/f6_*.png.
   python tools/emu/phase6.py
@@ -76,6 +77,66 @@ def blink(sym, font):
     check(diffs[1:] == [0] * 9, 'iCE: bright backgrounds, no blinking (dots differing: %s)' % diffs)
 
 
+def render40(t, font):
+    """RGB of 640x400 for a model of 40 columns: each dot of the font 4x8 doubled (a cell is 8x8 CGA dots)."""
+    pal = [tuple((v << 2 | v >> 4) for v in c) for c in ansiref.RGB6]
+    out = bytearray(640 * 400 * 3)
+    for r in range(25):
+        for c in range(40):
+            g = font[t.chr[r][c]]
+            a = t.att[r][c]
+            fg, bg = pal[a & 15], pal[a >> 4]
+            for y in range(8):
+                for x in range(8):
+                    col = fg if g[y][x // 2] == '#' else bg
+                    for dy in range(2):
+                        p = ((r * 8 + y) * 2 + dy) * 640 + (c * 8 + x) * 2
+                        out[p * 3:p * 3 + 6] = bytes(col) * 2
+    return bytes(out)
+
+
+def wide40(sym, font):
+    """Menu S: 40 columns on the CGA-1V, the MENU page as a terminal of 40x25, back to 80."""
+    keys('\x1d', 500)
+    keys('s', 3000)
+    check(emu.read(sym['cga_wide'], 1)[0] == 1 and emu.read(sym['term_cols'], 1)[0] == 40, 'S: 40 columns')
+    check(run_until(lambda: log().get('naws', [])[-1:] == [[40, 25]], ms=5000), 'S: NAWS 40x25')
+    keys('\x1b', 1000)
+    check('CGA-1V, 40x25' in mcp.call('screen_text'), 'the status card: CGA-1V, 40x25')
+    ansiref.COLS = 40
+    try:
+        model = ansiref.Term()
+        model.feed(testbbs.page_bytes('3'))
+    finally:
+        ansiref.COLS = 80
+    keys('3', 100)
+    ok = run_until(lambda: all(r[0][:40] == m and r[1][:40] == a
+                               for r, m, a in zip(shadow(sym), model.chr, model.att)), ms=10000)
+    check(ok, 'MENU in 40 columns: shadow equals the model of 40x25')
+    want0 = render40(model, font)
+    path = os.path.join(PREVIEW, 'f6_menu_40.png')
+    for _ in range(10):
+        mcp.call('run_for', ms=200)
+        mcp.call('pause')
+        emu.screenshot(path, display='CGA-1V')
+        w, h, got = ansiref.png_rgb(path)
+        want, got = bytearray(want0), bytearray(got)
+        cur = (emu.read(sym['cur_row'], 1)[0], emu.read(sym['cur_col'], 1)[0])
+        for y in range(16):
+            for x in range(16):
+                p = ((cur[0] * 16 + y) * 640 + cur[1] * 16 + x) * 3
+                want[p:p + 3] = got[p:p + 3]
+        diff = sum(1 for i in range(0, len(want), 3) if want[i:i + 3] != got[i:i + 3])
+        if diff == 0:
+            break
+    check(diff == 0, 'MENU in 40 columns: CGA-1V picture equals the doubled font (%d dots differ)' % diff)
+    keys('\x1d', 500)
+    keys('s', 3000)
+    check(emu.read(sym['cga_wide'], 1)[0] == 0 and emu.read(sym['term_cols'], 1)[0] == 80, 'S again: 80 columns')
+    check(run_until(lambda: log().get('naws', [])[-1:] == [[80, 25]], ms=5000), 'S again: NAWS 80x25')
+    keys('\x1b', 1000)
+
+
 def timed_page(sym, key, model):
     """Emulated seconds until the shadow equals the model after key."""
     c0 = mcp.call('machine_info')['cycles']
@@ -100,6 +161,7 @@ def main():
         mcp.call('type_text', text='SAPITERM 127.0.0.1:%d\r' % PORT)
         check(run_until(lambda: log().get('menu', 0) >= 1, ms=15000), 'connected to the test BBS')
         blink(sym, font)
+        wide40(sym, font)
 
         model = ansiref.Term()
         model.feed(testbbs.page_bytes('3'))
@@ -146,10 +208,7 @@ def main():
     mcp.call('type_text', text='\x1d', run_ms=1500)
     res = mcp.call('run_until', screen_text='A>', timeout_ms=5000)
     mcp.call('pause')
-    mcp.call('resume')
-    mcp.call('type_text', text='TYPE SAPITERM.CFG\r', run_ms=3000)
-    mcp.call('pause')
-    check('SPEED=2400' in mcp.call('screen_text'), 'the file: SPEED=2400')
+    check('SPEED=2400' in emu.command_lines('TYPE SAPITERM.CFG'), 'the file: SPEED=2400')
     if failed:
         sys.exit('%d check(s) failed' % len(failed))
     print('all checks passed')

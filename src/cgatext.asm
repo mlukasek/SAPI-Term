@@ -40,7 +40,8 @@ ga_koi_ok:
         ld h,a
         ret
 
-; cga_cell_addr: D = row, E = column -> HL = VRAM address of the first line of the cell. Changes A.
+; cga_cell_addr: D = row, E = column -> HL = VRAM address of the first line of the cell (in 40 columns a cell
+; is 2 bytes). Changes A.
 cga_cell_addr:
         ld a,d
         add a,a
@@ -50,14 +51,48 @@ cga_cell_addr:
         inc l
         ld h,(hl)
         add a,e
+        jr nc,cca_one
+        inc h
+cca_one:
+        ld l,a
+        ld a,(cga_wide)
+        or a
+        ret z
+        ld a,l
+        add a,e
         ld l,a
         ret nc
         inc h
         ret
 
+; cga_clip: in 40 columns, B cells from column E are cut at column 40 and B doubled to bytes (0 when none is
+; seen); in 80 columns nothing changes. Changes A.
+cga_clip:
+        ld a,(cga_wide)
+        or a
+        ret z
+        ld a,e
+        cp SCR_COLS/2
+        jr nc,ccl_none
+        add a,b
+        cp SCR_COLS/2+1
+        jr c,ccl_double
+        ld a,SCR_COLS/2
+        sub e
+        ld b,a
+ccl_double:
+        sla b
+        ret
+ccl_none:
+        ld b,0
+        ret
+
 ; cga_draw: the glyph at HL at D = row, E = column with slot C, 8 lines unrolled (glyphs are 8 bytes,
 ; 8-aligned: inc e). MAP_CGA. Changes A, B, DE, HL.
 cga_draw:
+        ld a,(cga_wide)
+        or a
+        jr nz,cga_draw_wide
         push hl
         call cga_cell_addr
         pop de
@@ -129,12 +164,56 @@ cga_draw:
         ld (hl),a
         ret
 
+; cga_draw_wide: cga_draw in 40 columns: each dot of the glyph doubled (wide_l, wide_r), 2 bytes a line;
+; columns from 40 on are not seen. MAP_CGA. Changes A, B, DE, HL.
+cga_draw_wide:
+        ld a,e
+        cp SCR_COLS/2
+        ret nc
+        push hl
+        call cga_cell_addr
+        pop de
+        ld b,8
+cdw_line:
+        ld a,(de)
+        push de
+        ld e,a
+        ld d,high wide_l
+        ld a,(de)
+        or c
+        ld (hl),a
+        inc hl
+        inc d                   ; wide_r
+        ld a,(de)
+        or c
+        ld (hl),a
+        ld de,79
+        add hl,de
+        pop de
+        inc e
+        djnz cdw_line
+        ret
+
 ; cga_cursor_xor: invert the dots of the last line of the cell D = row, E = column (an underline in the
 ; foreground colour of the cell). MAP_CGA. Changes A, DE, HL.
 cga_cursor_xor:
+        ld a,(cga_wide)
+        or a
+        jr z,cx_cell
+        ld a,e
+        cp SCR_COLS/2
+        ret nc
+cx_cell:
         call cga_cell_addr
         ld de,7*80
         add hl,de
+        ld a,(hl)
+        xor 0F0h
+        ld (hl),a
+        ld a,(cga_wide)
+        or a
+        ret z
+        inc hl
         ld a,(hl)
         xor 0F0h
         ld (hl),a
@@ -176,6 +255,7 @@ cfr_next:
 ; after each line. MAP_CGA. Changes A, BC, DE, HL.
 cga_fill_cells:
         ld (cf_byte),a
+        call cga_clip
         ld a,b
         or a
         ret z
@@ -199,9 +279,30 @@ cfc_byte:
         jr nz,cfc_line
         ret
 
-; cga_move_cells: in row D, B cells from column C move to column E (all 8 lines; to the right from the end).
-; MAP_CGA. Changes all.
+; cga_move_cells: in row D, B cells from column C move to column E (all 8 lines; to the right from the end;
+; in 40 columns only the cells seen, as bytes). MAP_CGA. Changes all.
 cga_move_cells:
+        ld a,(cga_wide)
+        or a
+        jr z,cm_go
+        ld a,c
+        cp e
+        jr nc,cm_max
+        ld a,e
+cm_max:                         ; A = the greater column
+        cp SCR_COLS/2
+        ret nc
+        ld h,a
+        ld a,SCR_COLS/2
+        sub h                   ; cells seen from it
+        cp b
+        jr nc,cm_double
+        ld b,a
+cm_double:
+        sla b
+        sla c
+        sla e
+cm_go:
         ld a,b
         or a
         ret z
@@ -284,6 +385,7 @@ ccr_piece:
 ; cga_fix_cells: B cells of row D from column E get slot C (the dots stay), the keyboard polled after each
 ; line. MAP_CGA. Changes A, B, E, HL.
 cga_fix_cells:
+        call cga_clip
         ld a,b
         or a
         ret z

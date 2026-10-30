@@ -4,6 +4,7 @@
 t_title SAPI-Term 0.5 - terminál pro BBS (vývojová verze, fáze 5)
 t_terminal Terminál na:
 t_cga_size CGA-1V, 80x25 znaků
+t_cga_size40 CGA-1V, 40x25 znaků
 t_and_size AND-1V, 64x20 znaků
 t_cards Karty v sestavě:
 t_yes ano
@@ -62,6 +63,7 @@ t_menu_swap Tab  výměna obrazovek
 t_menu_kbd T  klávesnice: 
 t_menu_cs Z  znaková sada BBS: 
 t_menu_speed R  rychlost linky:
+t_menu_cols S  sloupců na CGA-1V:
 t_menu_book U  uložit BBS (i se sadou) do adresáře
 t_menu_back Esc, Ctrl+]  zpět k BBS
 t_kbd_ekl EKL-1

@@ -173,11 +173,9 @@ def main():
         res = mcp.call('run_until', screen_text='A>', timeout_ms=5000)
         check(res.get('stopped') != 'timeout', 'Ctrl+] at the prompt returns to CP/M')
         mcp.call('pause')
-        mcp.call('resume')
-        mcp.call('type_text', text='TYPE SAPITERM.CFG\r', run_ms=3000)
-        mcp.call('pause')
-        text = mcp.call('screen_text')
-        print('      ' + '\n      '.join(text.rstrip().split('\n')[-12:]))
+        text = emu.command_lines('TYPE SAPITERM.CFG')
+        print('      ' + '\n      '.join(ln for ln in text.split('\n') if ln.startswith(('KEY', 'SCR', 'SPE',
+                                                                                          'COL', 'BBS=12', 'BBS=127'))))
         check('KEYBOARD=CONSUL' in text, 'the file: KEYBOARD=CONSUL')
         check('SCREEN=AND' in text, 'the file: SCREEN=AND')
         check('BBS=127.0.0.1,127.0.0.1:%d,UTF-8' % PORT in text, 'the file: the new BBS with UTF-8')
@@ -186,8 +184,13 @@ def main():
         n = log().get('connects', 0)
         mcp.call('resume')
         mcp.call('type_text', text='SAPITERM 13\r')
-        check(run_until(lambda: log().get('connects', 0) > n and log().get('menu', 0) >= 1, ms=15000),
-              'SAPITERM 13: connected at once')
+        ok = run_until(lambda: log().get('connects', 0) > n and log().get('menu', 0) >= 1, ms=15000)
+        check(ok, 'SAPITERM 13: connected at once')
+        if not ok:
+            for line in mcp.call('screen_text').rstrip().split('\n'):
+                print('      ' + line)
+            print('      mode %d, book_n %d, ui_line %r' % (byte(sym, 'mode'), byte(sym, 'book_n'),
+                  emu.read(sym['ui_line'], 64).split(b'\0')[0]))
         check(byte(sym, 'term_dev') == DEV_AND, 'SAPITERM 13: the terminal on the AND-1V (SCREEN=AND)')
         check(byte(sym, 'kbd_type') == 1, 'SAPITERM 13: the Consul keyboard type from the file')
         check(log().get('naws') == [[64, 20]], 'SAPITERM 13: NAWS 64x20: %r' % log().get('naws'))

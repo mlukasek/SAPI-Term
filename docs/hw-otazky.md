@@ -40,6 +40,14 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
    znakovou sadu: Z v menu, dokud čeština nesedí, pak U.
 4. **Seznam BBS přes skutečnou DPI-1L:** projít pár BBS z adresáře (úvodní obrazovka, odpojení O).
 
+## SAPITERM 0.5 (fáze 6)
+
+1. **Rychlost linky:** v menu R nastavit 2400 Bd, pak `SAPITERM SUNSET.ANS`. Obraz se má kreslit plynule asi
+   37 s (8,9 KB). Ověřuje čítač 0 MPH-1V jako hodiny. Na konci R zpět na MAX.
+2. **Blikání:** BBS s blikajícím textem bez iCE (třeba výzva „press any key“). Text bliká asi 1,5× za sekundu bez
+   sněhu na obrazovce.
+3. **40 sloupců:** na BBS menu S. Písmo 4×8 se zdvojenými body, čitelnost na monitoru.
+
 ## Na později
 
 - **Čekání DPI-1L (WAIT) při TCP:** jak dlouho drží Z80 jeden TCPRECV a TCPSTATUS při běžném provozu

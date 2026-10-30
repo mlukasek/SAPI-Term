@@ -373,6 +373,10 @@ ol_found:
 ol_open:
         ld a,MODE_ONLINE
         ld (mode),a
+        call term_size          ; 40 columns on the CGA-1V (COLUMNS=40): a new screen
+        ld a,(cga_wide)
+        or a
+        call nz,scr_cls
         call tn_reset
         ld hl,tn_reply
         ld (reply_hook),hl
@@ -462,6 +466,7 @@ ol_end:
         ld (js_enable),a
         ld (mode),a
         ld (cs_type),a
+        call term_size          ; 80 columns again
         ld hl,0
         ld (reply_hook),hl
         ret
@@ -501,16 +506,28 @@ om_show:
         call ss_text
         call show_speed
         ld de,8*256+2
+        ld hl,t_menu_cols
+        call ss_text
+        ld a,(cols40)
+        or a
+        ld a,'8'
+        jr z,om_cols
+        ld a,'4'
+om_cols:
+        call stat_putc
+        ld a,'0'
+        call stat_putc
+        ld de,9*256+2
         ld hl,t_menu_book
         call ss_text
-        ld de,9*256+2
+        ld de,10*256+2
         ld hl,t_menu_back
         call ss_text
         ld hl,(om_msg)          ; what the last choice did
         ld a,h
         or l
         jr z,om_key
-        ld de,11*256+0
+        ld de,12*256+0
         call ss_text
 om_key:
         call kbd_get
@@ -528,12 +545,14 @@ om_key:
         jr z,om_cs
         cp 'R'
         jr z,om_speed
+        cp 'S'
+        jr z,om_width
         cp 09h                  ; Tab (09h stays 09h)
         jr z,om_swap
         cp 1Bh
-        jr z,om_back
+        jp z,om_back
         cp K_MENU
-        jr z,om_back
+        jp z,om_back
         jr om_key
 om_kbd:
         ld a,(kbd_type)
@@ -557,6 +576,16 @@ om_book:                        ; this BBS and its set into the book (its host a
         jp om_show
 om_said:
         ld (om_msg),hl
+        jp om_show
+om_width:                       ; 80 or 40 columns on the CGA-1V, kept in the file
+        ld a,(cols40)
+        xor 1
+        ld (cols40),a
+        call cur_hide
+        call term_resize
+        call tn_naws            ; the BBS gets the new size at once
+        call tx_flush
+        call cfg_save_msg
         jp om_show
 om_speed:                       ; the next speed (slower), kept in the file
         ld a,(speed)

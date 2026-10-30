@@ -8,6 +8,7 @@
 ;   KEYBOARD=EKL-1 or CONSUL
 ;   SCREEN=CGA or AND             the card of the terminal when both are there
 ;   SPEED=MAX or 38400 ... 300    the speed of a modem shown (bytes to the terminal tick by tick)
+;   COLUMNS=80 or 40              columns of the CGA-1V on line (40: the font 4x8 with its dots doubled)
 ;   BBS=name,host[:port][,set]    at most BOOK_MAX, in this order on the start screen (no ',' in the name);
 ;                                 set = the character set of the BBS (charset.asm: CP437 when none, UTF-8,
 ;                                 LATIN2, CP1250, CP852, KAMENICKY, KOI8)
@@ -135,6 +136,9 @@ cl_line:                        ; HL = the start of a line
         ld de,key_speed
         call match_key
         jr z,cl_speed
+        ld de,key_columns
+        call match_key
+        jr z,cl_columns
         ld de,key_bbs
         call match_key
         jr z,cl_bbs
@@ -164,6 +168,15 @@ cl_screen:
 cl_scr_set:
         ld (cfg_term),a
         jr cl_next
+cl_columns:
+        ld de,val_40
+        call match_key
+        ld a,0
+        jr nz,cl_cols_set
+        inc a
+cl_cols_set:
+        ld (cols40),a
+        jp cl_next
 cl_speed:
         ld de,speed_names
         ld b,0
@@ -271,6 +284,12 @@ key_bbs:
         defb 'BBS=',0
 key_speed:
         defb 'SPEED=',0
+key_columns:
+        defb 'COLUMNS=',0
+val_40:
+        defb '40',0
+val_80:
+        defb '80',0
 val_ekl:
         defb 'EKL-1',0
 val_consul:
@@ -536,6 +555,16 @@ cfs_scr:
         pop de
         call put_str
         call put_crlf
+        ld hl,key_columns
+        call put_str
+        ld hl,val_80
+        ld a,(cols40)
+        or a
+        jr z,cfs_cols
+        ld hl,val_40
+cfs_cols:
+        call put_str
+        call put_crlf
         xor a
 cfs_entry:
         ld hl,book_n
@@ -629,6 +658,7 @@ cfg_header:
         defb '; SAPI-Term: nastaveni a adresar BBS. Lezi vedle SAPITERM.COM, SAPI-Term ho prepisuje.',0Dh,0Ah
         defb '; KEYBOARD=EKL-1 nebo CONSUL, SCREEN=CGA nebo AND (terminal na karte),',0Dh,0Ah
         defb '; SPEED=MAX nebo rychlost linky 38400, 19200, 9600, 4800, 2400, 1200, 300 (ANSI animace),',0Dh,0Ah
+        defb '; COLUMNS=80 nebo 40 (sloupce CGA-1V na BBS),',0Dh,0Ah
         defb '; BBS=jmeno,adresa[:port][,sada] (nejvys 16, poradi jako na uvodni obrazovce, jmeno bez carky),'
         defb 0Dh,0Ah
         defb ';   sada znaku BBS: CP437 (bez udani), UTF-8, LATIN2, CP1250, CP852, KAMENICKY, KOI8.',0Dh,0Ah,0

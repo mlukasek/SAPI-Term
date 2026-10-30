@@ -537,41 +537,7 @@ swap_cards:
         ld (stat_dev),a
         ld a,b
         ld (term_dev),a
-        cp DEV_CGA
-        ld a,SCR_COLS
-        ld b,SCR_ROWS
-        jr z,sw_size
-        ld a,AND_COLS
-        ld b,AND_ROWS
-sw_size:
-        ld (term_cols),a
-        ld a,b
-        ld (term_rows),a
-        ld a,(cur_row)          ; a smaller screen keeps the rows up to the cursor (like a resized
-        cp b                    ; terminal on a PC): the shadow moves up
-        jr c,sw_col
-        sub b
-        inc a
-        push bc
-        call scr_shift
-        pop bc
-        ld a,b
-        dec a
-        ld (cur_row),a
-sw_col:
-        ld a,(term_cols)
-        ld b,a
-        ld a,(cur_col)
-        cp b
-        jr c,sw_draw
-        ld a,b
-        dec a
-        ld (cur_col),a
-sw_draw:
-        xor a
-        ld (wrap_pend),a
-        call scr_redraw
-        jp stat_screen
+        jp term_resize
 
 ; tick_poll: NZ for a tick of 60 Hz: the MPH-1V counter, else the VBI of the CGA-1V, else every 1024 calls.
 ; Changes A, HL.
@@ -831,6 +797,11 @@ stat_screen:
         call ss_text
         ld de,2*256+14
         ld hl,t_cga_size
+        ld a,(cga_wide)
+        or a
+        jr z,sst_80
+        ld hl,t_cga_size40
+sst_80:
         ld a,(term_dev)
         cp DEV_CGA
         jr z,sst_term
@@ -1415,6 +1386,8 @@ speed:          defb 0          ; speed of the line (index of speed_rates, 0 = n
 pace_acc:       defw 0          ; the speed of the line: counts of time not used yet
 pace_t0:        defw 0          ; the MPH-1V counter 0 at the last pace_elapsed
 vf_eof:         defb 0          ; view_file: 1Ah in the buffer (in_end is there)
+cols40:         defb 0          ; COLUMNS=40: the CGA-1V has 40 columns on line
+cga_wide:       defb 0          ; the CGA-1V shows 40 columns now (term_size)
 cfg_fcb:        defs 36
 
 ; font and tables, page aligned

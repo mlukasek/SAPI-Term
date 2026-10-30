@@ -80,6 +80,38 @@ def command(text, wait='A>', timeout_ms=30000):
     return mcp.call('screen_text')
 
 
+def command_lines(text, timeout_ms=15000):
+    """Type a CP/M command, run until the prompt A> is on the last line again; returns every line seen on the
+    console meanwhile (read every 50 ms of emulation, so lines that scrolled away are there too). The console of
+    ECMON waits for a key when the output has filled the screen: after 1 s without a change Enter goes on."""
+    before = mcp.call('screen_text').replace('▒', ' ').rstrip()     # the cursor blinks
+    mcp.call('resume')
+    mcp.call('type_text', text=text + '\r')
+    mcp.call('run_for', ms=200 + 25 * (len(text) + 1))
+    seen = []
+    started = False                             # the screen changed since the typing began
+    last, still = None, 0
+    t = 0
+    while t < timeout_ms:
+        mcp.call('run_for', ms=50)
+        t += 50
+        screen = mcp.call('screen_text')
+        lines = screen.rstrip().split('\n')
+        seen += [ln for ln in lines if ln not in seen]
+        screen = screen.replace('▒', ' ').rstrip()
+        started = started or screen != before
+        at = [i for i, ln in enumerate(lines) if text in ln]
+        if started and lines[-1].strip('▒ ') == 'A>' and (not at or at[-1] < len(lines) - 1):
+            break
+        still = still + 50 if screen == last else 0
+        last = screen
+        if started and still >= 1000:
+            mcp.call('type_text', text='\r')
+            still = 0
+    mcp.call('pause')
+    return '\n'.join(seen)
+
+
 class Term:
     """SAPITERM loaded from build/sapiterm.com straight into memory (no disk) and started at 0100h."""
 

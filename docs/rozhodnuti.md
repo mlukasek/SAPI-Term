@@ -197,3 +197,32 @@ Nové rozhodnutí dopsat s datem a důvodem.
   jméno, první dotaz) občas skončila „Vypršel čas“.
 - **Plný kruh kláves (16) klávesu nepotvrdí.** EKL-1 ji drží, dokud není místo, a nic se neztratí. Dřív se klávesa
   přečetla a zahodila: test psal adresu, zatímco se kreslila úvodní obrazovka s adresářem, a ztratil se Enter.
+
+## 2026-10-30: fáze 6, ANSI art a animace
+
+Autor byl pryč a požádal, abych rozhodoval sám a pokračoval podle plánu. Tato rozhodnutí jsou tedy moje.
+
+- **Rychlost linky** (menu R, `SPEED=` v `SAPITERM.CFG`, jedna pro všechno):
+  - 38400 až 300 Bd (10 bitů na bajt), MAX = bez omezení;
+  - platí na BBS i v prohlížeči `.ANS`, aby šly přehrát ANSI animace z disku.
+  - **Čas měří volně běžící čítač 0 na MPH-1V** (55 930 Hz, dělitel 65536, oběh 1,17 s), ne tiky. Tik je jen
+    příznak a když smyčka déle čeká (paleta ve VBI, rolování), tik se ztratí a linka zpomalí. Bajty, které terminál
+    nestihl, dožene jako po modemu (nejvýš 64 najednou, aby se dál četla klávesnice a síť). Po vyprázdnění bufferu
+    se čas nepřenáší (modem pak také neposílá rychleji). Bez MPH-1V se počítá po ticích.
+  - Při omezené rychlosti je skokové rolování vypnuté. Modem ukazuje řádek po řádku a o to v animacích jde.
+- **Blikání jako na PC:** bit 7 atributu je bez iCE blikání (pozadí 0–7), s iCE jasné pozadí.
+  - Jasná pozadí 100–107 bez iCE proto také blikají. Osmibitový atribut nemá místo pro obojí. CTerm se chová
+    stejně.
+  - Blikání dělá paleta: dvojice s bitem 7 se každých 20 tiků přepíše na popředí = pozadí a zpět (`blink_tick`,
+    `blink_mark`). Přepnutí `?33h/l` přepíše paletu těchto dvojic hned.
+- **Do jednoho VBI 14 dvojic barev**, ne 16. Test blikání v `pal_slot` přidal čas a 16 dvojic se do VBI (125
+  řádků, 3,97 ms) už nevešlo (5 zápisů mimo VBI u SCROLL.ANS).
+- **40×25 je písmo 4×8 se zdvojenými body:**
+  - písmo 8×8 se tak nekreslí ručně (320 znaků), zůstává naše a ve stylu 40sloupcových počítačů (tahy 2 body);
+  - zdvojuje se při kreslení přes tabulky `wide_l` a `wide_r`;
+  - vlastní jemnější 8×8 (a PETSCII, ATASCII) může přijít ve fázi 8.
+- **40 sloupců jen na BBS a jen na CGA-1V** (menu S, `COLUMNS=40`).
+  - Úvodní obrazovka (nápověda, adresář), prohlížeč i stavová obrazovka potřebují 64 nebo 80 sloupců.
+  - Stín zůstává 80 sloupců, rutiny CGA ořežou sloupce od 40 výš a buňka je 2 bajty.
+- **Rychlejší kreslení podle profilu**, ne odhadem (`tools/emu/profile.py`, PC každou emulovanou milisekundu).
+  Zrychlení od 12 do 33 %, obraz zůstal přesně podle modelu.

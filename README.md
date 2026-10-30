@@ -11,10 +11,10 @@ Terminal emulator (telnet BBS client) for the vintage Czech TESLA SAPI-1 compute
 - telnet přes DPI-1L;
 - adresář BBS a nastavení v `SAPITERM.CFG` vedle programu;
 - znakové sady BBS (UTF-8, Latin-2, CP1250, CP852, Kamenický, KOI-8čs) a psaní česky z EKL-1;
-- prohlížeč souborů `.ANS`.
+- prohlížeč souborů `.ANS`;
+- rychlost linky pro ANSI animace, blikání a režim 40×25.
 
-Další na řadě jsou ANSI animace (rychlost modemu), blikání a režim 40×25. Plán a stav jsou
-v [docs/stav.md](docs/stav.md).
+Další na řadě je historie, záznam relace a stahování souborů. Plán a stav jsou v [docs/stav.md](docs/stav.md).
 
 ## Překlad
 
