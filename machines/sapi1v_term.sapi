@@ -1,0 +1,92 @@
+// SAPI-1 machine description for SAPI-Term tests (based on machines/sapi1v_BomberNet.sapi of SAPIemu 0.7.0-beta).
+// Relative paths are relative to the emulator data folder (roms/, media/, work/), the SAPI-Term ones are absolute.
+{
+    "name": "SAPI-Term: SAPI-1 V s EKL-1 (JPR-1V, RAM-1V, AND-1V, DSM-1V, ZRD-1V, DPI-1L, CGA-1V, MPH-1V; ECMON + CP/M)",
+    "description": "Sestava pro vývoj terminálu SAPI-Term, jako autorovo SAPI-1 V: klávesnice EKL-1, JPR-1V (TURBO 4 MHz), RAM-1V (MAP 63h), AND-1V na F800 při MAP1 = L, DSM-1V (10h, 14h; bez ní ECMON přepne konzoli na sériovou linku a stojí na portu 11h), RAM disk ZRD-1V rev 1.1 s obrazem build/ramdisk.bin z build.cmd (neukládá se), DPI-1L na B0h (SD karta ve work/sdcard repa SAPI-Term), CGA-1V na C000 při MAP1 = MAP2 = H, MPH-1V na 50h. Po startu ECMONu volba 3 (CP/M z RAM disku A:), pak SAPITERM.",
+    "main_display": "CGA-1V",
+    "bus": {
+        "type": "ARB-1C-8",
+        "jp3": "2-3"
+    },
+    "cards": [
+        {
+            "slot": 1,
+            "type": "JPR-1V",
+            "rom": "roms/jpr-1v/JPR-1V_28C64_MikroBIOS_ECMON.bin",
+            "bios": "open",
+            "turbo": true,
+            "osc_hz": 8000000,
+            "keyboard": { "type": "EKL-1" }
+        },
+        {
+            "slot": 2,
+            "type": "RAM-1V",
+            "sram_a": true,
+            "sram_b": true,
+            "sram_c": "none",
+            "c_select": "never",
+            "hole16_base": "C000h",
+            "hole16_map1": "h",
+            "hole16_map2": "ignore",
+            "hole2_base": "F800h",
+            "hole2_map1": "l",
+            "map_port": "63h",
+            "map1_enable": true,
+            "map1_bit": 6,
+            "map2_enable": true,
+            "map2_bit": 7
+        },
+        {
+            "slot": 3,
+            "type": "AND-1V",
+            "base": "F800h",
+            "map": "map1_l",
+            "color": "amber",
+            "font": "roms/and-1v/font_and1v22_1024.bin"
+        },
+        {
+            "slot": 4,
+            "type": "DSM-1V",
+            "a": { "enabled": true, "base": "10h", "baud": 115200, "connected": false },
+            "b": { "enabled": true, "base": "14h", "baud": 115200, "connected": false }
+        },
+        {
+            "slot": 5,
+            "type": "ZRD-1V",
+            "revision": "1.1",
+            "image": "E:/SAPI_GIT/SAPI-Term/build/ramdisk.bin",
+            "mode": "nosave"
+        },
+        {
+            "slot": 6,
+            "type": "DPI-1L",
+            "base": "B0h",
+            "net": {
+                "transport": "ws",
+                "host": "api.mzpico.com",
+                "port": 80
+            },
+            "sd": {
+                "folder": "E:/SAPI_GIT/SAPI-Term/work/sdcard",
+                "sectors": 62309376,
+                "flush_on_exit": false
+            }
+        },
+        {
+            "slot": 7,
+            "type": "CGA-1V",
+            "base": "C000h",
+            "map1": "h",
+            "map2": "h",
+            "wait_states": true,
+            "frame_blend": false
+        },
+        {
+            "slot": 8,
+            "type": "MPH-1V",
+            "base": "50h",
+            "k4": "joystick",
+            "k2": "mouse_atari"
+        }
+    ]
+}

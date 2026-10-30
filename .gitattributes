@@ -1,0 +1,12 @@
+* text=auto
+
+# Binary files must never be touched by line-ending conversion
+*.bin  binary
+*.com  binary
+*.COM  binary
+*.ans  binary
+*.ANS  binary
+*.png  binary
+
+# keep Windows batch files with CRLF
+*.cmd text eol=crlf
