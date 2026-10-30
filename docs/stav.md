@@ -164,8 +164,8 @@
 
 ## Další krok
 
-Fáze 9: skutečný HW dávkově s autorem (`docs/hw-otazky.md`). Do té doby drobnosti: zvonek BEL na YM3812 (MPH-1V),
-volba raw TCP pro BBS bez telnetu.
+Fáze 9: skutečný HW dávkově s autorem (`docs/hw-otazky.md`). Do té doby drobnosti: volba raw TCP pro BBS bez
+telnetu.
 
 ## Otevřené drobnosti
 
@@ -178,7 +178,8 @@ volba raw TCP pro BBS bez telnetu.
   EKL-1 (autorova) drží znak do potvrzení, jí se to netýká.
 - **Velká písmena s diakritikou** mají ve fontu 4×8 výšku malých písmen (`docs/rozhodnuti.md`). Autor je viděl
   a souhlasí (2026-10-30).
-- **BEL** zatím nepípá (MPH-1V má YM3812, přijde s historií nebo dřív).
+- **BEL** (v ATASCII bzučák FDh) zahraje krátký tón 880 Hz na YM3812 MPH-1V (asi 1/15 s, program na tu dobu
+  čeká). Bez MPH-1V je ticho. Ověřeno nahrávkou zvuku v `tools/emu/phase6.py`.
 - **Blikání a kurzor stojí, když běží data:** tiky pro blikání se počítají jen v klidu. Při pomalé lince se kurzor
   ukazuje stále.
 - **Znaková sada BBS Liane** (`bbs.vslib.cz`) není známá: úvodní obrazovka je v ASCII a hlubší pohled chce

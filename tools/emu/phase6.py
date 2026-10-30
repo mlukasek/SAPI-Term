@@ -1,9 +1,9 @@
-"""Phase 6 check: blinking text, 40 columns and the speed of the line.
+"""Phase 6 check: blinking text, the bell, 40 columns and the speed of the line.
 
 With the local test BBS (tools/testbbs.py, started here): the blink page without iCE (SGR 5, backgrounds
 100-107) on the shadow screen as the model says, the CGA-1V picture seen in both phases of the blink (each equal
 to the model drawn with the text shown or hidden); with iCE the same page has bright backgrounds and does not
-blink. Menu S: 40 columns on the CGA-1V (NAWS 40x25, the MENU page equal to a model of 40 columns, the picture
+blink. BEL (R of the test BBS): a tone of the MPH-1V recorded. Menu S: 40 columns on the CGA-1V (NAWS 40x25, the MENU page equal to a model of 40 columns, the picture
 in the font 4x8 with its dots doubled), S again 80. Menu R to 2400 Bd: the MENU page takes its time at 240 bytes a second and ends equal to the model. Back
 in CP/M "SAPITERM MENU.ANS" shows the file at the same speed (SPEED=2400 in SAPITERM.CFG). Needs the emulator
 with MCP (tools/emu/sapiemu.cmd) and build.cmd. Screenshots to build/preview/f6_*.png.
@@ -137,6 +137,22 @@ def wide40(sym, font):
     keys('\x1b', 1000)
 
 
+def bell():
+    """BEL from the BBS: a tone of the MPH-1V (the sound recorded), silence before it."""
+    mcp.call('audio_record', start=True)
+    mcp.call('run_for', ms=300)
+    quiet = mcp.call('audio_record')
+    mcp.call('audio_record', start=True)
+    keys('r', 50)
+    mcp.call('run_for', ms=400)
+    mcp.call('pause')
+    tone = mcp.call('audio_record')
+    print('      silence: rms %s peak %s; the bell: rms %s peak %s' % (quiet.get('rms'), quiet.get('peak'),
+                                                                       tone.get('rms'), tone.get('peak')))
+    check(tone.get('peak', 0) > 1000 and tone.get('peak', 0) > 10 * max(quiet.get('peak', 0), 1),
+          'BEL: a tone on the MPH-1V')
+
+
 def timed_page(sym, key, model):
     """Emulated seconds until the shadow equals the model after key."""
     c0 = mcp.call('machine_info')['cycles']
@@ -161,6 +177,7 @@ def main():
         mcp.call('type_text', text='SAPITERM 127.0.0.1:%d\r' % PORT)
         check(run_until(lambda: log().get('menu', 0) >= 1, ms=15000), 'connected to the test BBS')
         blink(sym, font)
+        bell()
         wide40(sym, font)
 
         model = ansiref.Term()

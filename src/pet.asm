@@ -200,13 +200,15 @@ pc_color:
         cp 92h
         jr z,pet_rvs_off
         cp 14h
-        jr z,pet_del
+        jp z,pet_del
         cp 94h
         jp z,pet_inst
         cp 0Eh
         jp z,pet_lower_set
         cp 8Eh
         jp z,pet_upper_set
+        cp 07h
+        jp z,mph_bell
         ret                     ; the others: nothing
 pc_set_color:
         ld a,16

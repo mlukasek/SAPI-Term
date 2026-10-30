@@ -69,6 +69,11 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 1. **Viewdata:** připojit `glasstty.com:6502` (Telstar), v menu Z zvolit VIEWDATA. Barvy teletextu, dvojitá výška,
    mozaiky. Enter = # (pokračovat).
 
+## Zvonek
+
+1. **BEL:** na BBS, která pípá (třeba při chatu), nebo `SAPITERM ANSITEST.ANS`. Má zaznít krátký tón z MPH-1V,
+   zajímá mě hlasitost a jestli YM3812 stihne zápisy s pauzami podle `ym_regs`.
+
 ## Na později
 
 - **Čekání DPI-1L (WAIT) při TCP:** jak dlouho drží Z80 jeden TCPRECV a TCPSTATUS při běžném provozu

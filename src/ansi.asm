@@ -66,7 +66,7 @@ ans_control:
         cp 0Ch
         jp z,ans_ff
         cp 07h
-        ret z                   ; BEL: no sound yet
+        jp z,mph_bell           ; BEL: a tone on the MPH-1V
         or a
         ret z
         jp scr_putc             ; other controls: their CP437 glyph
