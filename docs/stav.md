@@ -1,6 +1,30 @@
 # SAPI-Term – stav a další kroky
 
-## Stav (2026-10-30)
+## Shrnutí (2026-10-30, `SAPITERM.COM` 0.8, 31,4 KB)
+
+- **Hotové fáze 0–8,** zbývá fáze 9: zkouška na skutečném SAPI-1 s autorem (`docs/hw-otazky.md`).
+- **Terminál ANSI-BBS a VT100:**
+  - 80×25 na CGA-1V (vlastní písmo 4×8, dvojice barev po doménách), 64×20 na AND-1V;
+  - stav a menu na druhé kartě.
+- **Spuštění:** `SAPITERM` (úvodní obrazovka s adresářem), `SAPITERM číslo`, `SAPITERM host[:port]`,
+  `SAPITERM soubor.ANS` (prohlížeč).
+- **`SAPITERM.CFG` vedle programu:** klávesnice, karta terminálu, rychlost linky, sloupce a adresář až 16 BBS se
+  sadou a volbou RAW. Výchozí adresář má 15 ověřených BBS.
+- **Menu Ctrl+] na BBS:**
+  - O odpojit, K konec, Tab výměna karet, T klávesnice;
+  - Z sada (CP437, UTF-8, LATIN2, CP1250, CP852, KAMENICKY, KOI8, PETSCII, ATASCII, VIEWDATA);
+  - R rychlost linky, S 80/40 sloupců, U do adresáře, L záznam relace, D stažení XMODEM/YMODEM, H historie,
+    N telnet / raw TCP.
+- **Terminály C64 (PETSCII), Atari (ATASCII) a Prestel (Viewdata)** s vlastními písmy a barvami.
+- **Dál:**
+  - blikání, zvonek na MPH-1V;
+  - historie 93 řádků ve stránce B CGA-1V;
+  - čeština z EKL-1 v sadě BBS.
+- **Testy:** `tools/emu/phase2.py` až `phase8.py` (i `phase2.py --consul`) procházejí všechny,
+  `tools/emu/realbbs.py` připojí všech 15 BBS adresáře.
+- Níže je postup po fázích. Starší údaje tam platí v době fáze, novější je nahrazují.
+
+## Stav po fázích (2026-10-30)
 
 - **Fáze 0–2 hotové:** kostra, start a návrat do CP/M, výstup na CGA-1V (80×25, vlastní font 4×8) a AND-1V
   (64×20), stavová obrazovka, testovací obrazovka.
