@@ -108,8 +108,8 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 1. **Viewdata:** připojit `glasstty.com:6502` (Telstar), v menu Z zvolit VIEWDATA. Barvy teletextu, dvojitá výška,
    mozaiky. Enter = # (pokračovat).
    - **2026-10-31, autor na skutečném HW, testovací BBS z PC** (`testbbs.py --host 0.0.0.0`): stránka V funguje.
-     Na Telstar neověřeno. Telstar 2026-10-31 18:46 UTC odpovídal (z PC: úvodní stránka „GOOD EVENING“). Adresář
-     je plný (16 BBS), U ji neuloží: připojit adresou, Ctrl+], Z až na VIEWDATA, Esc.
+   - **2026-10-31, autor na skutečném HW:** Viewdata na Telstar (`glasstty.com:6502`) funguje. Adresář je plný
+     (16 BBS), U ji neuloží: připojit adresou, Ctrl+], Z až na VIEWDATA, Esc.
 
 ## Zvonek
 
