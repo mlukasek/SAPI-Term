@@ -38,6 +38,7 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 2. **Rychlost a plynulost příjmu** se skutečným čekáním DPI (WAIT po příkazech TCP): rolování a kreslení ANSI artu
    z BBS.
 3. **Klávesy EKL-1 na BBS:** šipky v menu BBS, Enter, Backspace, Ctrl+C.
+   - **2026-10-31, autor na skutečném HW (Vertrauen):** šipky, Backspace a Ctrl+C fungují.
 
 ## SAPITERM 0.5 (fáze 5)
 
