@@ -242,11 +242,14 @@
 6. ~~ANSI art a animace: rychlost modemu, blikání, 40×25 (písmo 4×8 zdvojené), rychlejší kreslení~~
 7. ~~Historie a záznam relace, stahování XMODEM/YMODEM (na disk programu)~~
 8. ~~PETSCII, ATASCII, Viewdata (40 sloupců, vlastní písma)~~
-9. **Skutečný HW** dávkově s autorem.
+9. ~~Skutečný HW dávkově s autorem~~ (2026-10-31, výsledky v `docs/hw-otazky.md`)
 
 ## Další krok
 
-Fáze 9: skutečný HW dávkově s autorem (`docs/hw-otazky.md`). Všechny ostatní body plánu jsou hotové.
+**Verze 1.0.0 vydaná 2026-10-31** (GitHub Release `v1.0.0`, zip se `SAPITERM.COM`, `sapiterm.hex`,
+`SAPITERM.CFG`, testovacími `*.ANS`, README, CHANGELOG a LICENSE). Plán je hotový. Neověřené zůstává: chyba 5
+při TCPSEND, čeština na skutečné BBS a Consul 262.3 na skutečném HW. Nápady mimo plán: odesílání souborů
+(XMODEM/YMODEM), ZMODEM, Aleco Experience BBS.
 
 ## Otevřené drobnosti
 
