@@ -114,3 +114,4 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 - **RTC DPI-1L (60–63h):** vrací UTC, nebo místní čas? (`repo.c` čte časovač AON, který podle `systime.h` drží UTC.)
 - **Sníh palety Bt476** při 2 MHz: zápis barev jedné dvojice (7 domén) trvá asi 0,4 ms, všech 16 asi 6 ms, víc
   než VBI (4 ms).
+  - **2026-10-31, autor na skutečném HW:** sníh na obraze zkoumal a žádný neviděl.
