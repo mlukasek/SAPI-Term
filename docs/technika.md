@@ -64,6 +64,22 @@ nenapodobí (`docs/rozhodnuti.md`).
   Adresa buňky = `cga_rows[řádek] + sloupec`, další řádek znaku +80.
 - **Font:**
   - `font_cp437` (2 KB) a `font_koi` (KOI-8čs2 C0–FF, 512 B), 8 bajtů na znak, zarovnané na stránku;
+  - **mapa paměti (2026-10-31, `SAPITERM.COM` 33 605 B):**
+
+    | Oblast | Velikost | Co |
+    |---|---|---|
+    | 0100–01FF | 256 B | `jp start`, úvodní text, nulové buffery (`msg_buf`, FCB, `ans_reply`), 44 B výplň |
+    | 0200–19B7 | 6 072 B | písma 4×8 (CP437 + KOI), PETSCII s mapou AND, ATASCII s mapou a `vdt_extra` |
+    | 19B8–19FF | 72 B | výplň před tabulkami |
+    | 1A00–2635 | 3 126 B | `tables.inc`: mapa AND, vzdálenosti barev, zdvojení bodů, řádky CGA, převody znakových sad |
+    | 2636–2BC7 | 1 426 B | písmo MZ-800 s mapami |
+    | 2BC8–790C | 19 781 B | kód (největší: `online` 2,7 KB, `screen` 2,4 KB, hlavní program 2,3 KB, `cgatext` 1,8 KB) |
+    | 790D–8444 | 2 872 B | texty UI (2 187 B) a proměnné (685 B) |
+    | 8445–A901 | 9 405 B | BSS: stín 6 000 B, `in_buf` 2 KB, záznamy, `hv_line`, zásobník 256 B |
+    | A902–B7FF | 3 838 B | **volné** |
+    | B800–BFFF | 2 048 B | `att_slot` a `att_pref` (dvojice barev CGA-1V) |
+    | C000–D5FF | 5 632 B | adresář 1 552 B, blok XMODEM 1 030 B, Viewdata 984 B, historie bez CGA-1V 12 řádků |
+    | D606– | | BDOS, BIOS (E400), ECMON (F000), AND-1V (F800); s MAP_CGA od C000h CGA-1V (stránka B = historie 93 řádků) |
   - **rozložení programu:** na 0100h `jp start` a úvodní text, do 0200h nulové buffery (`msg_buf`, FCB, `ans_reply`),
     od 0200h písma 4×8, PETSCII a ATASCII, 72 B výplně, tabulky (`tables.inc`), písmo MZ, teprve pak kód a data.
     Zarovnání písem tak nezávisí na velikosti kódu;
