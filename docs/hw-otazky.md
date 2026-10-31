@@ -79,6 +79,7 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 
 1. **Záznam relace:** na BBS menu L, chvíli procházet, L. V CP/M `SAPITERM LOG00.ANS` relaci přehraje.
 2. **Historie:** na BBS po delším výpisu menu H, PgUp, šipky, Esc. Obrazovka se má vrátit beze změny.
+   - **2026-10-31, autor na skutečném HW:** záznam relace i historie fungují.
 3. **Stahování:** na BBS, kde je účet (třeba Vertrauen), zvolit stažení malého souboru protokolem YMODEM nebo
    XMODEM, pak menu D. Soubor má být vedle `SAPITERM.COM`. Zajímá mě rychlost se skutečnou DPI-1L.
    - **2026-10-31, autor na skutečném HW** (Vertrauen, nový účet): XMODEM i YMODEM fungují skvěle. XMODEM jméno
