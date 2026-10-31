@@ -26,6 +26,7 @@ B_DELETE        equ 19
 B_READSEQ       equ 20
 B_WRITESEQ      equ 21
 B_MAKE          equ 22
+B_RENAME        equ 23
 
 ; cfg_find_drive: cfg_drive = the disk SAPITERM was started from (0 = A). Call it before anything overwrites
 ; the CCP. Changes A, DE, HL.

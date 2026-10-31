@@ -1565,6 +1565,10 @@ xm_files:       defb 0
 xm_open:        defb 0
 xm_pstate:      defb 0          ; 0 between blocks, 1 in a block
 xm_ymodem:      defb 0
+xm_kept:        defb 0          ; xm_rename: the typed name was not free, the file kept its name
+xm_nlen:        defb 0
+xm_newname:     defs 13         ; xm_ask_name: the typed name, 00h at the end
+xm_oldname:     defs 11         ; xm_rename: the name before
 xm_tries:       defb 0
 xm_cans:        defb 0
 xm_recs:        defw 0          ; records of the file written

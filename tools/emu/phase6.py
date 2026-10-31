@@ -128,8 +128,8 @@ def wide40(sym, font):
     keys('s', 3000)
     check(emu.read(sym['cga_wide'], 1)[0] == 1 and emu.read(sym['term_cols'], 1)[0] == 40, 'S: 40 columns')
     check(run_until(lambda: log().get('naws', [])[-1:] == [[40, 25]], ms=5000), 'S: NAWS 40x25')
-    keys('\x1b', 1000)
-    check('CGA-1V, 40x25' in mcp.call('screen_text'), 'the status card: CGA-1V, 40x25')
+    keys('\x1b', 300)                           # SAPITERM.CFG, the terminal in 40 columns, then the status card
+    check(run_until(lambda: 'CGA-1V, 40x25' in mcp.call('screen_text'), ms=5000), 'the status card: CGA-1V, 40x25')
     ansiref.COLS = 40
     try:
         model = ansiref.Term()

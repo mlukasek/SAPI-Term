@@ -111,6 +111,7 @@
   - **Stahování** (menu D, BBS musí začít posílat první):
     - XMODEM (bloky 128 B a 1K, CRC nebo součet) a dávkový YMODEM;
     - soubor jde vedle programu; jméno, které na disku už je, dostane číslici (MENU.ANS → MENU1.ANS);
+    - po XMODEM se program zeptá na jméno souboru (Enter nechá `XMODEM.BIN`);
     - průběh je na stavové kartě, Esc stahování přeruší.
   - **Telnet** zahodí NUL za CR, když BBS neposílá binárně (RFC 854). Stahování je pak čisté i bez binárního
     režimu.
@@ -267,6 +268,10 @@ Fáze 9: skutečný HW dávkově s autorem (`docs/hw-otazky.md`). Všechny ostat
 - **Znaková sada BBS Liane** (`bbs.vslib.cz`) není známá a nevadí: podle autora (2026-10-31) píše vše anglicky.
   V adresáři zůstává CP437. Čeština z EKL-1 je na skutečném HW ověřená jen na testovací obrazovce, převody do sad
   BBS v emulátoru (`phase5.py`); autor je dál neřeší (česká BBS dnes skoro není).
+- **Jméno souboru po XMODEM (2026-10-31, přání autora):** XMODEM jméno nepřenáší. Po stažení se program zeptá
+  na jméno (pod průběhem stahování) a `XMODEM.BIN` přejmenuje. Ptá se až po stažení: XMODEM od YMODEM pozná až
+  z prvního bloku a BBS při psaní jména nečeká. Když jsou jméno i jméno s číslicemi 1–9 obsazené, hláška to řekne
+  (dřív „Soubor se nepodařilo zapsat.“) a BBS dostane CAN (dřív čekala do vypršení času).
 - **Paměť:** program má 31,2 KB a pod C000h zbývají 2,6 KB. Historie bez CGA-1V (v RAM) se s každým dalším kódem
   zmenšuje (48 řádků). Víc místa by daly písma PETSCII a ATASCII nahrávaná ze souboru až při potřebě.
 - **Aleco Experience BBS** (Praha, Atari, `bbs.alecoexp.cz`) 2026-10-30 spojení na port 23 odmítala, web běží.

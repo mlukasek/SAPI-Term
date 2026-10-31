@@ -29,15 +29,19 @@ from phase4 import check, failed, keys, log, run_until, screen_matches, LOG, POR
 PREVIEW = os.path.join(emu.REPO, 'build', 'preview')
 
 
-def download(sym, key, want):
+def download(sym, key, want, name=None, xfer='ok'):
+    """Key starts a download on the test BBS, menu D receives it; XMODEM: name typed when it is asked for."""
     keys(key, 300)                              # the BBS waits for the receiver
     keys('\x1d', 500)
     keys('d', 300)
-    ok = run_until(lambda: log().get('xfer') is not None and 'Staženo' in term_text(sym), ms=60000,
-                   step=500)
+    if name is not None:
+        ok = run_until(lambda: 'Jméno souboru (Enter = XMODEM.BIN):' in term_text(sym), ms=60000, step=500)
+        check(ok, '%s: the name asked for after XMODEM' % key)
+        keys(name + '\r', 1500)
+    ok = run_until(lambda: log().get('xfer') is not None and want in term_text(sym), ms=60000, step=500)
     text = term_text(sym)
-    line = [ln for ln in text.split('\n') if 'Staženo' in ln or 'Stahov' in ln or 'Soubor' in ln]
-    check(ok and log().get('xfer') == 'ok', '%s: the BBS sent it all (%r)' % (key, log().get('xfer')))
+    line = [ln for ln in text.split('\n') if 'staženo' in ln.lower() or 'Stahov' in ln or 'Soubor' in ln]
+    check(ok and log().get('xfer') == xfer, '%s: the BBS: %r' % (key, log().get('xfer')))
     check(any(want in ln for ln in line), '%s: %r' % (key, line))
     keys('\x1b', 800)
 
@@ -115,6 +119,8 @@ def main():
     try:
         emu.use_machine('sapi1v_term')
         emu.checkpoint()
+        for name in ['X.BIN'] + ['X%d.BIN' % n for n in range(1, 10)] + ['XMODEM%d.BIN' % n for n in range(1, 10)]:
+            emu.command('SAVE 0 %s' % name)     # names taken: the typed X.BIN, later XMODEM.BIN
         mcp.call('resume')
         mcp.call('type_text', text='SAPITERM 127.0.0.1:%d\r' % PORT)
         check(run_until(lambda: log().get('menu', 0) >= 1, ms=15000), 'connected to the test BBS')
@@ -134,7 +140,9 @@ def main():
 
         history(sym, fontgen.parse()['cp437'])
         download(sym, 'Y', 'Staženo: MENU1.ANS, 2 KB')
-        download(sym, 'X', 'Staženo: XMODEM.BIN, 2 KB')
+        download(sym, 'X', 'Staženo: MENU2.ANS, 2 KB', name='menu.ans')     # MENU.ANS, MENU1.ANS are there
+        download(sym, 'X', 'Staženo: XMODEM.BIN, 2 KB. Nové jméno je obsazené.', name='x.bin')
+        download(sym, 'X', 'Nestaženo, jméno je na disku i s číslicemi 1-9.', xfer='the client cancelled')
 
         keys('\x1d', 500)
         keys('k', 1500)
@@ -145,11 +153,12 @@ def main():
         srv.terminate()
     text = emu.command_lines('DIR')
     print('      ' + ' | '.join(ln for ln in text.split('\n') if 'LOG00' in ln or 'SUNSET-D' in ln or 'MENU1' in ln
-                                or 'XMODEM' in ln))
+                                or 'XMODEM' in ln or 'MENU2' in ln))
 
     view(sym, 'LOG00.ANS', model)
     view(sym, 'SUNSET-D.ANS', ansiref.run(testbbs.art_file('SUNSET')))
     view(sym, 'MENU1.ANS', ansiref.run(testbbs.art_file('MENU')))
+    view(sym, 'MENU2.ANS', ansiref.run(testbbs.art_file('ANSITEST')))
     view(sym, 'XMODEM.BIN', ansiref.run(testbbs.art_file('ANSITEST')))
     if failed:
         sys.exit('%d check(s) failed' % len(failed))

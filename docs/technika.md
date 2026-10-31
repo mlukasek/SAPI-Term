@@ -304,7 +304,13 @@ nenapodobí (`docs/rozhodnuti.md`).
   - `xm_packet` blok ověří (`xm_check`, CRC-16/XMODEM bit po bitu, 1K asi 64 ms), pak hlavička YMODEMu
     (`xm_create`, `parse_dec32` do `xm_left`) nebo data (`xw_record` po 128 B);
   - čekání `XM_WAIT` (3 s) na blok, `XM_TRIES` (10) pokusů;
-  - výsledek v `xm_result`, zpráva pro menu v `msg_buf`.
+  - výsledek v `xm_result`, zpráva pro menu v `msg_buf`;
+  - jméno souboru: `xm_free_name` (cesta pryč, 8.3, velká písmena, znaky, které CP/M nebere, na `_`; obsazené
+    jméno dostane číslici 1–9 na konci jména). Když jsou obsazené všechny, `xm_create` vrátí `XM_TAKEN`, BBS
+    dostane CAN a menu hlášku „Nestaženo, jméno je na disku i s číslicemi 1-9.“;
+  - po XMODEM (jméno nepřenáší, soubor `XMODEM.BIN`) se `xm_ask_name` zeptá na řádku pod průběhem na jméno (až 12
+    znaků, Enter = nechat, Esc = nechat). `xm_rename` najde volné jméno a soubor přejmenuje (BDOS 23, staré jméno
+    v FCB na +1, nové na +17). Když volné není, soubor zůstane a hláška končí „Nové jméno je obsazené.“
 - **Telnet:** `tn_cr` = poslední datový bajt byl CR. NUL za ním se bez binárního režimu serveru zahodí.
 - **Raw TCP:** `tn_raw` (80h): `tn_filter` kopíruje přijaté bajty do vstupního bufferu beze změny, `tx_data` posílá
   bajt jako `tx_raw`. Nastaví se z adresáře v `online` nebo klávesou N v menu, U ho uloží s BBS.

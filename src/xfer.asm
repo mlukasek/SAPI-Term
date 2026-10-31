@@ -194,12 +194,13 @@ XM_STOPPED      equ 2
 XM_CANCELLED    equ 3
 XM_TIMEOUT      equ 4
 XM_DISK         equ 5
+XM_TAKEN        equ 6               ; the name and the name with 1-9 are all on the disk
 XM_ROW          equ 17              ; the progress on the status card (below the menu)
 
 ; xm_run: receive files the BBS sends (the download is started on the BBS first). 'C' asks for CRC blocks,
 ; after 3 tries without an answer NAK for checksum ones. Block 0 (YMODEM) names the file, a block 1 first is
-; XMODEM (the file XMODEM.BIN); a name that is on the disk gets a digit at its end. Esc stops it (CAN CAN CAN).
-; The log pauses meanwhile. HL = the message for the menu. Changes all.
+; XMODEM (the file XMODEM.BIN, after it a name may be typed: xm_rename); a name that is on the disk gets a digit
+; at its end. Esc stops it (CAN CAN CAN). The log pauses meanwhile. HL = the message for the menu. Changes all.
 xm_run:
         ld a,(log_on)
         ld (xm_logged),a
@@ -306,6 +307,14 @@ xr_end:
         ld hl,t_xm_disk
         cp XM_DISK
         ret z
+        ld hl,t_xm_taken
+        cp XM_TAKEN
+        ret z
+        xor a
+        ld (xm_kept),a
+        ld a,(xm_ymodem)        ; XMODEM brings no name: one may be typed now
+        or a
+        call z,xm_rename
         ld de,msg_buf           ; done: t_xm_done, NAME.EXT, n KB (the last file)
         ld hl,t_xm_done
         call put_str
@@ -328,6 +337,10 @@ xr_end:
         call put_dec16
         ld hl,txt_kb
         call put_str
+        ld a,(xm_kept)          ; the typed name was not free
+        or a
+        ld hl,t_xm_kept
+        call nz,put_str
         xor a
         ld (de),a
         ld hl,msg_buf
@@ -443,7 +456,7 @@ xm_packet:
         jp nz,xm_nak
         ld hl,txt_xmodem        ; block 1 at once: XMODEM, no name, no size
         call xm_create
-        ret nz
+        jp nz,xp_cancel
         ld a,1
         ld (xm_expect),a
         xor a
@@ -487,6 +500,7 @@ xp_record:
 xp_disk:
         ld a,XM_DISK
         ld (xm_result),a
+xp_cancel:                      ; the BBS is told to stop
         ld b,3
 xpd_can:
         ld a,XM_CAN
@@ -504,7 +518,7 @@ xp_header:                      ; YMODEM block 0: the name (00h at the end, none
 xp_file:
         ld hl,xm_pkt+2
         call xm_create
-        ret nz
+        jp nz,xp_cancel
         ld hl,xm_pkt+2          ; after the name: its size in decimal (none: unknown)
 xpf_end:
         ld a,(hl)
@@ -673,10 +687,40 @@ xw_write:
         xor a
         ret
 
-; xm_create: a file named by the text at HL (a path is cut, 8.3, capitals, characters CP/M does not take as
-; '_') made on cfg_drive; a name that is there gets a digit 1-9 at the end of its name part. Z when made,
-; else NZ with xm_result = XM_DISK. Changes all.
+; xm_create: a file named by the text at HL made on cfg_drive (the name: xm_free_name). Z when made, else NZ
+; with xm_result = XM_TAKEN (the name with 1-9 too is all there) or XM_DISK. Changes all.
 xm_create:
+        call xm_free_name
+        ld a,XM_TAKEN
+        jr nz,xcr_fail
+        call xm_fcb_reset
+        ld de,xm_fcb
+        ld c,B_MAKE
+        call BDOS
+        inc a
+        ld a,XM_DISK
+        jr z,xcr_fail
+        ld a,1
+        ld (xm_open),a
+        ld hl,xm_files
+        inc (hl)
+        ld hl,0
+        ld (xm_recs),hl
+        dec hl                  ; the size: unknown until the header says it
+        ld (xm_left),hl
+        ld (xm_left+2),hl
+        call xm_progress
+        xor a
+        ret
+xcr_fail:
+        ld (xm_result),a
+        or a
+        ret
+
+; xm_free_name: xm_fcb named by the text at HL (a path is cut, 8.3, capitals, characters CP/M does not take as
+; '_', none at all: DOWNLOAD) on cfg_drive; a name that is there gets a digit 1-9 at the end of its name part.
+; Z when the name in xm_fcb is free, NZ when the name and 1-9 are all there. Changes all.
+xm_free_name:
         push hl
         ld hl,xm_fcb
         ld b,36
@@ -739,11 +783,11 @@ xcr_try:
         call BDOS
         pop bc
         inc a
-        jr z,xcr_make
+        ret z                   ; not there: free
         inc b                   ; it is there: a digit at the end of the name
         ld a,b
         cp '9'+1
-        jr nc,xcr_fail
+        jr nc,xfn_taken
         ld hl,xm_fcb+8
         ld c,8
 xcr_last:                       ; after the last letter of the name, or over the eighth
@@ -766,32 +810,116 @@ xcr_digit:
 xcr_set:
         ld (hl),b
         jr xcr_try
-xcr_make:
-        call xm_fcb_reset
-        ld de,xm_fcb
-        ld c,B_MAKE
-        call BDOS
-        inc a
-        jr z,xcr_fail
-        ld a,1
-        ld (xm_open),a
-        ld hl,xm_files
-        inc (hl)
-        ld hl,0
-        ld (xm_recs),hl
-        dec hl                  ; the size: unknown until the header says it
-        ld (xm_left),hl
-        ld (xm_left+2),hl
-        call xm_progress
-        xor a
-        ret
-xcr_fail:
-        ld a,XM_DISK
-        ld (xm_result),a
-        or a
+xfn_taken:
+        or a                    ; A = '9'+1: NZ
         ret
 txt_download:
         defb 'DOWNLOAD'
+
+; xm_rename: after XMODEM the file may get a name typed under the progress (xm_ask_name, Enter keeps
+; XMODEM.BIN). A name that is there gets a digit 1-9 (xm_free_name); when all are there, the file keeps its name
+; and xm_kept = 1 (the message says so). xm_fcb has the name the file has after it. Changes all.
+xm_rename:
+        call xm_ask_name
+        ld a,(xm_newname)
+        or a
+        ret z
+        ld hl,xm_fcb+1          ; the name it has now
+        ld de,xm_oldname
+        ld bc,11
+        ldir
+        ld hl,xm_newname
+        call xm_free_name
+        jr nz,xrn_kept
+        ld hl,xm_fcb+1          ; BDOS rename: the old name first, the new one at +17
+        ld de,xm_fcb+17
+        ld bc,11
+        ldir
+        ld hl,xm_oldname
+        ld de,xm_fcb+1
+        ld bc,11
+        ldir
+        xor a
+        ld (xm_fcb+16),a
+        ld de,xm_fcb
+        ld c,B_RENAME
+        call BDOS
+        inc a
+        jr z,xrn_kept
+        ld hl,xm_fcb+17         ; the message names the new name
+        ld de,xm_fcb+1
+        ld bc,11
+        ldir
+        ret
+xrn_kept:
+        ld hl,xm_oldname
+        ld de,xm_fcb+1
+        ld bc,11
+        ldir
+        ld a,1
+        ld (xm_kept),a
+        ret
+
+; xm_ask_name: a name for the file typed on the status output under the progress to xm_newname (00h at the end,
+; up to 12 characters, no spaces). Enter ends, Esc gives none, Backspace and the left arrow delete.
+; Changes all.
+xm_ask_name:
+        xor a
+        ld (xm_nlen),a
+        ld (xm_newname),a
+xan_show:
+        ld de,XM_ROW*256+256
+        ld hl,t_xm_name
+        call ss_text
+        ld hl,xm_newname
+        call stat_puts
+        ld a,'_'                ; the place of the next character, a blank after it (one deleted)
+        call stat_putc
+        ld a,' '
+        call stat_putc
+xan_key:
+        call kbd_get
+        jr nc,xan_key
+        cp 0Dh
+        ret z
+        cp 1Bh
+        jr z,xan_none
+        cp 08h
+        jr z,xan_back
+        cp 13h                  ; the left arrow of the EKL-1 and of the Consul
+        jr z,xan_back
+        cp 0C4h
+        jr z,xan_back
+        cp '!'
+        jr c,xan_key
+        cp 7Fh
+        jr nc,xan_key
+        ld c,a
+        ld a,(xm_nlen)
+        cp 12
+        jr nc,xan_key
+        ld hl,xm_newname
+        call add_hl_a
+        ld (hl),c
+        inc hl
+        ld (hl),0
+        inc a
+        ld (xm_nlen),a
+        jr xan_show
+xan_back:
+        ld a,(xm_nlen)
+        or a
+        jr z,xan_key
+        dec a
+        ld (xm_nlen),a
+        ld hl,xm_newname
+        call add_hl_a
+        ld (hl),0
+        jr xan_show
+xan_none:
+        xor a
+        ld (xm_newname),a
+        ret
 
 ; xm_fcb_reset: xm_fcb from the extent on 0 (for open and make). Changes A, B, HL.
 xm_fcb_reset:

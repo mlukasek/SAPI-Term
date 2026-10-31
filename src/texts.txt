@@ -87,6 +87,9 @@ t_xm_stopped Stahování přerušeno.
 t_xm_cancel BBS stahování zrušila.
 t_xm_timeout Stahování se nepodařilo, BBS neposílá.
 t_xm_disk Soubor se nepodařilo zapsat.
+t_xm_taken Nestaženo, jméno je na disku i s číslicemi 1-9.
+t_xm_kept . Nové jméno je obsazené.
+t_xm_name Jméno souboru (Enter = XMODEM.BIN):\s
 t_menu_back Esc, Ctrl+]  zpět k BBS
 t_menu_prompt Esc, Ctrl+]  zpět na výběr BBS
 t_kbd_ekl EKL-1

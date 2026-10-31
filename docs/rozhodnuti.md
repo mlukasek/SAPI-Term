@@ -462,3 +462,12 @@ Autor byl stále pryč, rozhodoval jsem sám.
 - **Cena:** konec do CP/M z úvodní obrazovky jsou dvě klávesy (Ctrl+] a K), stejně jako na BBS. Na testovací
   obrazovce Ctrl+] dál vrací na výběr BBS, v prohlížeči souboru dál končí.
 - **S bez spojení jen mění nastavení:** úvodní obrazovka zůstává v 80 sloupcích, 40 sloupců použije až BBS.
+
+## 2026-10-31: jméno souboru po XMODEM
+
+- **Přání autora:** XMODEM jméno nepřenáší, každý soubor byl `XMODEM.BIN`, další `XMODEM1.BIN` až `XMODEM9.BIN`
+  a jedenáctý skončil zavádějící hláškou „Soubor se nepodařilo zapsat.“
+- **Ptát se až po stažení** (volba autora): protokol se pozná až z prvního bloku, dotaz před stažením by byl i u
+  YMODEM a BBS by mezitím čekala. Po stažení se soubor přejmenuje (BDOS 23), obsazené jméno dostane číslici jako
+  při stahování.
+- **Obsazená jména mají vlastní hlášku** (`XM_TAKEN`) a BBS dostane CAN hned.
