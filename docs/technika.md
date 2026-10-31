@@ -154,6 +154,8 @@ nenapodobí (`docs/rozhodnuti.md`).
   (`ym_regs`: pauza 38 T po adrese, 104 T po datech).
 - Čítač 0 běží od detekce volně (režim 2, dělitel 0 = 65536, hradlo G0, IEN = 28h) jako hodiny rychlosti linky.
 - SAPI-Term spustí čítač 2 v režimu 2 s dělitelem 932 (60,01 Hz), hradlo G2 v IEN = 20h, bez přerušení.
+  - 82C54 si dělitel nahraje až při dalším pulzu CLK (po 17,9 µs). Do té doby je v čítači cokoli, po zapnutí
+    i víc než 932. Detekce proto první hodnotu čte až asi 0,1 ms po zápisu dělitele.
 - Tik: STATUS (53h) D7 = F2, nuluje se `OUT 55h,80h`.
 - Při návratu IEN = 0 a IACK = C0h.
 

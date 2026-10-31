@@ -43,7 +43,8 @@ Nové rozhodnutí dopsat s datem a důvodem.
 - **Detekce karet** podle chování, které prázdná sběrnice nenapodobí (čte poslední bajt na sběrnici):
   - AND-1V a CGA-1V: vzorek 55h/AAh v nezobrazené RAM karty;
   - CGA-1V navíc: požadavek VBI po potvrzení zmizí a do 52 ms se vrátí;
-  - MPH-1V: čítač 2 82C54 čte dvakrát různé hodnoty do 932;
+  - MPH-1V: čítač 2 82C54 čte dvakrát různé hodnoty do 932, první až asi 0,1 ms po zápisu dělitele (82C54 ho
+    nahraje až dalším pulzem CLK, do té doby je obsah čítače nedefinovaný);
   - DPI-1L: REVD se stavem `02 06 04` a `'D'` ve výstupu, pak RESET 00h (zavře spojení po dřívějším programu).
 - **Při návratu je CGA-1V černá** (obě stránky smazané, paleta černá, stránka A, bez IRQ), aby po SAPI-Termu
   neukazovala zbytek obrazu.

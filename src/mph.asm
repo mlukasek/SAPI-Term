@@ -3,7 +3,8 @@
 
 ; mph_detect: start counter 2 (mode 2, TICK_DIV, gate open, no interrupt) and check that it counts: two latched
 ; values must be at most TICK_DIV and differ (an empty bus reads 52h 52h = 5252h). A = 1 when the card is there.
-; Changes A, BC, DE, HL.
+; The 82C54 takes the count only at the next pulse of CLK (every 17.9 us), till then the counter holds anything
+; (after power on also more than TICK_DIV), so the first read waits ~0.1 ms. Changes A, BC, DE, HL.
 mph_detect:
         ld a,T2_MODE2
         out (MPH_CTL),a
@@ -13,6 +14,9 @@ mph_detect:
         out (MPH_T2),a
         ld a,IEN_G2
         out (MPH_IEN),a
+        ld b,32                 ; ~420 T, ~6 pulses of CLK at 4 MHz
+md_load:
+        djnz md_load
         call t2_read
         ex de,hl
         ld b,0                  ; ~3300 T, ~46 counts of the 55.9 kHz clock at 4 MHz
