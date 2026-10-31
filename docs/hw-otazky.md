@@ -93,6 +93,10 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
    - **2026-10-31, autor:** RTC DPI-1L se nastaví z NTP pár sekund po zapnutí. Doba spojení je rozdíl dvou
      čtení RTC, proti stopkám se tedy nerozejde. Stačí kontrola za běhu: asi 5 minut stopkami od změny sekundy
      na stavové kartě a pohled, jestli sekundy při velkém toku dat (akvárium) neskáčou.
+   - **2026-10-31, autor na skutečném HW (bez MPH-1V, akvárium):** za 6:00 na stopkách se doba spojení posunula
+     přesně o 6:00. Sekundy jdou po jedné, ale nerovnoměrně (občas dřív, občas o chvilku později): změna se ukáže
+     až při čtení RTC (v klidu 4× za sekundu, při datech po 2 KB), tedy se zpožděním 0–0,3 s. Součet to nekazí,
+     častější čtení by znamenalo víc čekání na kartu. Necháno tak.
 
 ## Na později
 
