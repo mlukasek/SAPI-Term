@@ -78,14 +78,19 @@ nenapodobí (`docs/rozhodnuti.md`).
     | 8445–A901 | 9 405 B | BSS: stín 6 000 B, `in_buf` 2 KB, záznamy, `hv_line`, zásobník 256 B |
     | A902–B7FF | 3 838 B | **volné** |
     | B800–BFFF | 2 048 B | `att_slot` a `att_pref` (dvojice barev CGA-1V) |
-    | C000–D5FF | 5 632 B | adresář 1 552 B, blok XMODEM 1 030 B, Viewdata 984 B, historie bez CGA-1V 12 řádků |
-    | D606– | | BDOS, BIOS (E400), ECMON (F000), AND-1V (F800); s MAP_CGA od C000h CGA-1V (stránka B = historie 93 řádků) |
+    | C000–BDOS | 5 632 B | adresář 1 552 B, blok XMODEM 1 030 B, Viewdata 984 B, historie bez CGA-1V (12 řádků) |
+    | BDOS– | | u sestavy V BDOS D606h, BIOS E400h, ECMON F000h, AND-1V F800h; s MAP_CGA od C000h CGA-1V (stránka B = historie 93 řádků) |
+
+  - **konec TPA se zjišťuje za běhu** (`tpa_check`): stránka vstupu do BDOS z adresy na 0006h (jiný build CP/M
+    nebo rezidentní rozšíření ji má jinde). Buffery od C000h musí skončit pod ní, s CGA-1V je potřeba BDOS aspoň
+    od CE00h, bez CGA-1V od D100h (4 řádky historie); jinak SAPI-Term vypíše hlášku a vrátí se do CP/M.
+    `hist_init` dá historii bez CGA-1V tolik řádků, kolik se pod BDOS vejde. `check_build.py` požadavek vypíše.
   - **rozložení programu:** na 0100h `jp start` a úvodní text, do 0200h nulové buffery (`msg_buf`, FCB, `ans_reply`),
     od 0200h písma 4×8, PETSCII a ATASCII, 72 B výplně, tabulky (`tables.inc`), písmo MZ, teprve pak kód a data.
     Zarovnání písem tak nezávisí na velikosti kódu;
   - **BSS** (není v `.COM`) jde hned za program bez zarovnání; `att_slot` a `att_pref` (8 stránek) jsou pevně na
     B800h–BFFFh a BSS (se zásobníkem) musí skončit pod nimi (`check_build.py` vypíše, kolik zbývá);
-  - **C000h–D5FFh** (konec TPA, jen s MAP_CPM; CCP od CE00h nahraje warm boot na konci znovu): adresář BBS
+  - **C000h až BDOS** (konec TPA, jen s MAP_CPM; CCP pod BDOS nahraje warm boot na konci znovu): adresář BBS
     (`book`), blok XMODEM/YMODEM s `cfg_rec` a `cfg_line` (`xm_pkt`), kódy Viewdata (`vdt_raw`, `vdt_dh`), pak
     historie bez CGA-1V (12 řádků). Kreslení na ně nesahá (CGA-1V mapuje jen uvnitř `cga_draw`);
   - `tools/fontgen.py` je vyrobí z `fonts/sapiterm4x8.txt`, `--preview` uloží náhled PNG.
@@ -294,7 +299,7 @@ nenapodobí (`docs/rozhodnuti.md`).
 ## Historie (`src/history.asm`)
 
 - Kruh: s CGA-1V její stránka B (C000h, `CGA_SIZE` / `HIST_REC` = 93 řádků, `hist_ring_on` / `hist_ring_off`
-  nastaví MAP_CGA a CONFIG D1), bez ní `hist_buf` (za buffery od C000h, jen s MAP_CPM) až po D5FFh (`HIST_LINES` = 12). `hist_init` při
+  nastaví MAP_CGA a CONFIG D1), bez ní `hist_buf` (za buffery od C000h, jen s MAP_CPM) až po BDOS (na sestavě V 12 řádků, `hist_init`). `hist_init` při
   startu nastaví `hist_vram`, `hist_base`, `hist_cap`. Záznam `HIST_REC` = 171 B se skládá a čte v `hv_line`.
   - `hist_head` je další zapisovaný řádek, `hist_count` počet řádků.
   - Záznam řádku: 80 znaků, 80 atributů, 10 B bitů EXT_KOI (buňka 0 v bitu 0), 1 B příznaků písma (EXT_8X8,

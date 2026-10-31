@@ -35,17 +35,21 @@ def main():
     for name in ('font_cp437', 'font_koi', 'and_map_cp437', 'col_dist', 'cga_rows', 'att_slot'):
         if name in s and s[name] & 0xFF:
             errors.append(f'{name} at {s[name]:04X}h is not page aligned')
-    if s['hist_buf'] + 8 * s['HIST_REC'] > 0xD600:
-        errors.append(f'the buffers from C000h end at {s["hist_buf"]:04X}h: no room for 8 rows of history '
-                      'below D600h (the end of the TPA)')
+    # the end of the TPA is checked at run time (tpa_check: the page of the BDOS entry at 0006h); the CP/M of
+    # the set V has the BDOS at D606h, the history without a CGA-1V must get its HIST_MIN rows there
+    need_cga = (s['hist_buf'] + 0xFF) & 0xFF00
+    need = (s['hist_buf'] + s['HIST_MIN'] * s['HIST_REC'] + 0xFF) & 0xFF00
+    if need > 0xD600:
+        errors.append(f'the buffers from C000h end at {s["hist_buf"]:04X}h: on the CP/M of the set V (BDOS '
+                      f'D606h) no room for {s["HIST_MIN"]} rows of history')
     if s['font_cp437'] != 0x200:
         errors.append(f'font_cp437 at {s["font_cp437"]:04X}h, not 0200h: the buffers before it grew too much')
     if errors:
         sys.exit('\n'.join(errors))
     pages = (size + 255) // 256
     print(f'layout ok: program 0100-{s["PROGRAM_END"] - 1:04X}h ({size} B), buffers and stack to '
-          f'{s["BSS_END"] - 1:04X}h, {s["att_slot"] - s["BSS_END"]} B free below att_slot; in CP/M: SAVE {pages} '
-          'SAPITERM.COM')
+          f'{s["BSS_END"] - 1:04X}h, {s["att_slot"] - s["BSS_END"]} B free below att_slot; needs the BDOS from '
+          f'{need_cga:04X}h (with a CGA-1V) or {need:04X}h; in CP/M: SAVE {pages} SAPITERM.COM')
 
 
 if __name__ == '__main__':

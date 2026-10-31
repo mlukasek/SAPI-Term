@@ -1,8 +1,8 @@
 ; SAPI-Term - the history: the rows that scroll off the top of the screen, in a ring of hist_cap rows. With a
 ; CGA-1V the ring is its page B, which is never shown (16000 bytes: 93 rows; the CPU reaches it with MAP_CGA
-; and CONFIG D1). Without one it is the RAM after the stack up to D5FFh (HIST_LINES rows; C000h-D5FFh with
-; MAP_CPM is the TPA of CP/M under its CCP, which the warm boot loads again). A row is put together and read
-; back in hv_line. hist_view shows the history on the terminal; the screen itself goes to the end of the ring
+; and CONFIG D1). Without one it is the RAM from hist_buf (after the buffers from C000h) up to the BDOS
+; (tpa_top; with MAP_CPM it is the TPA of CP/M with its CCP, which the warm boot loads again). A row is put
+; together and read back in hv_line. hist_view shows the history on the terminal; the screen itself goes to the end of the ring
 ; meanwhile and comes back from it.
 
 HIST_REC        equ 2*SCR_COLS+SCR_COLS/8+1 ; a row: characters, attributes, the KOI bits, the flags of its font
@@ -13,9 +13,27 @@ hist_init:
         ld a,(has_cga)
         ld (hist_vram),a
         or a
+        jr nz,hin_cga
+        ld a,(tpa_top)          ; in RAM: the rows from hist_buf to the end of the TPA (tpa_check)
+        ld h,a
+        ld l,0
+        ld de,hist_buf
+        or a
+        sbc hl,de
+        ld de,HIST_REC
+        ld b,0
+hin_row:
+        or a
+        sbc hl,de
+        jr c,hin_ram
+        inc b
+        jr nz,hin_row
+        dec b                   ; at most 255
+hin_ram:
+        ld a,b
         ld hl,hist_buf
-        ld a,HIST_LINES
-        jr z,hin_set
+        jr hin_set
+hin_cga:
         ld hl,CGA_VRAM
         ld a,CGA_SIZE/HIST_REC
 hin_set:

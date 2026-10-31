@@ -52,6 +52,7 @@ st_di:
         call cfg_find_drive     ; while the CCP still has the command line
         call kbd_init
         call detect
+        call tpa_check          ; the buffers from C000h below the BDOS (before cfg_load writes there)
         call cfg_load           ; settings and the address book (DMA not at 0080h: the arguments stay)
         call hist_init
         ld a,(has_cga)
@@ -61,8 +62,7 @@ st_di:
         or a
         jr nz,st_cards
         ld de,t_no_and          ; no display at all: a message through BDOS, then back
-        call bdos_puts
-        jp quit
+        jp quit_say
 st_cards:
         ld a,(has_cga)
         or a
@@ -397,6 +397,9 @@ txt_sauce:
         defb 'SAUCE00'
 
 ; quit: cards to a quiet state, MAP_CPM, the console cleared, interrupts as they were, warm boot.
+; quit_say: quit with the KOI text DE on the console of CP/M, written after it is cleared.
+quit_say:
+        ld (quit_text),de
 quit:
         ld sp,STACK_TOP
         ld a,MAP_CPM
@@ -424,6 +427,14 @@ quit:
         ld e,1Fh
         ld c,B_CONOUT
         call BDOS
+        ld de,(quit_text)
+        ld a,d
+        or e
+        jr z,q_iff
+        call bdos_puts
+        ld de,txt_crlf
+        call bdos_puts
+q_iff:
         ld a,(saved_iff)
         or a
         jr z,q_boot
@@ -1219,6 +1230,28 @@ cd_done:
         ret
 
 ; bdos_puts: the string at DE up to a 00h byte through the BDOS console output. Changes A, BC, DE.
+; tpa_check: tpa_top = the page of the entry of the BDOS (its address at 0006h: builds of CP/M differ, a resident
+; extension lowers it); the buffers from C000h, and without a CGA-1V HIST_MIN rows of history, must end below that
+; page. Else a message and back to CP/M (the CCP below the BDOS may be overwritten: the warm boot loads it again).
+; Changes all.
+HIST_MIN        equ 4
+tpa_check:
+        ld a,(0007h)
+        ld (tpa_top),a
+        ld hl,hist_buf - 1      ; the last byte used: with a CGA-1V the history is on the card
+        ld a,(has_cga)
+        or a
+        jr nz,tc_need
+        ld hl,hist_buf + HIST_MIN*HIST_REC - 1
+tc_need:
+        ld a,(tpa_top)
+        cp h
+        jr z,tc_short
+        ret nc
+tc_short:
+        ld de,t_no_tpa
+        jp quit_say
+
 bdos_puts:
         ld a,(de)
         or a
@@ -1458,6 +1491,9 @@ ps_rgb:         defs 6          ; pal_slot
 om_msg:         defw 0          ; ol_menu: what the last choice did (KOI text, 0 none)
 om_stat:        defb 0          ; ol_menu: the status card (stat_dev) while the menu is on the terminal card
 om_save:        defb 0          ; ol_menu: a setting changed, to be saved when the menu closes
+tpa_top:        defb 0          ; tpa_check: the first page of the BDOS (nothing written from there on)
+quit_text:      defw 0          ; quit_say: the message for the console of CP/M (0 none)
+txt_crlf:       defb 0Dh,0Ah,0
 stat_new:       defb 0          ; stat_putc: a new pair of colours, the palette follows
 srd_off:        defw 0          ; scr_redraw: the offset of the cell in the shadow
 clk_t0:         defw 0          ; ol_clock: the MPH-1V counter 0 at the last call
@@ -1578,9 +1614,10 @@ vdt_dhbuf       equ vdt_glyph + 8               ; 8
 STACK_TOP       equ vdt_dhbuf + 8 + 256
 BSS_END         equ STACK_TOP                   ; at most att_slot
 
-; from C000h to the end of the TPA (D5FFh; the CCP from CE00h is loaded again by the warm boot when SAPI-Term
-; ends): RAM with MAP_CPM only. Buffers the drawing does not touch (it maps the CGA-1V only inside cga_draw),
-; then the history without a CGA-1V (with it the history is in its page B).
+; from C000h to the end of the TPA (the page of the BDOS entry at 0006h, tpa_check; the CCP below it is loaded
+; again by the warm boot when SAPI-Term ends): RAM with MAP_CPM only. Buffers the drawing does not touch (it maps
+; the CGA-1V only inside cga_draw), then the history without a CGA-1V (with it the history is in its page B;
+; hist_init counts its rows up to tpa_top).
 book            equ 0C000h                      ; BOOK_MAX entries of the address book
 xm_pkt          equ book + BOOK_ENTRY*BOOK_MAX  ; 1030: a block of XMODEM / YMODEM; cfg_rec and cfg_line in it too
                                                 ; (SAPITERM.CFG is not read or written while a download runs)
@@ -1589,6 +1626,6 @@ cfg_line        equ cfg_rec + 128               ; CFG_LINE + 2: a line of it
 vdt_raw         equ xm_pkt + 1030               ; 24 x 40: the codes of Viewdata
 vdt_dh          equ vdt_raw + 24*40             ; 24: double height in the row
 hist_buf        equ vdt_dh + 24                 ; the history without a CGA-1V (and so without att_slot)
-HIST_LINES      equ (0D600h - hist_buf) / HIST_REC
+HIST_LINES      equ (0D600h - hist_buf) / HIST_REC  ; the rows on the CP/M of the set V (BDOS at D606h)
 
         end start

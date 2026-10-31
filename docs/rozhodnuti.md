@@ -434,3 +434,8 @@ Autor byl stále pryč, rozhodoval jsem sám.
 - **Konec TPA:** vše končí pod D600h (BDOS od D606h); `check_build.py` hlídá, že na historii bez CGA-1V zbude
   aspoň 8 řádků. CCP od CE00h se přepíše, SAPI-Term končí warm bootem (`JP 0`), který ho nahraje znovu.
 - **Cena:** historie bez CGA-1V má 12 řádků místo 32.
+- **Konec TPA se zjišťuje za běhu** (upozornění autora: jiný build CP/M má BDOS jinde): mez je stránka vstupu do
+  BDOS z adresy na 0006h (sériové číslo BDOS ani rezidentní rozšíření se nepřepíšou). `tpa_check` hned po zjištění
+  karet, ještě než `cfg_load` zapíše od C000h; při malé TPA hláška a návrat do CP/M. Ověřeno skokem do BDOS na
+  CC00h a 0006h = CC00h: hláška, warm boot vrátí 0006h, `DIR` funguje.
+- **Hlášky při startu vidět** (`quit_say`): `quit` maže konzoli ECMONu, hláška se proto píše až po smazání.
