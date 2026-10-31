@@ -46,7 +46,7 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
    37 s (8,9 KB). Ověřuje čítač 0 MPH-1V jako hodiny. Na konci R zpět na MAX.
 2. **Blikání:** BBS s blikajícím textem bez iCE (třeba výzva „press any key“). Text bliká asi 1,5× za sekundu bez
    sněhu na obrazovce.
-3. **40 sloupců:** na BBS menu S. Písmo 4×8 se zdvojenými body, čitelnost na monitoru.
+3. **40 sloupců:** na BBS menu S. Písmo Sharp MZ-800 (i čeština podle CP/M pro MZ-800), čitelnost na monitoru.
 
 ## SAPITERM 0.7 (fáze 7)
 
