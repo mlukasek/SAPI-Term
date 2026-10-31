@@ -465,6 +465,8 @@ handle_key:
         jp z,hist_view
         cp 14h                  ; Ctrl+T: test screen
         jp z,test_screen
+        cp 07h                  ; Ctrl+G: the bell (a tone of the MPH-1V, without it nothing)
+        jp z,mph_bell
         cp 0Ch                  ; Ctrl+L: clear
         jp z,scr_cls
         cp 10h                  ; Ctrl+P: next foreground

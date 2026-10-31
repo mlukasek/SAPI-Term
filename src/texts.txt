@@ -14,7 +14,7 @@ t_firmware firmware
 t_keys Klávesy:
 t_key1 Tab     výměna obrazovek (CGA-1V a AND-1V)
 t_key2 Ctrl+T  test, Ctrl+L smazat, PgUp historie
-t_key3 Ctrl+P  barva písma, Ctrl+O barva pozadí
+t_key3 Ctrl+P  barva písma, Ctrl+O barva pozadí, Ctrl+G zvonek
 t_key4 šipky   pohyb kurzoru, ostatní klávesy píšou
 t_key5 Ctrl+]  konec, návrat do CP/M
 t_key5_test Ctrl+]  zpět na výběr BBS

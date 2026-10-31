@@ -96,6 +96,13 @@ def main():
     keys('\t', 4000)
     check('Terminál na:  CGA-1V' in mcp.call('screen_text'), 'Tab again: terminal back on the CGA-1V')
     check(sh.row(19).startswith('radek 6ahoj z AND-1V'), 'shadow kept while on the AND-1V')
+    mcp.call('audio_record', start=True)
+    keys('\x07', 400)
+    bell = mcp.call('audio_record')
+    if consul:
+        check(bell.get('peak', 0) == 0, 'Ctrl+G: no MPH-1V, no tone (peak %s)' % bell.get('peak'))
+    else:
+        check(bell.get('peak', 0) > 1000, 'Ctrl+G: the bell, a tone on the MPH-1V (peak %s)' % bell.get('peak'))
     keys('\x0c', 1500)
     check(all(sh.row(r).strip() == '' for r in (0, 12, 24)), 'Ctrl+L clears the screen')
     keys('\x14', 2000)

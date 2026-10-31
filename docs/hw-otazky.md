@@ -73,8 +73,9 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 
 ## Zvonek
 
-1. **BEL:** na BBS, která pípá (třeba při chatu), nebo `SAPITERM ANSITEST.ANS`. Má zaznít krátký tón z MPH-1V,
-   zajímá mě hlasitost a jestli YM3812 stihne zápisy s pauzami podle `ym_regs`.
+1. **BEL:** na testovací obrazovce (prázdný Enter na výzvě „BBS:“) Ctrl+G, nebo na BBS, která pípá (třeba při
+   chatu). Má zaznít krátký tón z MPH-1V, zajímá mě hlasitost a jestli YM3812 stihne zápisy s pauzami podle
+   `ym_regs`.
 
 ## Doba spojení bez MPH-1V (RTC DPI-1L)
 
