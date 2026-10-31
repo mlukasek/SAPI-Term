@@ -1,6 +1,6 @@
 # SAPI-Term – stav a další kroky
 
-## Shrnutí (2026-10-31, `SAPITERM.COM` 0.8, 33,7 KB)
+## Shrnutí (2026-10-31, `SAPITERM.COM` 1.0.0, 33,7 KB)
 
 - **Hotové fáze 0–8,** zbývá fáze 9: zkouška na skutečném SAPI-1 s autorem (`docs/hw-otazky.md`).
 - **Terminál ANSI-BBS a VT100:**

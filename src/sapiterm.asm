@@ -20,7 +20,7 @@
         org 0100h
 
         jp start
-        defb 0Dh,0Ah,'SAPI-Term 0.8',0Dh,0Ah,1Ah
+        defb 0Dh,0Ah,'SAPI-Term 1.0.0',0Dh,0Ah,1Ah
 
 ; zero buffers up to 0200h, then the fonts and the tables aligned to pages: here before the code their padding
 ; does not change with the size of the code (only 72 B between font_ata.inc and tables.inc; check_build.py)

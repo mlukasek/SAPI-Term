@@ -2,7 +2,7 @@
 # One text per line: the asm label, one space, the text. A "\" at the end continues on the next line,
 # "\s" at the end is a space (a plain space at the end of a line gets lost in editors and tools).
 
-t_title SAPI-Term 0.8 - terminál pro BBS
+t_title SAPI-Term 1.0.0 - terminál pro BBS
 t_terminal Terminál na:
 t_cga_size CGA-1V, 80x25 znaků
 t_cga_size40 CGA-1V, 40x25 znaků
@@ -27,7 +27,7 @@ t_viewing Zobrazuji soubor (klávesa ho zastaví)...
 t_shown Konec souboru. Klávesy píšou, Ctrl+] = konec.
 t_not_found Soubor nenalezen.
 
-t_test_title SAPI-Term 0.8 - test výstupu (80x25 na CGA-1V, 64x20 na AND-1V)
+t_test_title SAPI-Term 1.0.0 - test výstupu (80x25 CGA-1V, 64x20 AND-1V)
 t_test_fg Popředí 0-F:
 t_test_bg Pozadí 0-F:
 t_test_blocks Bloky:
@@ -37,7 +37,7 @@ t_cz_lower Příliš žluťoučký kůň úpěl ďábelské ódy.
 t_cz_upper PŘÍLIŠ ŽLUŤOUČKÝ KŮŇ ÚPĚL ĎÁBELSKÉ ÓDY.
 t_test_help Piš na klávesnici. Tab = druhá obrazovka, Ctrl+] = výběr BBS.
 
-t_ui_title SAPI-Term 0.8 - terminál pro BBS
+t_ui_title SAPI-Term 1.0.0 - terminál pro BBS
 t_ui_help1 Adresa BBS: jméno nebo IP, za dvojtečkou port (bez něj 23).
 t_ui_help2 Číslo = BBS z adresáře, -číslo = smazat ji z adresáře.
 t_ui_help3 Prázdný Enter = test, Tab = druhá obrazovka, Ctrl+] = menu.
