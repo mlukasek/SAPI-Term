@@ -76,6 +76,13 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 1. **BEL:** na BBS, která pípá (třeba při chatu), nebo `SAPITERM ANSITEST.ANS`. Má zaznít krátký tón z MPH-1V,
    zajímá mě hlasitost a jestli YM3812 stihne zápisy s pauzami podle `ym_regs`.
 
+## Doba spojení bez MPH-1V (RTC DPI-1L)
+
+1. **Bez MPH-1V** (kartu vytáhnout, nebo sestava, která ji nemá): na BBS běží doba spojení na stavové kartě
+   z hodin RTC DPI-1L (RTCGETT). Má jít stejně jako hodinky, i při stahování dlouhé stránky. Zajímá mě, jestli RTC
+   karty po zapnutí běží (bez nastavení času) a jestli čtení asi 4× za sekundu nebo po 2 KB dat znatelně
+   nezpomalí příjem (WAIT karty).
+
 ## Na později
 
 - **Čekání DPI-1L (WAIT) při TCP:** jak dlouho drží Z80 jeden TCPRECV a TCPSTATUS při běžném provozu

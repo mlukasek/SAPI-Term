@@ -195,6 +195,10 @@
   - Písma a tabulky zarovnané na stránku jsou na začátku programu (od 0200h), jejich výplň už neroste s kódem.
     Pod C000h zbývá 597 B.
   - Testy čtou menu z obrazu CGA-1V (`tools/emu/cgaread.py`), celá sada prochází i s Consulem.
+- **Doba spojení bez MPH-1V z RTC DPI-1L (2026-10-31):** rozdíl času RTCGETT proti začátku spojení, rychlost
+  z přírůstku dat za uplynulé sekundy. RTC se čte v klidu 4× za sekundu, při provozu po 2 KB dat. Ověřeno na sestavě
+  s Consulem: karta ukázala stejný čas jako hodiny PC. Tabulky dvojic barev jsou pevně na B800h–BFFFh, BSS
+  za programem bez výplně: pod nimi zbývá 369 B (`check_build.py`). Historie bez CGA-1V má 32 řádků od C000h.
 - **Rychlejší příjem (2026-10-31):** akvárium z telehack.com po síti 4,3 → 6,0 KB/s (telnet rychlou smyčkou,
   parser CSI a SGR bez `add_hl_a`), `docs/rozhodnuti.md`. Testy fází 3–8 procházejí.
 

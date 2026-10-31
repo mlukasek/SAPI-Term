@@ -773,7 +773,9 @@ om_leave:
         ld (stat_dev),a
         ret
 
-; ol_clock_reset: the time and the data on line from zero (a new connection). Changes A, B, HL.
+; ol_clock_reset: the time and the data on line from zero (a new connection): the MPH-1V counter 0, without it
+; the time of the RTC of the DPI-1L (rtc_ok; when the card does not give it, the quiet ticks count).
+; Changes A, BC, DE, HL.
 ol_clock_reset:
         ld hl,rx_total
         ld b,OL_STATS
@@ -784,19 +786,29 @@ ocr_zero:
         djnz ocr_zero
         ld a,(has_mph)
         or a
-        ret z
+        jr z,ocr_rtc
         call t0_read
         ld (clk_t0),hl
         ret
+ocr_rtc:
+        call dpi_time
+        ret nz
+        ld a,1
+        ld (rtc_ok),a
+        ld hl,rtc_now
+        ld de,rtc_t0
+        ld bc,3
+        ldir
+        jp or_mark
 
 ; ol_clock: the time on line by the MPH-1V counter 0 (55930 Hz, in eighths so that the sum fits a word): every
-; second ol_second. Without the MPH-1V the quiet ticks count (ol_tick, slower when the line is busy).
-; Changes all.
+; second ol_second. Without the MPH-1V the RTC of the DPI-1L, read when due (ol_rtc): four times a second when
+; quiet (ol_tick), every 2 KB of data when busy (a command of the card holds the Z80 up to 8 ms). Changes all.
 CLK_SECOND      equ 6991                ; 55930 / 8
 ol_clock:
         ld a,(has_mph)
         or a
-        ret z
+        jr z,oc_rtc
         call t0_read            ; the counter counts down
         ld de,(clk_t0)
         ld (clk_t0),hl
@@ -824,14 +836,147 @@ oc_keep:
         add hl,de
         ld (clk_acc),hl
         ret
+oc_rtc:
+        ld a,(rtc_ok)
+        or a
+        ret z
+        ld a,(rtc_due)
+        or a
+        jr nz,oc_read
+        ld hl,(rx_total)        ; 2 KB of data since the last reading
+        ld de,(rtc_rx)
+        or a
+        sbc hl,de
+        ld a,h
+        cp 8
+        ret c
+oc_read:
+        xor a
+        ld (rtc_due),a
+        ld hl,(rx_total)
+        ld (rtc_rx),hl
+; ol_rtc: the time on line = the RTC now - rtc_t0; when seconds passed since the last reading (rtc_last), the bytes
+; per second since then (ol_rate) and the live lines of the status card. Changes all.
+ol_rtc:
+        call dpi_time
+        ret nz
+        ld hl,rtc_t0
+        call rtc_sub
+        ld (ol_secs),a
+        ld a,c
+        ld (ol_mins),a
+        ld a,b
+        ld (ol_hours),a
+        ld hl,rtc_last
+        call rtc_sub
+        ld e,a
+        ld a,b
+        or c
+        jr nz,or_long           ; a minute or more: no rate
+        ld a,e
+        or a
+        ret z                   ; still the same second
+        push af
+        call or_mark
+        pop af
+        ld c,a
+        ld hl,(rx_total)
+        ld de,(rx_last)
+        ld (rx_last),hl
+        or a
+        sbc hl,de
+        call div_hl_c
+        ld (ol_rate),hl
+        jp stat_update
+or_long:
+        call or_mark
+        ld hl,(rx_total)
+        ld (rx_last),hl
+        ld hl,0
+        ld (ol_rate),hl
+        jp stat_update
 
-; ol_tick: a quiet tick of 60 Hz without the MPH-1V: every 60th ol_second. Changes all.
+; or_mark: rtc_last = rtc_now. Changes BC, DE, HL.
+or_mark:
+        ld hl,rtc_now
+        ld de,rtc_last
+        ld bc,3
+        ldir
+        ret
+
+; rtc_sub: rtc_now - the time at HL (hour, minute, second), over midnight too -> B = hours, C = minutes,
+; A = seconds. Changes BC, HL.
+rtc_sub:
+        push de
+        ld de,rtc_now+2
+        inc hl
+        inc hl
+        ld a,(de)
+        sub (hl)
+        ld b,0
+        jp p,rsb_sec
+        add a,60
+        inc b
+rsb_sec:
+        push af
+        dec de
+        dec hl
+        ld a,(de)
+        sub (hl)
+        sub b
+        ld b,0
+        jp p,rsb_min
+        add a,60
+        inc b
+rsb_min:
+        ld c,a
+        dec de
+        dec hl
+        ld a,(de)
+        sub (hl)
+        sub b
+        jp p,rsb_hour
+        add a,24
+rsb_hour:
+        ld b,a
+        pop af
+        pop de
+        ret
+
+; div_hl_c: HL = HL / C (C 1-127). Changes A, B.
+div_hl_c:
+        xor a
+        ld b,16
+dhc_bit:
+        add hl,hl
+        rla
+        cp c
+        jr c,dhc_next
+        sub c
+        inc l
+dhc_next:
+        djnz dhc_bit
+        ret
+
+; ol_tick: a quiet tick of 60 Hz without the MPH-1V: with the RTC every 15th asks for a reading (rtc_due), without
+; it every 60th is a second (ol_second). Changes all.
 ol_tick:
         ld a,(has_mph)
         or a
         ret nz
         ld hl,ol_ticks
         inc (hl)
+        ld a,(rtc_ok)
+        or a
+        jr z,ot_count
+        ld a,(hl)
+        cp 15
+        ret c
+        ld (hl),0
+        ld a,1
+        ld (rtc_due),a
+        ret
+ot_count:
         ld a,(hl)
         cp 60
         ret c

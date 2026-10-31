@@ -22,8 +22,8 @@ def main():
     if 0x100 + size != s['PROGRAM_END']:
         errors.append(f'sapiterm.com has {size} B, PROGRAM_END is {s["PROGRAM_END"]:04X}h')
     # everything must stay below C000h: MAP_CGA puts the CGA-1V there
-    if s['BSS_END'] > 0xC000:
-        errors.append(f'buffers and stack up to {s["BSS_END"]:04X}h, over C000h')
+    if s['BSS_END'] > s['att_slot']:
+        errors.append(f'buffers and stack up to {s["BSS_END"]:04X}h, over att_slot {s["att_slot"]:04X}h')
     # pasmo: an EQU using a symbol defined after it gives the code before it the value of the first pass;
     # the first LD SP,nn of the program must be STACK_TOP
     com = open(os.path.join(ROOT, 'build', 'sapiterm.com'), 'rb').read()
@@ -41,7 +41,8 @@ def main():
         sys.exit('\n'.join(errors))
     pages = (size + 255) // 256
     print(f'layout ok: program 0100-{s["PROGRAM_END"] - 1:04X}h ({size} B), buffers and stack to '
-          f'{s["BSS_END"] - 1:04X}h; in CP/M: SAVE {pages} SAPITERM.COM')
+          f'{s["BSS_END"] - 1:04X}h, {s["att_slot"] - s["BSS_END"]} B free below att_slot; in CP/M: SAVE {pages} '
+          'SAPITERM.COM')
 
 
 if __name__ == '__main__':

@@ -67,6 +67,8 @@ nenapodobí (`docs/rozhodnuti.md`).
   - **rozložení programu:** na 0100h `jp start` a úvodní text, do 0200h nulové buffery (`msg_buf`, FCB, `ans_reply`),
     od 0200h písma 4×8, PETSCII a ATASCII, 72 B výplně, tabulky (`tables.inc`), písmo MZ, teprve pak kód a data.
     Zarovnání písem tak nezávisí na velikosti kódu;
+  - **BSS** (není v `.COM`) jde hned za program bez zarovnání; `att_slot` a `att_pref` (8 stránek) jsou pevně na
+    B800h–BFFFh a BSS (se zásobníkem) musí skončit pod nimi (`check_build.py` vypíše, kolik zbývá);
   - `tools/fontgen.py` je vyrobí z `fonts/sapiterm4x8.txt`, `--preview` uloží náhled PNG.
 - **Dvojice barev po doménách** (doména = 4 textové řádky = 32 řádků obrazu, sedmá jen řádek 24):
   - `att_slot` (7 stránek): slot atributu v doméně (FFh nemá);
@@ -273,7 +275,7 @@ nenapodobí (`docs/rozhodnuti.md`).
 ## Historie (`src/history.asm`)
 
 - Kruh: s CGA-1V její stránka B (C000h, `CGA_SIZE` / `HIST_REC` = 93 řádků, `hist_ring_on` / `hist_ring_off`
-  nastaví MAP_CGA a CONFIG D1), bez ní `hist_buf` (= `STACK_TOP`) až po D5FFh (`HIST_LINES`). `hist_init` při
+  nastaví MAP_CGA a CONFIG D1), bez ní `hist_buf` (C000h, jen s MAP_CPM) až po D5FFh (`HIST_LINES` = 32). `hist_init` při
   startu nastaví `hist_vram`, `hist_base`, `hist_cap`. Záznam `HIST_REC` = 171 B se skládá a čte v `hv_line`.
   - `hist_head` je další zapisovaný řádek, `hist_count` počet řádků.
   - Záznam řádku: 80 znaků, 80 atributů, 10 B bitů EXT_KOI (buňka 0 v bitu 0), 1 B příznaků písma (EXT_8X8,

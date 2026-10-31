@@ -69,6 +69,7 @@ DPI_DATA        equ 0B1h        ; out: parameter, in: output
 DPI_RESET       equ 00h
 DPI_STSR        equ 03h         ; only resets the status pointer
 DPI_REVD        equ 06h         ; output: major, minor, 'D', board (bit 0 = DPI-1L)
+DPI_RTCGETT     equ 63h         ; output: hour, minute, second of the RTC (binary)
 DPI_TCPSTATUS   equ 80h         ; 10 B: connected, state, WORD waiting, IP, port
 DPI_TCPIP       equ 81h         ; 4 B: IP, first octet first
 DPI_TCPPORT     equ 82h         ; WORD

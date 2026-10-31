@@ -404,3 +404,17 @@ Autor byl stále pryč, rozhodoval jsem sám.
 - **Písma a tabulky zarovnané na stránku na začátku programu:** kód rostl přes hranici stránky a výplň před písmy
   skákala až o 256 B (dvakrát během dne). Teď je od 0200h, před nimi nulové buffery a za `font_ata.inc` pevných
   72 B výplně; `check_build.py` hlídá, že písmo začíná na 0200h.
+
+## 2026-10-31: doba spojení bez MPH-1V z RTC DPI-1L, BSS bez zarovnání
+
+- **MPH-1V není nutná** (ověřeno na sestavě s Consulem: stránka podle modelu, 2400 Bd). Bez ní je potichu zvonek
+  a tiky jdou ze zatemnění CGA-1V. Doba spojení z tiků v klidu se ale při provozu zpožďovala (5 s místo 15 s).
+- **Bez MPH-1V se doba spojení bere z RTC DPI-1L** (přání autora): RTCGETT (63h) dá hodinu, minutu a sekundu,
+  doba = teď − začátek spojení (i přes půlnoc), rychlost = přírůstek dat za uplynulé sekundy. Karta DPI-1L je
+  v sestavě vždy (bez ní nejde síť).
+  - Čtení jen když je potřeba: v klidu 4× za sekundu (15 tiků), při provozu po 2 KB přijatých dat. Příkaz karty
+    drží na HW Z80 ve WAIT až asi 8 ms, čtení při každém průchodu smyčkou by zdržovalo.
+  - Když karta čas nevrátí, počítají se tiky v klidu jako dřív. S MPH-1V zůstává čítač 0 (přesnější).
+- **`att_slot` a `att_pref` pevně na B800h–BFFFh,** ostatní BSS hned za programem: dřív začínalo BSS na další
+  stránce za programem a konec BSS skákal po 256 B (zase se to stalo s kódem RTC). Historie bez CGA-1V je teď od
+  C000h (32 řádků), s `att_slot` se nepotká: ten se bez CGA-1V nepoužívá a historie s CGA-1V je ve stránce B.

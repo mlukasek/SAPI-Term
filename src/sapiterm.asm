@@ -1469,7 +1469,13 @@ ol_mins:        defb 0
 ol_hours:       defb 0
 clk_acc:        defw 0          ; ol_clock: eighths of the counts of the MPH-1V in this second
 ol_ticks:       defb 0          ; without the MPH-1V: the quiet ticks of this second
+rtc_ok:         defb 0          ; without the MPH-1V: the time on line from the RTC of the DPI-1L
+rtc_due:        defb 0          ; read the RTC at the next ol_clock
+rtc_rx:         defw 0          ; rx_total at the last reading of the RTC
 OL_STATS        equ $-rx_total
+rtc_now:        defs 3          ; the RTC of the DPI-1L: hour, minute, second (dpi_time)
+rtc_t0:         defs 3          ; when the connection began
+rtc_last:       defs 3          ; at the last reading that gave a new second
 cfg_drive:      defb 0          ; the disk of SAPITERM.COM and SAPITERM.CFG (0 = A)
 cfg_term:       defb 0          ; SCREEN=: 0 CGA-1V, 1 AND-1V
 cfg_lptr:       defw 0          ; cfg_load: the end of the line in cfg_line
@@ -1546,10 +1552,11 @@ PROGRAM_END:
 ; buffers after the program (not in the .COM). Every EQU here may use only symbols defined above it: pasmo
 ; gives the code before it the value of its first pass otherwise (docs/vyvoj.md, tools/check_build.py).
 IN_RECORDS      equ 16                          ; input buffer: records of 128 bytes
-BSS             equ (PROGRAM_END + 0FFh) & 0FF00h
-att_slot        equ BSS                         ; 7 pages: slot of each attribute per domain (FFh = none)
-att_pref        equ att_slot + 256*DOMAINS      ; page: the preferred slot of each attribute
-scr_chr         equ att_pref + 256              ; shadow: characters
+att_slot        equ 0B800h                      ; 7 pages under C000h (the BSS must end below, check_build.py):
+                                                ; slot of each attribute per domain (FFh = none)
+att_pref        equ att_slot + 256*DOMAINS      ; page: the preferred slot of each attribute (to BFFFh)
+BSS             equ PROGRAM_END                 ; the rest needs no alignment: no padding after the program
+scr_chr         equ BSS                         ; shadow: characters
 scr_att         equ scr_chr + SCR_COLS*SCR_ROWS ; attributes
 scr_ext         equ scr_att + SCR_COLS*SCR_ROWS ; flags
 row_off         equ scr_ext + SCR_COLS*SCR_ROWS ; 25 words: offset of each screen row
@@ -1572,9 +1579,9 @@ vdt_dh          equ vdt_raw + 24*40             ; 24: double height in the row
 vdt_glyph       equ vdt_dh + 24                 ; 8: the glyph made by ga_vdt (after font_pet: drawn as it is)
 vdt_dhbuf       equ vdt_glyph + 8               ; 8
 STACK_TOP       equ vdt_dhbuf + 8 + 256
-BSS_END         equ STACK_TOP
-hist_buf        equ STACK_TOP                   ; the history without a CGA-1V, up to D5FFh (C000h and on
-                                                ; with MAP_CPM only)
+BSS_END         equ STACK_TOP                   ; at most att_slot
+hist_buf        equ 0C000h                      ; the history without a CGA-1V (and so without att_slot):
+                                                ; C000h-D5FFh, with MAP_CPM only
 HIST_LINES      equ (0D600h - hist_buf) / HIST_REC
 
         end start

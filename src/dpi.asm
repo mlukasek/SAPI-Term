@@ -71,6 +71,17 @@ dpi_cmd:
         otir
         jr dpi_status
 
+; dpi_time: the time of the RTC of the card (hour, minute, second) to rtc_now. NZ when the card failed.
+; Changes A, BC, HL.
+dpi_time:
+        ld a,DPI_RTCGETT
+        ld b,0
+        call dpi_cmd
+        ret nz
+        ld hl,rtc_now
+        ld b,3                  ; inir ends with B = 0: Z
+        jr dpi_output
+
 ; dpi_output: B bytes of output to HL. Changes A, BC, HL.
 dpi_output:
         ld c,DPI_DATA
