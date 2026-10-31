@@ -68,6 +68,8 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 2. **Historie:** na BBS po delším výpisu menu H, PgUp, šipky, Esc. Obrazovka se má vrátit beze změny.
 3. **Stahování:** na BBS, kde je účet (třeba Vertrauen), zvolit stažení malého souboru protokolem YMODEM nebo
    XMODEM, pak menu D. Soubor má být vedle `SAPITERM.COM`. Zajímá mě rychlost se skutečnou DPI-1L.
+   - **2026-10-31, autor na skutečném HW** (Vertrauen, nový účet): XMODEM i YMODEM fungují skvěle. XMODEM jméno
+     nepřenáší, soubor je `XMODEM.BIN` (další `XMODEM1.BIN` až `XMODEM9.BIN`). Rychlost neměřena.
 
 ## SAPITERM 0.8 (fáze 8, PETSCII)
 
