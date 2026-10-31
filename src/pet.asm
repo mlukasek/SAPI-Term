@@ -209,7 +209,7 @@ pc_color:
         cp 8Eh
         jp z,pet_upper_set
         cp 07h
-        jp z,mph_bell
+        jp z,bell
         ret                     ; the others: nothing
 pc_set_color:
         ld a,16

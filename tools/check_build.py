@@ -35,6 +35,9 @@ def main():
     for name in ('font_cp437', 'font_koi', 'and_map_cp437', 'col_dist', 'cga_rows', 'att_slot'):
         if name in s and s[name] & 0xFF:
             errors.append(f'{name} at {s[name]:04X}h is not page aligned')
+    # glyphs in RAM: cga_draw and cga_draw_8 step through the 8 lines with inc e
+    if s['vdt_glyph'] & 7:
+        errors.append(f'vdt_glyph at {s["vdt_glyph"]:04X}h is not 8-aligned')
     # the end of the TPA is checked at run time (tpa_check: the page of the BDOS entry at 0006h); the CP/M of
     # the set V has the BDOS at D606h, the history without a CGA-1V must get its HIST_MIN rows there
     need_cga = (s['hist_buf'] + 0xFF) & 0xFF00

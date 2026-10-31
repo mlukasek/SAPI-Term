@@ -90,6 +90,8 @@ nenapodobí (`docs/rozhodnuti.md`).
     Zarovnání písem tak nezávisí na velikosti kódu;
   - **BSS** (není v `.COM`) jde hned za program bez zarovnání; `att_slot` a `att_pref` (8 stránek) jsou pevně na
     B800h–BFFFh a BSS (se zásobníkem) musí skončit pod nimi (`check_build.py` vypíše, kolik zbývá);
+  - výjimka: `vdt_glyph` (znak Viewdata skládaný v RAM) je zarovnaný na 8, protože `cga_draw` a `cga_draw_8`
+    procházejí řádky znaku přes `inc e` (`check_build.py` to hlídá);
   - **C000h až BDOS** (konec TPA, jen s MAP_CPM; CCP pod BDOS nahraje warm boot na konci znovu): adresář BBS
     (`book`), blok XMODEM/YMODEM s `cfg_rec` a `cfg_line` (`xm_pkt`), kódy Viewdata (`vdt_raw`, `vdt_dh`), pak
     historie bez CGA-1V (12 řádků). Kreslení na ně nesahá (CGA-1V mapuje jen uvnitř `cga_draw`);
@@ -150,8 +152,8 @@ nenapodobí (`docs/rozhodnuti.md`).
 ## MPH-1V (báze 50h)
 
 - 82C54: CLK0 = CLK2 = 55 930,4 Hz.
-- BEL: `mph_bell` zapíše kanálu 0 YM3812 sinus 880 Hz (blok 5, F-číslo 244h), čeká 4 tiky a tón vypne
-  (`ym_regs`: pauza 38 T po adrese, 104 T po datech).
+- BEL: `bell` zapíše kanálu 0 YM3812 sinus 880 Hz (blok 5, F-číslo 244h), čeká 4 tiky a tón vypne
+  (`ym_regs`: pauza 38 T po adrese, 104 T po datech). Bez MPH-1V pípne bzučák klávesnice (oddíl Klávesnice).
 - Čítač 0 běží od detekce volně (režim 2, dělitel 0 = 65536, hradlo G0, IEN = 28h) jako hodiny rychlosti linky.
 - SAPI-Term spustí čítač 2 v režimu 2 s dělitelem 932 (60,01 Hz), hradlo G2 v IEN = 20h, bez přerušení.
   - 82C54 si dělitel nahraje až při dalším pulzu CLK (po 17,9 µs). Do té doby je v čítači cokoli, po zapnutí
@@ -167,7 +169,10 @@ nenapodobí (`docs/rozhodnuti.md`).
   3. `OUT 01h,03h` (ACK);
   4. čekat, až bit 0 = 1 (nejvýš 256 čtení);
   5. `OUT 01h,02h`.
-  - Bit 1 portu 01h = 0 rozezní bzučák EKL-1.
+  - Bit 1 portu 01h = 0 rozezní bzučák EKL-1 (aktivní, s vlastním oscilátorem; SAPIemu: 2,4 kHz). Consul 262.3
+    ho má podle SAPIemu stejně, na skutečném Consulu to ověřené není.
+  - **Zvonek bez MPH-1V:** `bell` zapíše `OUT 01h,00h`, čeká 4 tiky a zapíše `OUT 01h,02h`. `kbd_scan` mezitím
+    bere ACK i klid z `kb_out` (při pípnutí 01h a 00h), takže klávesa stisknutá během pípnutí bzučák nevypne.
 - **EKL-1** drží znak do ACK. **Consul 262.3** na JPR-1V dává jen impuls 1 ms bez zachycení, proto se klávesnice
   čte (`kbd_scan`) i v dlouhých smyčkách, nejméně jednou za ~0,5 ms. Klávesy čekají v kruhové frontě 16 znaků.
 - **Kódy:**

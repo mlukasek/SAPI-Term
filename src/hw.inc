@@ -17,7 +17,7 @@ KB_STAT         equ 01h         ; in: bit 0 = 0 while STROBE is active (a key is
                                 ; out: bit 0 = ACK, bit 1 = 0 sounds the EKL-1 buzzer
 KB_DATA         equ 02h         ; in: the key code, inverted
 KB_IDLE         equ 02h         ; out KB_STAT: ACK off, buzzer off
-KB_ACK          equ 03h         ; out KB_STAT: ACK on, buzzer off
+KB_ACK          equ 03h         ; out KB_STAT: ACK on, buzzer off (bit 1 = 0: the buzzer of the EKL-1 sounds)
 
 ; RAM-1V MAP register (bit 6 = MAP1, bit 7 = MAP2). Bits 0-5 of the same port are A16-A21 of the ZRD-1V RAM
 ; disk; the BIOS sets them again before every disk access.

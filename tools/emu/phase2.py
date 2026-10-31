@@ -96,13 +96,18 @@ def main():
     keys('\t', 4000)
     check('Terminál na:  CGA-1V' in mcp.call('screen_text'), 'Tab again: terminal back on the CGA-1V')
     check(sh.row(19).startswith('radek 6ahoj z AND-1V'), 'shadow kept while on the AND-1V')
+    wav = os.path.join(PREVIEW, 'f2_bell.wav').replace('\\', '/')
     mcp.call('audio_record', start=True)
     keys('\x07', 400)
-    bell = mcp.call('audio_record')
-    if consul:
-        check(bell.get('peak', 0) == 0, 'Ctrl+G: no MPH-1V, no tone (peak %s)' % bell.get('peak'))
-    else:
-        check(bell.get('peak', 0) > 1000, 'Ctrl+G: the bell, a tone on the MPH-1V (peak %s)' % bell.get('peak'))
+    bell = mcp.call('audio_record', file=wav)
+    hz, ms = emu.tone(wav)
+    what = 'peak %s, %.0f Hz, %.0f ms' % (bell.get('peak'), hz, ms)
+    if consul:     # the buzzer of the keyboard: 2.4 kHz in SAPIemu, 4 ticks of the VBI
+        check(bell.get('peak', 0) > 1000 and hz > 1500 and 40 < ms < 75,
+              'Ctrl+G: no MPH-1V, the buzzer of the keyboard (%s)' % what)
+    else:          # 880 Hz of the YM3812 (it fades after the key off), no buzzer in it
+        check(bell.get('peak', 0) > 1000 and 840 < hz < 920 and ms < 200,
+              'Ctrl+G: the bell, a tone on the MPH-1V (%s)' % what)
     keys('\x0c', 1500)
     check(all(sh.row(r).strip() == '' for r in (0, 12, 24)), 'Ctrl+L clears the screen')
     keys('\x14', 2000)

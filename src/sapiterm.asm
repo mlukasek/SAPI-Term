@@ -465,8 +465,8 @@ handle_key:
         jp z,hist_view
         cp 14h                  ; Ctrl+T: test screen
         jp z,test_screen
-        cp 07h                  ; Ctrl+G: the bell (a tone of the MPH-1V, without it nothing)
-        jp z,mph_bell
+        cp 07h                  ; Ctrl+G: the bell (the MPH-1V, without it the buzzer of the keyboard)
+        jp z,bell
         cp 0Ch                  ; Ctrl+L: clear
         jp z,scr_cls
         cp 10h                  ; Ctrl+P: next foreground
@@ -1379,6 +1379,7 @@ and_ptr:        defw AND_VRAM
 ad_lead:        defb 0          ; and_dec8, stat_dec8: a digit was written
 kb_head:        defb 0
 kb_tail:        defb 0
+kb_out:         defb KB_IDLE    ; KB_STAT without the ACK: KB_IDLE, 0 while the bell sounds on the keyboard
 soft_ticks:     defw 0
 term_dev:       defb 0          ; DEV_CGA or DEV_AND
 stat_dev:       defb 0          ; the other card, or 0
@@ -1630,7 +1631,8 @@ rx_raw          equ sauce_buf                   ; 253: a TCPRECV (SAUCE is not u
 log_buf         equ sauce_buf + 256             ; 128: a record of the session log
 hv_line         equ log_buf + 128               ; HIST_REC: a row of the history put together or read back (the
                                                 ; ring may be the page B of the CGA-1V: below C000h)
-vdt_glyph       equ hv_line + HIST_REC          ; 8: the glyph made by ga_vdt (after font_pet: drawn as it is)
+vdt_glyph       equ (hv_line + HIST_REC + 7) & 0FFF8h   ; 8: the glyph made by ga_vdt (after font_pet: drawn as
+                                                ; it is); 8-aligned, the drawing steps through it with inc e
 vdt_dhbuf       equ vdt_glyph + 8               ; 8
 STACK_TOP       equ vdt_dhbuf + 8 + 256
 BSS_END         equ STACK_TOP                   ; at most att_slot

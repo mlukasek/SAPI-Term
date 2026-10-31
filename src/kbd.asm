@@ -7,6 +7,7 @@
 ; kbd_init: ACK off, buzzer off, empty ring. Changes A.
 kbd_init:
         ld a,KB_IDLE
+        ld (kb_out),a
         out (KB_STAT),a
         xor a
         ld (kb_head),a
@@ -32,7 +33,8 @@ kbd_scan:
         in a,(KB_DATA)
         cpl
         ld c,a
-        ld a,KB_ACK
+        ld a,(kb_out)           ; ACK on, the buzzer as the bell has it
+        inc a
         out (KB_STAT),a
         ld b,0                  ; wait for STROBE inactive: EKL-1 lifts it after the ACK, the Consul after its
 ks_wait:                        ; ~1 ms pulse (256 reads = 2.5 ms at 4 MHz)
@@ -41,7 +43,7 @@ ks_wait:                        ; ~1 ms pulse (256 reads = 2.5 ms at 4 MHz)
         jr c,ks_released
         djnz ks_wait
 ks_released:
-        ld a,KB_IDLE
+        ld a,(kb_out)
         out (KB_STAT),a
         ld a,(kb_head)
         ld l,a

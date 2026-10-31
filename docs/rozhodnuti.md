@@ -408,8 +408,8 @@ Autor byl stále pryč, rozhodoval jsem sám.
 
 ## 2026-10-31: doba spojení bez MPH-1V z RTC DPI-1L, BSS bez zarovnání
 
-- **MPH-1V není nutná** (ověřeno na sestavě s Consulem: stránka podle modelu, 2400 Bd). Bez ní je potichu zvonek
-  a tiky jdou ze zatemnění CGA-1V. Doba spojení z tiků v klidu se ale při provozu zpožďovala (5 s místo 15 s).
+- **MPH-1V není nutná** (ověřeno na sestavě s Consulem: stránka podle modelu, 2400 Bd). Bez ní byl potichu
+  zvonek (od 2026-10-31 bzučák klávesnice, níže) a tiky jdou ze zatemnění CGA-1V. Doba spojení z tiků v klidu se ale při provozu zpožďovala (5 s místo 15 s).
 - **Bez MPH-1V se doba spojení bere z RTC DPI-1L** (přání autora): RTCGETT (63h) dá hodinu, minutu a sekundu,
   doba = teď − začátek spojení (i přes půlnoc), rychlost = přírůstek dat za uplynulé sekundy. Karta DPI-1L je
   v sestavě vždy (bez ní nejde síť).
@@ -440,3 +440,14 @@ Autor byl stále pryč, rozhodoval jsem sám.
   karet, ještě než `cfg_load` zapíše od C000h; při malé TPA hláška a návrat do CP/M. Ověřeno skokem do BDOS na
   CC00h a 0006h = CC00h: hláška, warm boot vrátí 0006h, `DIR` funguje.
 - **Hlášky při startu vidět** (`quit_say`): `quit` maže konzoli ECMONu, hláška se proto píše až po smazání.
+
+## 2026-10-31: zvonek bez MPH-1V na bzučáku klávesnice
+
+- **Volba autora:** s MPH-1V zvoní YM3812 (880 Hz) jako dosud, bez ní bzučák klávesnice (EKL-1: port 01h bit 1
+  = 0, aktivní bzučák). Zvonek tak funguje v každé sestavě. MPH-1V zůstává volitelná: dává přesnější čas pro
+  emulaci rychlosti modemu (čítač 0, při rolování nic neztratí) a příjemnější tón přes zesilovač.
+- **Další možnosti byly:** vždy jen bzučák, nebo volba zdroje v menu.
+- **Délka stejná jako u YM3812:** 4 tiky z `tick_poll` (MPH-1V, jinak VBI CGA-1V). Bez MPH-1V i CGA-1V tiky
+  odhaduje počítání průchodů, pípnutí pak trvá déle (podle taktů asi 1/4 s, neměřeno).
+- **Klávesnice během pípnutí:** stejný port nese ACK. `kbd_scan` proto bere hodnoty portu z `kb_out` (klid 02h,
+  při pípnutí 00h, ACK o 1 víc), klávesa přijatá během pípnutí ho nepřeruší.

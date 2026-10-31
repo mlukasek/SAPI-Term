@@ -67,7 +67,7 @@ python tools\romfont.py --c64 work\roms\c64\chargen-901225-01.bin --atari work\r
 
 | Skript | Co dělá |
 |---|---|
-| `phase2.py [--consul]` | fáze 2: SAPITERM z disku, stavová obrazovka, stínová obrazovka v paměti (titulek, tabulka CP437), psaní a rolování, Tab na AND-1V a zpět, Ctrl+G (tón MPH-1V, bez ní ticho), Ctrl+L, Ctrl+T, Ctrl+] zpět na výběr BBS, Ctrl+] do CP/M a `DIR` po návratu; snímky `build/preview/f2_*.png` |
+| `phase2.py [--consul]` | fáze 2: SAPITERM z disku, stavová obrazovka, stínová obrazovka v paměti (titulek, tabulka CP437), psaní a rolování, Tab na AND-1V a zpět, Ctrl+G (tón MPH-1V 880 Hz, bez ní bzučák klávesnice: frekvence a délka z nahrávky `build/preview/f2_bell.wav`), Ctrl+L, Ctrl+T, Ctrl+] zpět na výběr BBS, Ctrl+] do CP/M a `DIR` po návratu; snímky `build/preview/f2_*.png` |
 | `phase3.py [JMÉNO...]` | fáze 3: každý testovací soubor `SAPITERM JMÉNO.ANS`, stínová obrazovka a kurzor proti `tools/ansiref.py`, snímek CGA-1V proti modelu vykreslenému fontem (bod po bodu), žádný zápis palety mimo VBI; snímky `build/preview/f3_*.png` |
 | `phase4.py` | fáze 4: spustí `tools/testbbs.py` (127.0.0.1:6023), `SAPITERM 127.0.0.1:6023`; vyjednání telnetu, tři stránky po síti proti modelu (stín i obraz), CPR a DA, menu Ctrl+] na CGA-1V (text z obrazu, `cgaread.py`) a stav na AND-1V (protokol, doba, data), po Esc obraz proti modelu, odeslané klávesy, NAWS po Tab, konec spojení od BBS, odmítnutý port, neznámé jméno |
 | `phase5.py` | fáze 5: výchozí `SAPITERM.CFG`, adresář na úvodní obrazovce, mazání, chybné číslo; na testovací BBS všech šest znakových sad (stránka glyf po glyfu proti `tools/tables.py`, odeslaná „čŘ“), U, T; výběr číslem se sadou z adresáře, Tab na výzvě; `TYPE SAPITERM.CFG` po návratu; `SAPITERM 13` s AND-1V a Consulem ze souboru |
@@ -92,12 +92,20 @@ python tools\romfont.py --c64 work\roms\c64\chargen-901225-01.bin --atari work\r
   dá kódu před sebou hodnotu z prvního průchodu, kde ten symbol ještě není (0). `.sym` přitom ukazuje správnou
   hodnotu. Tak skončil `ld sp,STACK_TOP` uvnitř vstupního bufferu (`IN_RECORDS` bylo až za `sauce_buf`).
   Konstanty definovat před prvním použitím ve výrazu `equ`. `check_build.py` hlídá aspoň `LD SP`.
+- **Znak pro kreslení v RAM musí být zarovnaný na 8:** `cga_draw` a `cga_draw_8` posouvají ukazatel jen `inc e`.
+  `vdt_glyph` v BSS bez zarovnání vyšel po přidání pár bajtů kódu na A8FAh–A901h, poslední dva řádky bodů se
+  četly z A800h a obraz Viewdata nesouhlasil (`phase8.py`). Teď `(… + 7) & 0FFF8h`, `check_build.py` to hlídá.
 - **`jr` přes rozvinutou smyčku** (`rept 80 / ldi`) nedosáhne, pasmo hlásí „Relative jump out of range“. Rychlá
   oprava: smyčka v Bashi, která pasmo pustí a nahlášený řádek změní z `jr` na `jp`.
 - **Rutiny, které mění A** (`and_at`, `and_putc`…): před voláním si příznak v A uložit. Na tom se spálila první
   verze `show_yes_no`.
 - **MCP:**
   - `read_memory` vrací nejvýš 4096 B (`emu.read` dělí);
+  - `read_memory` ukazuje paměť z pohledu CPU: kdyby se emulátor zastavil, když má SAPI-Term namapovanou CGA-1V,
+    četlo by se nad C000h z karty, ne z RAM (adresář BBS, buffery). `emu.read` proto nad C000h nejdřív počká
+    po 1 ms, až `machine_info` ukáže MAP1 i MAP2 = 0 (`emu.ram_view`). Pojistka po jednom selhání `phase5.py`
+    (2026-10-31: položky adresáře přečtené jako nuly). Příčina ověřená není, ve 36 dalších startech se to
+    nezopakovalo a karta v tu chvíli namapovaná nebyla.
   - `cycles` počítá takty 4 MHz i při CPU 2 MHz;
   - `run_until` s textem, který už na obrazovce je (starý `A>`), skončí hned. `emu.command` proto nejdřív
     nechá běžet dobu psaní.

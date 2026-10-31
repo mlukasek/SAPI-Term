@@ -18,7 +18,7 @@
 - **Terminály C64 (PETSCII), Atari (ATASCII) a Prestel (Viewdata)** s písmy C64 a Atari z jejich ROM a jejich
   barvami. ANSI ve 40 sloupcích má písmo Sharp MZ-800 a česká písmena jako české CP/M pro MZ-800.
 - **Dál:**
-  - blikání, zvonek na MPH-1V;
+  - blikání, zvonek na MPH-1V (bez ní bzučák klávesnice);
   - historie 93 řádků ve stránce B CGA-1V;
   - čeština z EKL-1 v sadě BBS.
 - **Testy:** `tools/emu/phase2.py` až `phase8.py` (i `phase2.py --consul`) procházejí všechny,
@@ -210,6 +210,12 @@
 - **Detekce MPH-1V počká na nahrání dělitele (2026-10-31):** 82C54 vezme dělitel čítače 2 až dalším pulzem CLK
   (po 17,9 µs), první čtení proto až asi 0,1 ms po zápisu. Dřív šlo asi 20 µs po zápisu a po zapnutí mohl
   nedefinovaný obsah čítače (víc než 932) kartu skrýt. V emulátoru se to neprojevilo.
+- **Zvonek bez MPH-1V na bzučáku klávesnice (2026-10-31, volba autora):** s MPH-1V dál tón 880 Hz z YM3812,
+  bez ní bzučák EKL-1 (port 01h bit 1 = 0) na 4 tiky. `phase2.py` pozná zdroj podle frekvence v nahrávce WAV:
+  s MPH-1V 878 Hz (155 ms i s doznětím), na sestavě s Consulem bzučák 2397 Hz, 58 ms.
+- **`vdt_glyph` zarovnaný na 8 (2026-10-31):** po přidání bzučáku vyšel přes hranici stránky a kreslení (`inc e`)
+  bralo dva řádky bodů odjinud: obraz Viewdata v `phase8.py` nesouhlasil. Chyba od BSS bez zarovnání, dřív
+  náhodou nevadila. `check_build.py` teď zarovnání hlídá.
 - **Skutečný HW (2026-10-31, autor):** SAPI-Term jede perfektně, akvárium na telehack.com stejně rychle jako
   v SAPIemu (WAIT DPI-1L příjem znatelně nezpomaluje). Další body ke zkoušce jsou v `docs/hw-otazky.md`.
 - **Konec TPA za běhu (2026-10-31):** BDOS se bere z adresy na 0006h, ne pevně D600h (jiné buildy CP/M). S CGA-1V
@@ -250,7 +256,7 @@ Fáze 9: skutečný HW dávkově s autorem (`docs/hw-otazky.md`). Všechny ostat
 - **Raw TCP** (menu N, v adresáři `,RAW`): pro BBS, které telnet nemluví. Přijaté bajty jdou beze změny, FFh se
   neposílá dvakrát a za CR nejde NUL. Ověřeno v `phase8.py` (FFh jako π: s telnetem jedno, raw dvě).
 - **BEL** (v ATASCII bzučák FDh) zahraje krátký tón 880 Hz na YM3812 MPH-1V (asi 1/15 s, program na tu dobu
-  čeká). Bez MPH-1V je ticho. Ověřeno nahrávkou zvuku v `tools/emu/phase6.py`.
+  čeká). Bez MPH-1V pípne bzučák klávesnice. Ověřeno nahrávkou zvuku v `tools/emu/phase6.py` a `phase2.py`.
 - **Blikání a kurzor stojí, když běží data:** tiky pro blikání se počítají jen v klidu. Při pomalé lince se kurzor
   ukazuje stále.
 - **Znaková sada BBS Liane** (`bbs.vslib.cz`) není známá: úvodní obrazovka je v ASCII a hlubší pohled chce

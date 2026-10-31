@@ -77,23 +77,39 @@ mph_poll_tick:
         out (MPH_IACK),a        ; A = 80h clears F2
         ret
 
-; mph_bell: BEL as a short tone (880 Hz, about 1/15 s) on channel 0 of the YM3812; without the MPH-1V nothing.
-; Changes A, B, HL.
-mph_bell:
+; bell: BEL as a short tone, 4 ticks of 60 Hz (about 1/15 s): 880 Hz on channel 0 of the YM3812, without the
+; MPH-1V the buzzer of the keyboard (KB_STAT bit 1 = 0; kbd_scan keeps it through kb_out). Changes A, B, HL.
+bell:
         ld a,(has_mph)
         or a
-        ret z
+        jr z,bell_kbd
         ld hl,bell_on
         call ym_regs
-        ld b,4                  ; 4 ticks of 60 Hz
-mb_wait:
+        call bell_wait
+        ld hl,bell_off
+        jr ym_regs
+bell_kbd:
+        xor a                   ; ACK off, the buzzer on
+        ld (kb_out),a
+        out (KB_STAT),a
+        call bell_wait
+        ld a,KB_IDLE
+        ld (kb_out),a
+        out (KB_STAT),a
+        ret
+
+; bell_wait: 4 ticks of tick_poll, the keyboard read meanwhile. Changes A, B.
+bell_wait:
+        ld b,4
+bw_loop:
         call kbd_scan
         push hl
         call tick_poll
         pop hl
-        jr z,mb_wait
-        djnz mb_wait
-        inc hl                  ; the key off after the FFh
+        jr z,bw_loop
+        djnz bw_loop
+        ret
+
 ; ym_regs: pairs register, value at HL to the YM3812 (FFh ends), with the waits it needs (3.3 us after the
 ; address, 23 us after the data). Changes A, HL.
 ym_regs:
@@ -116,7 +132,8 @@ ymr_wait:
 bell_on:                        ; sine, the modulator silent, fast attack, then key on: block 5, F-number 244h
         defb 01h,00h, 20h,01h, 23h,01h, 40h,3Fh, 43h,06h, 60h,0F0h, 63h,0F0h, 80h,0F7h, 83h,0F7h
         defb 0C0h,00h, 0A0h,44h, 0B0h,36h, 0FFh
-        defb 0B0h,16h, 0FFh     ; key off (mph_bell after the wait)
+bell_off:
+        defb 0B0h,16h, 0FFh     ; key off
 
 ; mph_off: gates closed, no interrupt, flags cleared. Changes A.
 mph_off:

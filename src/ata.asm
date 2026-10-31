@@ -65,7 +65,7 @@ ata_putc:
         cp 9Fh
         ret z
         cp 0FDh                 ; the buzzer
-        jp z,mph_bell
+        jp z,bell
         cp 0FEh
         jp z,ata_del_char
         cp 0FFh
