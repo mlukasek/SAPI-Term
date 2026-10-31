@@ -1329,6 +1329,7 @@ ans_np:         defb 0
 ans_priv:       defb 0
 ans_inter:      defb 0
 ans_par:        defs ANS_PARAMS
+ans_pp:         defw 0          ; the current parameter (ans_par + ans_np)
 sgr_fg:         defb 7          ; SGR state: ANSI colours, flags (SGR_SIZE bytes)
 sgr_bg:         defb 0
 sgr_bold:       defb 0
@@ -1432,7 +1433,6 @@ xm_expect:      defb 0          ; the block number expected
 xm_left:        defs 4          ; bytes of the file still to write (FFFFFFFFh unknown)
 xm_fcb:         defs 36
 pd_out:         defw 0          ; put_dec16
-msg_buf:        defs 64         ; a message made up (xm_run, xm_progress)
 term_putc:      jp ansi_putc    ; a byte of the BBS to the terminal: ansi_putc or pet_putc (pet.asm)
 rgb_tab:        defw ansi_rgb   ; the colours of the attributes (pal_slot): ansi_rgb or c64_rgb
 pet_lower:      defb 0          ; PETSCII: 80h = the lower case set
@@ -1465,7 +1465,6 @@ hv_att:         defb 0
 hv_wrap:        defb 0
 hv_rtop:        defb 0
 hv_rbot:        defb 0
-cfg_fcb:        defs 36
 
 ; font and tables, page aligned
         defs (256 - ($ & 0FFh)) & 0FFh
@@ -1475,6 +1474,10 @@ cfg_fcb:        defs 36
         include "../build/font_pet.inc"
         include "../build/font_ata.inc"
         include "../build/font_mz.inc"
+
+; zero buffers in the .COM after the aligned fonts, where they move no alignment
+msg_buf:        defs 64         ; a message made up (xm_run, xm_progress)
+cfg_fcb:        defs 36
 
 PROGRAM_END:
 

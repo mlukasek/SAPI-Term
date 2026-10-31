@@ -368,3 +368,21 @@ Autor byl stále pryč, rozhodoval jsem sám.
   Kdo ji má v `SAPITERM.CFG` jako PETSCII, opraví ji v menu: Z až na ATASCII, N na raw TCP, U uloží.
 - **Pro PETSCII zůstává Retro Campus** (číslo 5): v menu Z až na PETSCII, pak volba 1. Adresář jinou ověřenou
   BBS pro C64 nemá.
+
+## 2026-10-31: rychlejší příjem (akvárium z telehack.com)
+
+- **Měřeno na záznamu akvária telehacku** (`aquarium`, zachycený jako terminál ANSI 80×25). Telehack posílá
+  průměrně 17 KB/s, ve špičkách 35 KB/s. Na jeden nakreslený znak je to asi 23 bajtů: posun kurzoru a dvě až
+  čtyři SGR (`ESC[13;49H ESC[1m ESC[30m X ESC[39m ESC[22m`). V 32 KB je jen 1405 tisknutelných znaků.
+- **Čas nejde do kreslení, ale do zpracování bajtů** (profil po síti): telnet po bajtech 27 %, předávání
+  terminálu 12 %, parser ANSI 23 %, kreslení na CGA-1V asi 12 %.
+- **Úpravy podle profilu:**
+  - telnet kopíruje data rychlou smyčkou až po IAC nebo NUL, ty bere `tn_byte` (asi 64 místo 255 taktů na bajt);
+  - CSI maže parametry po slovech, číslice jdou přes ukazatel `ans_pp`, skok na příkaz bez `add_hl_a`;
+  - SGR zkouší nejdřív barvy 30–49, `ansi_to_cga` bez `add_hl_a` (ten si uchovává AF, 68 taktů).
+- **Výsledek:** akvárium po síti 4,3 → 6,0 KB/s (1,38×), obraz přesně podle modelu. Prohlížeč souborů nezpomalil
+  (SUNSET 3,25 → 3,14 s). Akvárium tím dál nestíhá: chce 17 KB/s, i VT100 na 19200 Bd by zvládl jen 1,9 KB/s.
+- **`msg_buf` a `cfg_fcb` jsou za písmy:** kód narostl přes hranici stránky a zarovnání písem by stálo 195 B
+  výplně.
+- **Na skutečném HW bude příjem pomalejší:** DPI-1L drží Z80 po příkazu TCP ve WAIT až asi 8 ms, na 253 B to je
+  kolem 120 taktů na bajt navíc. Emulátor to nemodeluje (`docs/hw-otazky.md`).

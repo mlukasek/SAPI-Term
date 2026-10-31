@@ -187,6 +187,8 @@
   jako ATASCII s raw TCP (`docs/rozhodnuti.md`). Ověřeno v emulátoru, snímek `build/preview/f8_ata_basement.png`.
 - **telehack.com v adresáři (2026-10-31):** šestnáctá položka, uložil ji autor. Adresář je teď plný; `phase8.py`
   proto na začátku šestnáctku smaže, aby U mohlo uložit testovací BBS.
+- **Rychlejší příjem (2026-10-31):** akvárium z telehack.com po síti 4,3 → 6,0 KB/s (telnet rychlou smyčkou,
+  parser CSI a SGR bez `add_hl_a`), `docs/rozhodnuti.md`. Testy fází 3–8 procházejí.
 
 ## Plán (schválený 2026-10-30, rozhodnutí v `docs/rozhodnuti.md`)
 

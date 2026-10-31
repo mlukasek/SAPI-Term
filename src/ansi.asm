@@ -120,19 +120,21 @@ ans_to_normal:
         xor a
         ld (ans_state),a
         ret
-ans_csi_start:
+ans_csi_start:                  ; the ANS_PARAMS (8) parameters cleared by words
         ld a,ANS_CSI
         ld (ans_state),a
         xor a
         ld (ans_np),a
         ld (ans_priv),a
         ld (ans_inter),a
+        ld h,a
+        ld l,a
+        ld (ans_par),hl
+        ld (ans_par+2),hl
+        ld (ans_par+4),hl
+        ld (ans_par+6),hl
         ld hl,ans_par
-        ld b,ANS_PARAMS
-acs_clear:
-        ld (hl),a
-        inc hl
-        djnz acs_clear
+        ld (ans_pp),hl
         ret
 
 ; CSI: parameters, then the final byte runs the command.
@@ -144,7 +146,7 @@ ans_csi:
         jr nc,csi_other
         sub '0'                 ; digit: param = param * 10 + digit, at most 255
         ld e,a
-        call par_addr
+        ld hl,(ans_pp)
         ld a,(hl)
         cp 26
         jr nc,csi_max
@@ -177,6 +179,9 @@ csi_next:
         ret nc
         inc a
         ld (ans_np),a
+        ld hl,(ans_pp)
+        inc hl
+        ld (ans_pp),hl
         ret
 csi_ctl:
         cp 20h
@@ -187,9 +192,9 @@ csi_c0:
         cp 1Bh
         jp z,ans_esc_start
         cp 18h                  ; CAN, SUB: abort
-        jr z,ans_to_normal
+        jp z,ans_to_normal
         cp 1Ah
-        jr z,ans_to_normal
+        jp z,ans_to_normal
         ret                     ; other controls inside a sequence: ignored
 csi_final:
         ld b,a
@@ -211,8 +216,10 @@ csi_final:
         sub 40h
         ret c
         add a,a
-        ld hl,csi_jump
-        call add_hl_a
+        ld l,a
+        ld h,0
+        ld de,csi_jump
+        add hl,de
         ld a,(hl)
         inc hl
         ld h,(hl)
@@ -230,12 +237,6 @@ csi_jump:
         defw csi_none, csi_none, csi_none, csi_none, csi_none, csi_sgr, csi_dsr, csi_none ; h i j k l m n o
         defw csi_none, csi_none, csi_stbm, ans_save, csi_none, ans_restore, csi_none, csi_none ; p q r s t u v w
         defw csi_none, csi_none, csi_none, csi_none, csi_none, csi_none, csi_none       ; x y z { | } ~
-
-; par_addr: HL = address of the current parameter. Changes A.
-par_addr:
-        ld a,(ans_np)
-        ld hl,ans_par
-        jp add_hl_a
 
 ; p0: A = parameter 0 as it is. p1: A = parameter 0, 1 when 0 (the default of counts). p1b: the same for
 ; parameter 1.
@@ -774,10 +775,39 @@ sgr_skip:
 sgr_done:
         jp sgr_apply
 
-; sgr_one: one SGR parameter A.
+; sgr_one: one SGR parameter A. The colours first (30-49, the most of them), then the rest.
 sgr_one:
         or a
-        jr nz,so_1
+        jr z,so_reset_all
+        cp 30
+        jr c,so_1
+        cp 50
+        jr nc,so_bright
+        sub 30
+        cp 8
+        jr c,so_fg              ; 30-37
+        cp 9
+        jr z,so_fg_default      ; 39
+        sub 10
+        cp 8
+        jr c,so_bg              ; 40-47
+        cp 9
+        jr z,so_bg_default      ; 49
+        ret
+so_bright:
+        sub 90
+        ret c
+        cp 8
+        jr c,so_fg_bright       ; 90-97
+        sub 10
+        ret c
+        cp 8
+        ret nc
+        ld (sgr_bg),a           ; 100-107: bright background
+        ld a,1
+        ld (sgr_bghi),a
+        ret
+so_reset_all:
         ld hl,sgr_fg            ; 0: all off
         ld (hl),7
         inc hl
@@ -805,28 +835,6 @@ so_1:
         jr z,so_set
         cp 27
         jr z,so_clear
-        cp 39
-        jr z,so_fg_default
-        cp 49
-        jr z,so_bg_default
-        sub 30
-        ret c
-        cp 8
-        jr c,so_fg              ; 30-37
-        sub 10
-        cp 8
-        jr c,so_bg              ; 40-47
-        sub 50
-        ret c
-        cp 8
-        jr c,so_fg_bright       ; 90-97
-        sub 10
-        ret c
-        cp 8
-        ret nc
-        ld (sgr_bg),a           ; 100-107: bright background
-        ld a,1
-        ld (sgr_bghi),a
         ret
 so_set:
         ld (hl),1
@@ -899,7 +907,11 @@ sa_set:                         ; B = foreground, C = background
 ansi_to_cga:
         and 7
         ld hl,ansi_cga
-        call add_hl_a
+        add a,l
+        ld l,a
+        jr nc,atc_hl
+        inc h
+atc_hl:
         ld a,(hl)
         ret
 ansi_cga:

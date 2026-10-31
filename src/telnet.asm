@@ -37,11 +37,30 @@ tr_clear:
         djnz tr_clear
         ret
 
-; tn_filter: B received bytes at HL (B > 0); raw TCP (tn_raw): all of them data. Changes all.
+; tn_filter: B received bytes at HL (B > 0); raw TCP (tn_raw): all of them data. Outside a telnet command the
+; data are copied at once up to an IAC or a NUL (maybe the NUL of CR NUL), which tn_byte takes. Changes all.
 tn_filter:
         ld a,(tn_raw)
         or a
         jr nz,tf_raw
+tf_next:
+        ld a,(tn_state)
+        or a
+        jr nz,tf_byte
+        ld de,(in_end)
+tf_copy:
+        ld a,(hl)
+        cp TN_IAC
+        jr z,tf_stop
+        or a
+        jr z,tf_stop
+        ld (de),a
+        inc de
+        inc hl
+        djnz tf_copy
+        jr tf_cr
+tf_stop:
+        call tf_cr
 tf_byte:
         ld a,(hl)
         inc hl
@@ -50,7 +69,28 @@ tf_byte:
         call tn_byte
         pop bc
         pop hl
-        djnz tf_byte
+        djnz tf_next
+        ret
+
+; tf_cr: after tf_copy: in_end = DE, tn_cr = the last byte copied was CR (nothing copied: tn_cr stays).
+; Changes A.
+tf_cr:
+        push hl
+        ld hl,(in_end)
+        or a
+        sbc hl,de
+        pop hl
+        ret z
+        ld (in_end),de
+        dec de
+        ld a,(de)
+        inc de
+        sub 0Dh
+        jr z,tc_set
+        ld a,0FFh
+tc_set:
+        inc a
+        ld (tn_cr),a
         ret
 tf_raw:
         ld de,(in_end)
