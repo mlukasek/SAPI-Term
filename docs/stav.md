@@ -264,8 +264,9 @@ Fáze 9: skutečný HW dávkově s autorem (`docs/hw-otazky.md`). Všechny ostat
   čeká). Bez MPH-1V pípne bzučák klávesnice. Ověřeno nahrávkou zvuku v `tools/emu/phase6.py` a `phase2.py`.
 - **Blikání a kurzor stojí, když běží data:** tiky pro blikání se počítají jen v klidu. Při pomalé lince se kurzor
   ukazuje stále.
-- **Znaková sada BBS Liane** (`bbs.vslib.cz`) není známá: úvodní obrazovka je v ASCII a hlubší pohled chce
-  přihlášení (BBS nabízí veřejný účet `guest`). V adresáři je zatím CP437. Na BBS se dá vyzkoušet Z a uložit U.
+- **Znaková sada BBS Liane** (`bbs.vslib.cz`) není známá a nevadí: podle autora (2026-10-31) píše vše anglicky.
+  V adresáři zůstává CP437. Čeština z EKL-1 je na skutečném HW ověřená jen na testovací obrazovce, převody do sad
+  BBS v emulátoru (`phase5.py`); autor je dál neřeší (česká BBS dnes skoro není).
 - **Paměť:** program má 31,2 KB a pod C000h zbývají 2,6 KB. Historie bez CGA-1V (v RAM) se s každým dalším kódem
   zmenšuje (48 řádků). Víc místa by daly písma PETSCII a ATASCII nahrávaná ze souboru až při potřebě.
 - **Aleco Experience BBS** (Praha, Atari, `bbs.alecoexp.cz`) 2026-10-30 spojení na port 23 odmítala, web běží.

@@ -39,6 +39,9 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 3. **Čeština z EKL-1:** na BBS se sadou UTF-8 nebo Latin-2 napsat „Příliš žluťoučký kůň“ (třeba do vyhledávání
    nebo zprávy, bez odeslání) a podívat se, co BBS ukáže. Na Liane (`bbs.vslib.cz`, účet guest) zjistit její
    znakovou sadu: Z v menu, dokud čeština nesedí, pak U.
+   - **2026-10-31, autor na skutečném HW:** na testovací obrazovce se české znaky z EKL-1 píšou i zobrazují
+     správně. Na BBS neověřeno: Liane píše vše anglicky a česká BBS dnes skoro není (ani dřív se čeština kvůli
+     problémům moc nepoužívala). Autor to dál neřeší, převody sad jsou ověřené jen v emulátoru (`phase5.py`).
 4. **Seznam BBS přes skutečnou DPI-1L:** projít pár BBS z adresáře (úvodní obrazovka, odpojení O).
 
 ## SAPITERM 0.5 (fáze 6)
