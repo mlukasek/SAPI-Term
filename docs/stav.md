@@ -203,6 +203,8 @@
 - **Buffery nad C000h (2026-10-31):** adresář BBS, blok XMODEM/`SAPITERM.CFG` a kódy Viewdata jsou v RAM
   C000h–D5FFh (konec TPA), kterou s CGA-1V nic nepoužívalo. Pod tabulkami dvojic barev zbývá 3838 B. Historie bez
   CGA-1V má 12 řádků (s CGA-1V dál 93 ve stránce B). Testy fází 2–8 procházejí.
+- **Z testovací obrazovky Ctrl+] zpět na výběr BBS (2026-10-31):** dřív ukončil program. Na výběru BBS
+  a po prohlížení souboru (`SAPITERM SOUBOR.ANS`) Ctrl+] dál vrací do CP/M.
 - **Skutečný HW (2026-10-31, autor):** SAPI-Term jede perfektně, akvárium na telehack.com stejně rychle jako
   v SAPIemu (WAIT DPI-1L příjem znatelně nezpomaluje). Další body ke zkoušce jsou v `docs/hw-otazky.md`.
 - **Konec TPA za běhu (2026-10-31):** BDOS se bere z adresy na 0006h, ne pevně D600h (jiné buildy CP/M). S CGA-1V

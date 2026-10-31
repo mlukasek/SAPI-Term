@@ -127,6 +127,8 @@ st_net:
 st_online:
         call online
 st_prompt:
+        xor a
+        ld (test_on),a
         call ui_prompt
         cp 2
         jp z,quit
@@ -135,6 +137,8 @@ st_prompt:
 st_test:
         xor a
         ld (mode),a
+        inc a
+        ld (test_on),a
         call test_screen
         call stat_screen
 st_main:
@@ -442,10 +446,19 @@ q_iff:
 q_boot:
         jp WBOOT
 
+; hk_menu: Ctrl+] of the typewriter: the test screen goes back to the start screen (the stack as at the start),
+; after a file shown SAPI-Term ends.
+hk_menu:
+        ld a,(test_on)
+        or a
+        jp z,quit
+        ld sp,STACK_TOP
+        jp st_prompt
+
 ; handle_key: the local typewriter. Changes all.
 handle_key:
         cp K_MENU
-        jp z,quit
+        jp z,hk_menu
         cp 09h                  ; Tab: swap the cards
         jp z,swap_cards
         cp 12h                  ; PgUp of the EKL-1 (Ctrl+R): the history
@@ -930,6 +943,11 @@ sst_pairs:
         call ss_text
         ld de,19*256+2
         ld hl,t_key5
+        ld a,(test_on)
+        or a
+        jr z,sst_key5
+        ld hl,t_key5_test
+sst_key5:
         call ss_text
         jp stat_update
 sst_online:                     ; on line: the BBS, protocol, time and data (stat_update), set, speed, log, keys
@@ -1492,6 +1510,7 @@ om_msg:         defw 0          ; ol_menu: what the last choice did (KOI text, 0
 om_stat:        defb 0          ; ol_menu: the status card (stat_dev) while the menu is on the terminal card
 om_save:        defb 0          ; ol_menu: a setting changed, to be saved when the menu closes
 tpa_top:        defb 0          ; tpa_check: the first page of the BDOS (nothing written from there on)
+test_on:        defb 0          ; the test screen from the start screen: Ctrl+] goes back there
 quit_text:      defw 0          ; quit_say: the message for the console of CP/M (0 none)
 txt_crlf:       defb 0Dh,0Ah,0
 stat_new:       defb 0          ; stat_putc: a new pair of colours, the palette follows
