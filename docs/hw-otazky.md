@@ -46,6 +46,7 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
    V menu (Ctrl+]) T přepne klávesnici a uloží. Po novém startu musí typ zůstat (zápis na ZRD-1V).
    - **2026-10-31, autor na skutečném HW:** uložení typu klávesnice funguje.
 2. **Jiný disk:** je-li v sestavě další disk, `B:SAPITERM` má číst a psát `B:SAPITERM.CFG`.
+   - **2026-10-31, autor na skutečném HW:** `B:SAPITERM` funguje, jak má, a otevírá `SAPITERM.CFG` z B:.
 3. **Čeština z EKL-1:** na BBS se sadou UTF-8 nebo Latin-2 napsat „Příliš žluťoučký kůň“ (třeba do vyhledávání
    nebo zprávy, bez odeslání) a podívat se, co BBS ukáže. Na Liane (`bbs.vslib.cz`, účet guest) zjistit její
    znakovou sadu: Z v menu, dokud čeština nesedí, pak U.
