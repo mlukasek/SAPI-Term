@@ -87,6 +87,8 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 
 - **Čekání DPI-1L (WAIT) při TCP:** jak dlouho drží Z80 jeden TCPRECV a TCPSTATUS při běžném provozu
   (rychlost příjmu, plynulost kreslení). V emulátoru se to nedá zjistit.
+  - **2026-10-31, autor na skutečném HW:** SAPI-Term jede perfektně, akvárium na telehack.com je stejně rychlé
+    jako v SAPIemu. WAIT karty příjem znatelně nezpomaluje.
 - **TCPSEND chyba 5** (plné odesílání lwIP) a odmítnuté spojení (stav 3 hned).
 - **RTC DPI-1L (60–63h):** vrací UTC, nebo místní čas? (`repo.c` čte časovač AON, který podle `systime.h` drží UTC.)
 - **Sníh palety Bt476** při 2 MHz: zápis barev jedné dvojice (7 domén) trvá asi 0,4 ms, všech 16 asi 6 ms, víc
