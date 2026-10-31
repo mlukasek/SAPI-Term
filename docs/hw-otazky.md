@@ -71,6 +71,8 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
      `python tools\testbbs.py --host 0.0.0.0`, na SAPI `SAPITERM IP_PC:6023`. B = blikající text (SGR 5 bez iCE),
      I = totéž s iCE (nebliká, světlá pozadí). Pak Ctrl+], Z na UTF-8, S, Esc a U = „Příliš žluťoučký kůň…“ ve
      40 sloupcích písmem MZ-800 (i rámečky a další znaky Unicode).
+   - **2026-10-31, autor na skutečném HW, testovací BBS z PC** (`testbbs.py --host 0.0.0.0`): blikání (B, I) i čeština
+     ve 40 sloupcích (U) fungují, jak mají.
 
 ## SAPITERM 0.7 (fáze 7)
 
@@ -88,10 +90,14 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 
 1. **PETSCII:** Retro Campus (`SAPITERM 5`), v menu Z až na PETSCII, Esc, pak volba 1 (CBM PETSCII). Grafika C64
    a barvy na monitoru, čitelnost písma 8×8.
+   - **2026-10-31, autor na skutečném HW, testovací BBS z PC** (`testbbs.py --host 0.0.0.0`): stránka G funguje.
+     Na Retro Campus neověřeno.
 
 ## SAPITERM 0.8 (fáze 8, ATASCII)
 
 1. **ATASCII:** `SAPITERM 15` (Southern Amis), Return. Kresba Atari 800XL a inverzní text, barvy Atari.
+   - **2026-10-31, autor na skutečném HW, testovací BBS z PC** (`testbbs.py --host 0.0.0.0`): stránka A funguje.
+     Na Southern Amis a The Basement neověřeno.
 2. **ATASCII s raw TCP:** `SAPITERM 14` (The Basement, jednolinková, bývá obsazená), na „press <return>“ Return.
    Text „Are you ready to do things tonight…“ se skládá vkládáním znaků (FFh) a má vyjít celý.
 
@@ -99,6 +105,8 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 
 1. **Viewdata:** připojit `glasstty.com:6502` (Telstar), v menu Z zvolit VIEWDATA. Barvy teletextu, dvojitá výška,
    mozaiky. Enter = # (pokračovat).
+   - **2026-10-31, autor na skutečném HW, testovací BBS z PC** (`testbbs.py --host 0.0.0.0`): stránka V funguje.
+     Na Telstar neověřeno.
 
 ## Zvonek
 
