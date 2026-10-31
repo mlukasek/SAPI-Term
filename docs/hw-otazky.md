@@ -70,6 +70,8 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
    XMODEM, pak menu D. Soubor má být vedle `SAPITERM.COM`. Zajímá mě rychlost se skutečnou DPI-1L.
    - **2026-10-31, autor na skutečném HW** (Vertrauen, nový účet): XMODEM i YMODEM fungují skvěle. XMODEM jméno
      nepřenáší, soubor je `XMODEM.BIN` (další `XMODEM1.BIN` až `XMODEM9.BIN`). Rychlost neměřena.
+   - **Od 2026-10-31 jméno po XMODEM:** po stažení se pod průběhem objeví „Jméno souboru (Enter = XMODEM.BIN):“.
+     Napsat jméno a Enter: hláška v menu má ukázat nové jméno a `DIR` po návratu ho má mít místo `XMODEM.BIN`.
 
 ## SAPITERM 0.8 (fáze 8, PETSCII)
 
