@@ -28,6 +28,7 @@ import testbbs  # noqa: E402
 from phase3 import shadow  # noqa: E402
 from phase4 import check, failed, keys, log, run_until, screen_matches, LOG, PORT  # noqa: E402
 from phase5 import expect_glyphs, row_glyphs  # noqa: E402
+from cgaread import term_text  # noqa: E402
 
 PREVIEW = os.path.join(emu.REPO, 'build', 'preview')
 CPS_2400 = 240
@@ -211,9 +212,11 @@ def bell():
 
 
 def timed_page(sym, key, model):
-    """Emulated seconds until the shadow equals the model after key."""
+    """Emulated seconds until the shadow equals the model after key: first the page starts (the screen it clears
+    no longer equals the model, which it may still show from before), then it ends."""
     c0 = mcp.call('machine_info')['cycles']
     keys(key, 50)
+    run_until(lambda: not screen_matches(sym, model), ms=10000, step=20)
     ok = run_until(lambda: screen_matches(sym, model), ms=60000, step=100)
     return ok, (mcp.call('machine_info')['cycles'] - c0) / 4e6
 
@@ -245,7 +248,7 @@ def main():
         for _ in range(5):                      # MAX, 38400, 19200, 9600, 4800, 2400
             keys('r', 400)
         check(emu.read(sym['speed'], 1)[0] == 5, 'R five times: 2400 Bd')
-        check('2400 Bd' in mcp.call('screen_text'), 'the menu shows 2400 Bd')
+        check('2400 Bd' in term_text(sym), 'the menu shows 2400 Bd')
         check(emu.read(sym['js_enable'], 1)[0] == 0, 'no jump scroll at 2400 Bd')
         keys('\x1b', 500)
         model = ansiref.Term()

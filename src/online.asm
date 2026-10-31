@@ -260,7 +260,6 @@ ui_key:
         call nz,scr_flush
         jr ui_key
 ui_got:
-        ld (last_key),a
         push af
         call cur_hide
         pop af
@@ -387,6 +386,7 @@ ol_open:
         ld hl,in_buf
         ld (in_ptr),hl
         ld (in_end),hl
+        call ol_clock_reset
         call js_by_speed
         call term8_enter        ; a PETSCII or ATASCII BBS of the book: the screen of a C64 or an Atari
         ld hl,t_connected
@@ -398,9 +398,9 @@ ol_open:
         xor a
         ld (ol_idle),a
 ol_loop:
+        call ol_clock
         call kbd_get
         jr nc,ol_net
-        ld (last_key),a
         cp K_MENU
         jp z,ol_menu
         call key_send
@@ -446,11 +446,12 @@ ol_quiet:
         call tick_poll
         jr z,ol_loop
         call cur_tick
+        call ol_tick
         ld a,(ol_idle)
         inc a
         ld (ol_idle),a
         cp IDLE_CHECK
-        jr c,ol_loop
+        jp c,ol_loop
         xor a
         ld (ol_idle),a
         call net_status         ; still connected?
@@ -479,16 +480,21 @@ ol_end:
         ld (reply_hook),hl
         ret
 
-; ol_menu: Ctrl+] on line. Without a status card it disconnects at once. The keyboard type, the card of the
-; terminal and the book (U) are saved in SAPITERM.CFG at once.
+; ol_menu: Ctrl+] on line: the menu on the card of the terminal (it stands meanwhile; the status card stays),
+; Esc draws the terminal again from the shadow. The book (U) is saved in SAPITERM.CFG at once, the keyboard type,
+; the speed, the columns and the card of the terminal when the menu closes (om_flush: a write takes 0.3 s).
 ol_menu:
+        call cur_hide
         ld a,(stat_dev)
-        or a
-        jp z,ol_user_end
+        ld (om_stat),a
+        call om_here
         ld hl,0
         ld (om_msg),hl
-om_show:
+        xor a
+        ld (om_save),a
+om_show:                        ; the whole menu on a clear card
         call stat_cls
+om_lines:                       ; its lines over the old ones (after T U L N R: no clearing, no new colours)
         ld de,0*256+0
         ld hl,t_menu_title
         call ss_text
@@ -505,14 +511,17 @@ om_show:
         ld hl,t_menu_kbd
         call ss_text
         call show_kbd
+        call om_pad16
         ld de,6*256+2
         ld hl,t_menu_cs
         call ss_text
         call show_cs
+        call om_pad16
         ld de,7*256+2
         ld hl,t_menu_speed
         call ss_text
         call show_speed
+        call om_pad16
         ld de,8*256+2
         ld hl,t_menu_cols
         call ss_text
@@ -532,6 +541,7 @@ om_cols:
         ld hl,t_menu_log
         call ss_text
         call show_log
+        call om_pad16
         ld de,11*256+2
         ld hl,t_menu_dl
         call ss_text
@@ -548,23 +558,29 @@ om_cols:
         ld hl,t_proto_raw
 om_proto:
         call stat_puts
+        call om_pad16
         ld de,14*256+2
         ld hl,t_menu_back
         call ss_text
-        ld hl,(om_msg)          ; what the last choice did
+        ld de,16*256+0
+        call stat_at
+        ld hl,(om_msg)          ; what the last choice did (none: the old message wiped)
+        ld b,40
         ld a,h
         or l
-        jr z,om_key
-        ld de,16*256+0
-        call ss_text
+        jr z,om_wipe
+        call stat_puts
+        ld b,16
+om_wipe:
+        call om_pad
 om_key:
         call kbd_get
         jr nc,om_key
         and 0DFh                ; letters as capitals
         cp 'O'
-        jp z,ol_user_end
+        jp z,om_end
         cp 'K'
-        jp z,quit
+        jp z,om_quit
         cp 'T'
         jr z,om_kbd
         cp 'U'
@@ -578,7 +594,7 @@ om_key:
         cp 'L'
         jr z,om_log
         cp 'D'
-        jr z,om_download
+        jp z,om_download
         cp 'H'
         jr z,om_hist
         cp 'N'
@@ -594,14 +610,17 @@ om_kbd:
         ld a,(kbd_type)
         xor 1
         ld (kbd_type),a
-        call cfg_save_msg
-        jp om_show
-om_swap:
-        call cur_hide
+        call om_dirty
+        jp om_lines
+om_swap:                        ; the terminal (and the menu) to the other card
+        call om_leave
         call swap_cards
         call tn_naws            ; the BBS gets the new size at once
         call tx_flush
-        call cfg_save_msg
+        call om_dirty
+        ld a,(stat_dev)
+        ld (om_stat),a
+        call om_here
         jp om_show
 om_book:                        ; this BBS and its set into the book (its host as the name)
         call book_add
@@ -609,10 +628,10 @@ om_book:                        ; this BBS and its set into the book (its host a
         or a
         jr nz,om_said
         call cfg_save_msg
-        jp om_show
+        jp om_lines
 om_said:
         ld (om_msg),hl
-        jp om_show
+        jp om_lines
 om_log:                         ; the session log on or off
         ld a,(log_on)
         or a
@@ -633,26 +652,35 @@ om_raw:                         ; telnet or raw TCP (U keeps it for the BBS)
         ld (tn_raw),a
         ld hl,0
         ld (om_msg),hl
-        jp om_show
-om_hist:                        ; the rows that scrolled off, back to the BBS after it
+        jp om_lines
+om_hist:                        ; the rows that scrolled off (it draws the terminal again), back to the BBS after it
+        ld a,(hist_count)
+        or a
+        jp z,om_back
+        call om_leave
+        call om_flush
+        call pet_palette
         call hist_view
-        jp om_back
+        call cur_restart
+        jp ol_loop
 om_download:                    ; XMODEM, YMODEM (the BBS was told to send first)
         call stat_cls
         ld de,0*256+0
         ld hl,t_xm_title
         call ss_text
         call xm_run
-        jr om_said
+        ld (om_msg),hl
+        jp om_show
 om_width:                       ; 80 or 40 columns on the CGA-1V, kept in the file
         ld a,(cols40)
         xor 1
         ld (cols40),a
-        call cur_hide
+        call om_leave
         call term_resize
+        call om_here
         call tn_naws            ; the BBS gets the new size at once
         call tx_flush
-        call cfg_save_msg
+        call om_dirty
         jp om_show
 om_speed:                       ; the next speed (slower), kept in the file
         ld a,(speed)
@@ -664,8 +692,8 @@ om_speed_set:
         ld (speed),a
         call js_by_speed
         call pace_reset
-        call cfg_save_msg
-        jp om_show
+        call om_dirty
+        jp om_lines
 om_cs:                          ; the next character set (U keeps it for the BBS)
         call cur_hide
         ld a,(cs_type)
@@ -679,6 +707,7 @@ om_cs_new:
         pop af
         ld (cs_type),a
         call term8_enter        ; to PETSCII or ATASCII: the screen of a C64 or an Atari
+        call om_here            ; the menu stays in the colours of ANSI
         call tn_naws            ; the size may have changed
         call tx_flush
         xor a
@@ -687,9 +716,164 @@ om_cs_new:
         ld (om_msg),hl
         jp om_show
 om_back:
+        call om_leave
+        call om_flush
+        call pet_palette        ; the colours of the terminal again
+        call scr_redraw         ; the terminal from the shadow (the menu covered it)
         call stat_screen
         call cur_restart
         jp ol_loop
+om_end:
+        call om_leave
+        call om_flush
+        jp ol_user_end
+om_quit:
+        call om_leave
+        call om_flush
+        jp quit
+
+; om_dirty: a setting changed, SAPITERM.CFG gets it when the menu closes (om_flush). Changes A, HL.
+om_dirty:
+        ld a,1
+        ld (om_save),a
+        ld hl,0
+        ld (om_msg),hl
+        ret
+
+; om_flush: the settings changed in the menu to SAPITERM.CFG. Changes all.
+om_flush:
+        ld a,(om_save)
+        or a
+        ret z
+        xor a
+        ld (om_save),a
+        jp cfg_save
+
+; om_here: the menu output (the stat_ routines) goes to the card of the terminal, in the colours of ANSI (its
+; pairs start anew there, stat_cls). Changes A, HL.
+om_here:
+        ld a,(term_dev)
+        ld (stat_dev),a
+        ld hl,ansi_rgb
+        ld (rgb_tab),hl
+        ret
+
+; om_pad16, om_pad: 16 or B spaces after a value of the menu (the rest of a longer old one). Changes A, B.
+om_pad16:
+        ld b,16
+om_pad:
+        ld a,' '
+        call stat_putc
+        djnz om_pad
+        ret
+
+; om_leave: the status card back to stat_dev. Changes A.
+om_leave:
+        ld a,(om_stat)
+        ld (stat_dev),a
+        ret
+
+; ol_clock_reset: the time and the data on line from zero (a new connection). Changes A, B, HL.
+ol_clock_reset:
+        ld hl,rx_total
+        ld b,OL_STATS
+        xor a
+ocr_zero:
+        ld (hl),a
+        inc hl
+        djnz ocr_zero
+        ld a,(has_mph)
+        or a
+        ret z
+        call t0_read
+        ld (clk_t0),hl
+        ret
+
+; ol_clock: the time on line by the MPH-1V counter 0 (55930 Hz, in eighths so that the sum fits a word): every
+; second ol_second. Without the MPH-1V the quiet ticks count (ol_tick, slower when the line is busy).
+; Changes all.
+CLK_SECOND      equ 6991                ; 55930 / 8
+ol_clock:
+        ld a,(has_mph)
+        or a
+        ret z
+        call t0_read            ; the counter counts down
+        ld de,(clk_t0)
+        ld (clk_t0),hl
+        ex de,hl
+        or a
+        sbc hl,de
+        srl h
+        rr l
+        srl h
+        rr l
+        srl h
+        rr l
+        ld de,(clk_acc)
+        add hl,de
+oc_second:
+        ld de,CLK_SECOND
+        or a
+        sbc hl,de
+        jr c,oc_keep
+        push hl
+        call ol_second
+        pop hl
+        jr oc_second
+oc_keep:
+        add hl,de
+        ld (clk_acc),hl
+        ret
+
+; ol_tick: a quiet tick of 60 Hz without the MPH-1V: every 60th ol_second. Changes all.
+ol_tick:
+        ld a,(has_mph)
+        or a
+        ret nz
+        ld hl,ol_ticks
+        inc (hl)
+        ld a,(hl)
+        cp 60
+        ret c
+        ld (hl),0
+; ol_second: one second on line more; the bytes of that second; the live lines of the status card. Changes all.
+ol_second:
+        ld hl,ol_secs
+        inc (hl)
+        ld a,(hl)
+        cp 60
+        jr c,os_rate
+        ld (hl),0
+        inc hl
+        inc (hl)
+        ld a,(hl)
+        cp 60
+        jr c,os_rate
+        ld (hl),0
+        inc hl
+        inc (hl)
+os_rate:
+        ld hl,(rx_total)
+        ld de,(rx_last)
+        ld (rx_last),hl
+        or a
+        sbc hl,de
+        ld (ol_rate),hl
+        jp stat_update
+
+; rx_count: HL more bytes of data received (rx_total). Changes A, DE.
+rx_count:
+        push hl
+        ld de,(rx_total)
+        add hl,de
+        ld (rx_total),hl
+        jr nc,rxc_done
+        ld hl,(rx_total+2)
+        inc hl
+        ld (rx_total+2),hl
+rxc_done:
+        pop hl
+        ret
 ol_user_end:
         ld hl,t_disconnected
         jp ol_end
@@ -849,6 +1033,7 @@ nr_done:
         ld a,h
         or l
         ret z
+        call rx_count
         ld a,(log_on)           ; into the session log too
         or a
         jr z,nr_data

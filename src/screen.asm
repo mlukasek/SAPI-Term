@@ -401,20 +401,41 @@ scr_redraw:
         ret nz
         call pair_init
         ld d,0
-srd_row:
+srd_row:                        ; the domain and the offset of the row once, its 80 cells follow in the shadow
         ld a,d
         call pair_row_dom
         ld e,0
+        call scr_offset
+        ld (srd_off),hl
 srd_col:
         push de
-        call scr_offset
+        ld hl,(srd_off)
         ld bc,scr_att
         add hl,bc
         ld a,(hl)
-        call pair_get
+        call pair_get           ; the slot, the cell counted
+        ld c,a
+        push bc
+        ld hl,(srd_off)
+        ld bc,scr_ext
+        add hl,bc
+        ld b,(hl)
+        ld hl,(srd_off)
+        ld de,scr_chr
+        add hl,de
+        ld a,(hl)
+        call glyph_addr
+        pop bc                  ; C = slot
         pop de
         push de
-        call scr_draw_cell
+        ld a,MAP_CGA
+        out (MAPREG),a
+        call cga_draw
+        ld a,MAP_CPM
+        out (MAPREG),a
+        ld hl,(srd_off)
+        inc hl
+        ld (srd_off),hl
         pop de
         inc e
         ld a,e
@@ -1386,6 +1407,8 @@ stat_putc:
         ld a,(hl)
         cp 16
         jr c,stp_slot
+        ld a,1
+        ld (stat_new),a
         ld a,(stat_att)
         push bc
         call pair_get
@@ -1410,7 +1433,11 @@ stp_glyph:
         ld a,MAP_CGA
         out (MAPREG),a
         call cga_draw
-        call pal_flush
+        ld a,(stat_new)         ; only a new pair waits for the palette
+        or a
+        call nz,pal_flush
+        xor a
+        ld (stat_new),a
         ld a,MAP_CPM
         out (MAPREG),a
         jr stp_done
@@ -1447,7 +1474,24 @@ stat_nibble:
         daa
         adc a,40h
         daa
-        jr stat_putc
+        jp stat_putc
+
+; stat_dec2: A (0-99) as two digits. Changes A.
+stat_dec2:
+        push bc
+        ld c,'0'-1
+sd2_ten:
+        inc c
+        sub 10
+        jr nc,sd2_ten
+        add a,10+'0'
+        ld b,a
+        ld a,c
+        call stat_putc
+        ld a,b
+        call stat_putc
+        pop bc
+        ret
 
 ; stat_dec8: A in decimal without leading zeros. Changes A.
 stat_dec8:

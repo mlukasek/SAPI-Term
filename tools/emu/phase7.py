@@ -23,6 +23,7 @@ import ansiref  # noqa: E402
 import testbbs  # noqa: E402
 import fontgen  # noqa: E402
 from phase3 import shadow  # noqa: E402
+from cgaread import term_text  # noqa: E402
 from phase4 import check, failed, keys, log, run_until, screen_matches, LOG, PORT  # noqa: E402
 
 PREVIEW = os.path.join(emu.REPO, 'build', 'preview')
@@ -32,9 +33,9 @@ def download(sym, key, want):
     keys(key, 300)                              # the BBS waits for the receiver
     keys('\x1d', 500)
     keys('d', 300)
-    ok = run_until(lambda: log().get('xfer') is not None and 'Staženo' in mcp.call('screen_text'), ms=60000,
+    ok = run_until(lambda: log().get('xfer') is not None and 'Staženo' in term_text(sym), ms=60000,
                    step=500)
-    text = mcp.call('screen_text')
+    text = term_text(sym)
     line = [ln for ln in text.split('\n') if 'Staženo' in ln or 'Stahov' in ln or 'Soubor' in ln]
     check(ok and log().get('xfer') == 'ok', '%s: the BBS sent it all (%r)' % (key, log().get('xfer')))
     check(any(want in ln for ln in line), '%s: %r' % (key, line))
@@ -120,7 +121,7 @@ def main():
 
         keys('\x1d', 500)
         keys('l', 1500)
-        check('LOG00.ANS' in mcp.call('screen_text'), 'L: the log LOG00.ANS')
+        check('LOG00.ANS' in term_text(sym), 'L: the log LOG00.ANS')
         keys('\x1b', 800)
         model = ansiref.Term()
         model.feed(testbbs.page_bytes('3'))
@@ -128,7 +129,7 @@ def main():
         check(run_until(lambda: screen_matches(sym, model), ms=10000), 'MENU on the screen')
         keys('\x1d', 500)
         keys('l', 1500)
-        check('vypnutý' in mcp.call('screen_text'), 'L again: the log off')
+        check('vypnutý' in term_text(sym), 'L again: the log off')
         keys('\x1b', 800)
 
         history(sym, fontgen.parse()['cp437'])

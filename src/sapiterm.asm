@@ -22,6 +22,21 @@
         jp start
         defb 0Dh,0Ah,'SAPI-Term 0.8',0Dh,0Ah,1Ah
 
+; zero buffers up to 0200h, then the fonts and the tables aligned to pages: here before the code their padding
+; does not change with the size of the code (only 72 B between font_ata.inc and tables.inc; check_build.py)
+msg_buf:        defs 64         ; a message made up (xm_run, xm_progress)
+cfg_fcb:        defs 36
+log_fcb:        defs 36
+xm_fcb:         defs 36
+ans_reply:      defs 20
+        defs (256 - ($ & 0FFh)) & 0FFh
+        include "../build/font4x8.inc"
+        include "../build/font_pet.inc"
+        include "../build/font_ata.inc"
+        defs (256 - ($ & 0FFh)) & 0FFh
+        include "../build/tables.inc"
+        include "../build/font_mz.inc"
+
 start:
         ld (cpm_sp),sp
         ld a,i                  ; P/V = IFF2
@@ -258,7 +273,6 @@ vp_tick:
         call nz,scr_flush
         jr vp_tick
 vp_key:
-        ld (last_key),a
         cp K_MENU
         jp z,quit
         jr vf_end
@@ -275,7 +289,6 @@ vf_more:
         call scr_flush
         call kbd_get
         jp nc,vf_fill
-        ld (last_key),a
         cp K_MENU
         jp z,quit
 vf_end:
@@ -420,7 +433,6 @@ q_boot:
 
 ; handle_key: the local typewriter. Changes all.
 handle_key:
-        ld (last_key),a
         cp K_MENU
         jp z,quit
         cp 09h                  ; Tab: swap the cards
@@ -890,12 +902,6 @@ sst_view:
         call stat_at
         call show_speed
 sst_pairs:
-        ld de,11*256+0
-        ld hl,t_pairs
-        call ss_text
-        ld de,12*256+0
-        ld hl,t_last_key
-        call ss_text
         ld de,14*256+0
         ld hl,t_keys
         call ss_text
@@ -915,7 +921,7 @@ sst_pairs:
         ld hl,t_key5
         call ss_text
         jp stat_update
-sst_online:                     ; on line: the BBS, the keys
+sst_online:                     ; on line: the BBS, protocol, time and data (stat_update), set, speed, log, keys
         ld de,10*256+0
         ld hl,t_bbs
         call ss_text
@@ -926,36 +932,48 @@ sst_online:                     ; on line: the BBS, the keys
         ld hl,(net_port)
         call stat_dec16
         ld de,11*256+0
-        ld hl,t_pairs
+        ld hl,t_proto
         call ss_text
+        ld de,11*256+23
+        call stat_at
+        ld hl,t_proto_telnet
+        ld a,(tn_raw)
+        or a
+        jr z,sst_proto
+        ld hl,t_proto_raw
+sst_proto:
+        call stat_puts
         ld de,12*256+0
-        ld hl,t_last_key
+        ld hl,t_conn_time
         call ss_text
         ld de,13*256+0
-        ld hl,t_charset
+        ld hl,t_received
         call ss_text
-        ld de,13*256+23
-        call stat_at
-        call show_cs
         ld de,14*256+0
-        ld hl,t_speed
+        ld hl,t_charset
         call ss_text
         ld de,14*256+23
         call stat_at
-        call show_speed
+        call show_cs
         ld de,15*256+0
-        ld hl,t_log
+        ld hl,t_speed
         call ss_text
         ld de,15*256+23
         call stat_at
-        call show_log
+        call show_speed
         ld de,16*256+0
+        ld hl,t_log
+        call ss_text
+        ld de,16*256+23
+        call stat_at
+        call show_log
+        ld de,17*256+0
         ld hl,t_keys
         call ss_text
-        ld de,17*256+2
+        ld de,18*256+2
         ld hl,t_okey1
         call ss_text
-        ld de,18*256+2
+        ld de,19*256+2
         ld hl,t_okey2
         call ss_text
         call show_kbd
@@ -1002,19 +1020,67 @@ stat_update:
         ld a,(stat_dev)
         or a
         ret z
-        ld de,11*256+23
+        ld a,(mode)
+        cp MODE_ONLINE
+        ret nz
+        ld de,12*256+23         ; the time on line h:mm:ss
         call stat_at
-        ld a,(term_dev)
-        cp DEV_CGA
-        ld a,0
-        call z,pair_used
+        ld a,(ol_hours)
         call stat_dec8
-        ld hl,txt_of16
-        call stat_puts
-        ld de,12*256+23
+        ld a,':'
+        call stat_putc
+        ld a,(ol_mins)
+        call stat_dec2
+        ld a,':'
+        call stat_putc
+        ld a,(ol_secs)
+        call stat_dec2
+        ld de,13*256+23         ; received: KB (the total >> 10), KB/s of the last second with one decimal
         call stat_at
-        ld a,(last_key)
-        jp stat_hex8
+        ld hl,(rx_total+1)
+        ld a,(rx_total+3)
+        srl a
+        rr h
+        rr l
+        srl a
+        rr h
+        rr l
+        call stat_dec16
+        ld hl,t_kb
+        call stat_puts
+        ld hl,(ol_rate)
+        push hl
+        ld a,h
+        rrca
+        rrca
+        and 3Fh
+        call stat_dec8
+        ld a,','
+        call stat_putc
+        pop hl
+        ld a,h                  ; the tenths: (rate & 3FFh) * 10 >> 10
+        and 3
+        ld h,a
+        ld d,h
+        ld e,l
+        add hl,hl
+        add hl,hl
+        add hl,de
+        add hl,hl
+        ld a,h
+        rrca
+        rrca
+        and 3Fh
+        add a,'0'
+        call stat_putc
+        ld hl,t_kbs
+        call stat_puts
+        ld b,3                  ; a shorter number leaves nothing behind
+su_pad:
+        ld a,' '
+        call stat_putc
+        djnz su_pad
+        ret
 
 ss_text:
         call stat_at
@@ -1242,7 +1308,6 @@ txt_cga:        defb 'CGA-1V',0
 txt_and:        defb 'AND-1V',0
 txt_mph:        defb 'MPH-1V',0
 txt_dpi:        defb 'DPI-1L',0
-txt_of16:       defb ' / 16 ',0
 
         include "../build/texts.inc"
 
@@ -1261,7 +1326,6 @@ and_ptr:        defw AND_VRAM
 ad_lead:        defb 0          ; and_dec8, stat_dec8: a digit was written
 kb_head:        defb 0
 kb_tail:        defb 0
-last_key:       defb 0
 soft_ticks:     defw 0
 term_dev:       defb 0          ; DEV_CGA or DEV_AND
 stat_dev:       defb 0          ; the other card, or 0
@@ -1344,7 +1408,6 @@ ice_mode:       defb 0          ; blink = bright background
 blink_on:       defb 1          ; blinking text shown (blink_tick)
 blink_ticks:    defb 0
 reply_hook:     defw 0          ; where answers to the BBS go (0 = nowhere)
-ans_reply:      defs 20
 view_state:     defb 0          ; 0 being shown, 1 shown, 2 no such file
 has_sauce:      defb 0
 vf_size:        defw 0          ; view_file: records of the file
@@ -1393,6 +1456,20 @@ near_n:         defs DOMAINS    ; per domain: attributes on the nearest pair (pa
 pn_slot:        defb 0
 ps_rgb:         defs 6          ; pal_slot
 om_msg:         defw 0          ; ol_menu: what the last choice did (KOI text, 0 none)
+om_stat:        defb 0          ; ol_menu: the status card (stat_dev) while the menu is on the terminal card
+om_save:        defb 0          ; ol_menu: a setting changed, to be saved when the menu closes
+stat_new:       defb 0          ; stat_putc: a new pair of colours, the palette follows
+srd_off:        defw 0          ; scr_redraw: the offset of the cell in the shadow
+clk_t0:         defw 0          ; ol_clock: the MPH-1V counter 0 at the last call
+rx_total:       defs 4          ; on line: bytes of data received (from here OL_STATS bytes cleared at the start)
+rx_last:        defw 0          ; rx_total at the last second (low word)
+ol_rate:        defw 0          ; bytes received in the last second
+ol_secs:        defb 0          ; the time on line: seconds, minutes, hours (in this order)
+ol_mins:        defb 0
+ol_hours:       defb 0
+clk_acc:        defw 0          ; ol_clock: eighths of the counts of the MPH-1V in this second
+ol_ticks:       defb 0          ; without the MPH-1V: the quiet ticks of this second
+OL_STATS        equ $-rx_total
 cfg_drive:      defb 0          ; the disk of SAPITERM.COM and SAPITERM.CFG (0 = A)
 cfg_term:       defb 0          ; SCREEN=: 0 CGA-1V, 1 AND-1V
 cfg_lptr:       defw 0          ; cfg_load: the end of the line in cfg_line
@@ -1413,7 +1490,6 @@ tn_raw:         defb 0          ; 80h: raw TCP, no telnet (the book, menu N)
 log_on:         defb 0          ; session log (xfer.asm)
 log_num:        defb 0          ; LOGnn.ANS
 log_ptr:        defw 0          ; next byte in log_buf
-log_fcb:        defs 36
 xm_logged:      defb 0          ; xm_run: the log was on
 xm_result:      defb 0
 xm_files:       defb 0
@@ -1431,7 +1507,6 @@ xm_pleft:       defw 0          ; bytes of the block still to come
 xm_pptr:        defw 0
 xm_expect:      defb 0          ; the block number expected
 xm_left:        defs 4          ; bytes of the file still to write (FFFFFFFFh unknown)
-xm_fcb:         defs 36
 pd_out:         defw 0          ; put_dec16
 term_putc:      jp ansi_putc    ; a byte of the BBS to the terminal: ansi_putc or pet_putc (pet.asm)
 rgb_tab:        defw ansi_rgb   ; the colours of the attributes (pal_slot): ansi_rgb or c64_rgb
@@ -1465,19 +1540,6 @@ hv_att:         defb 0
 hv_wrap:        defb 0
 hv_rtop:        defb 0
 hv_rbot:        defb 0
-
-; font and tables, page aligned
-        defs (256 - ($ & 0FFh)) & 0FFh
-        include "../build/font4x8.inc"
-        include "../build/tables.inc"
-        defs (256 - ($ & 0FFh)) & 0FFh
-        include "../build/font_pet.inc"
-        include "../build/font_ata.inc"
-        include "../build/font_mz.inc"
-
-; zero buffers in the .COM after the aligned fonts, where they move no alignment
-msg_buf:        defs 64         ; a message made up (xm_run, xm_progress)
-cfg_fcb:        defs 36
 
 PROGRAM_END:
 

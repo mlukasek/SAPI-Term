@@ -30,6 +30,7 @@ import testbbs  # noqa: E402
 from phase3 import shadow  # noqa: E402
 from phase4 import check, failed, keys, log, run_until, LOG, PORT  # noqa: E402
 from phase5 import at_prompt  # noqa: E402
+from cgaread import term_text  # noqa: E402
 
 PREVIEW = os.path.join(emu.REPO, 'build', 'preview')
 CS_PETSCII = 7
@@ -179,7 +180,7 @@ def to_petscii(sym, presses):
     for _ in range(presses):
         keys('z', 1500)
     check(emu.read(sym['cs_type'], 1)[0] == CS_PETSCII, 'Z: PETSCII')
-    check('PETSCII' in mcp.call('screen_text'), 'the menu shows PETSCII')
+    check('PETSCII' in term_text(sym), 'the menu shows PETSCII')
     keys('\x1b', 800)
 
 

@@ -22,7 +22,8 @@
    - `tools\mkart.py`: testovací soubory ANSI → `build\art\*.ANS` (každá doména nejvýš 16 dvojic, hlídá
      `tools\ansiref.py`), používá je i `tools\testbbs.py`;
 2. pasmo → `build\sapiterm.com`, `.sym` a `.hex` (Intel HEX od 0100h);
-3. `tools\check_build.py`: rozložení paměti (vše pod C000h, tabulky zarovnané na stránku), vypíše
+3. `tools\check_build.py`: rozložení paměti (vše pod C000h, tabulky zarovnané na stránku, písmo 4×8 na 0200h),
+   vypíše
    `SAVE n SAPITERM.COM`;
 4. `tools\cpmdisk.py` (převzatý z SAPI-Bad-Apple): `build\ramdisk.bin` = RAM disk CP/M sestavy V
    se `SAPITERM.COM` a testovacími soubory `*.ANS`.
@@ -68,14 +69,15 @@ python tools\romfont.py --c64 work\roms\c64\chargen-901225-01.bin --atari work\r
 |---|---|
 | `phase2.py [--consul]` | fáze 2: SAPITERM z disku, stavová obrazovka, stínová obrazovka v paměti (titulek, tabulka CP437), psaní a rolování, Tab na AND-1V a zpět, Ctrl+L, Ctrl+T, Ctrl+] a `DIR` po návratu; snímky `build/preview/f2_*.png` |
 | `phase3.py [JMÉNO...]` | fáze 3: každý testovací soubor `SAPITERM JMÉNO.ANS`, stínová obrazovka a kurzor proti `tools/ansiref.py`, snímek CGA-1V proti modelu vykreslenému fontem (bod po bodu), žádný zápis palety mimo VBI; snímky `build/preview/f3_*.png` |
-| `phase4.py` | fáze 4: spustí `tools/testbbs.py` (127.0.0.1:6023), `SAPITERM 127.0.0.1:6023`; vyjednání telnetu, tři stránky po síti proti modelu (stín i obraz), CPR a DA, odeslané klávesy, NAWS po Tab, konec spojení od BBS, odmítnutý port, neznámé jméno |
+| `phase4.py` | fáze 4: spustí `tools/testbbs.py` (127.0.0.1:6023), `SAPITERM 127.0.0.1:6023`; vyjednání telnetu, tři stránky po síti proti modelu (stín i obraz), CPR a DA, menu Ctrl+] na CGA-1V (text z obrazu, `cgaread.py`) a stav na AND-1V (protokol, doba, data), po Esc obraz proti modelu, odeslané klávesy, NAWS po Tab, konec spojení od BBS, odmítnutý port, neznámé jméno |
 | `phase5.py` | fáze 5: výchozí `SAPITERM.CFG`, adresář na úvodní obrazovce, mazání, chybné číslo; na testovací BBS všech šest znakových sad (stránka glyf po glyfu proti `tools/tables.py`, odeslaná „čŘ“), U, T; výběr číslem se sadou z adresáře, Tab na výzvě; `TYPE SAPITERM.CFG` po návratu; `SAPITERM 13` s AND-1V a Consulem ze souboru |
-| `phase6.py` | fáze 6: blikání (obraz v obou fázích proti modelu), iCE bez blikání, 40 sloupců (stín proti modelu 40×25, obraz proti zdvojenému písmu, NAWS), rychlost 2400 Bd na BBS a v prohlížeči, `SPEED=` v souboru |
+| `phase6.py` | fáze 6: blikání (obraz v obou fázích proti modelu), iCE bez blikání, 40 sloupců (stín proti modelu 40×25, obraz s písmem MZ-800, stránka UTF-8 s češtinou, NAWS), rychlost 2400 Bd na BBS a v prohlížeči, `SPEED=` v souboru |
 | `phase7.py` | fáze 7: záznam relace (L), historie (H, PgUp, šipka, End, Esc proti modelu a obraz po návratu), YMODEM se dvěma soubory a XMODEM z testovací BBS; záznam i stažené soubory program zobrazí a obraz se porovná s modelem |
 | `phase8.py` | fáze 8: PETSCII přes menu Z, stránka G testovací BBS proti modelu `tools/petref.py` (stín i obraz s písmem `font_pet` a barvami C64), klávesy, Tab na AND-1V a zpět; ATASCII, stránka A proti `tools/ataref.py`, klávesy; Viewdata, stránka V proti `tools/vdtref.py` (obraz v obou fázích blikání), klávesy; uložení do adresáře a připojení s PETSCII |
 | `profile.py "PŘÍKAZ"` | statistický profil: PC každou emulovanou milisekundu, počty podle návěští z `.sym` |
 | `realbbs.py [ČÍSLO\|ADRESA…]` | skutečné BBS z adresáře nebo podle adresy: připojení, úvodní obrazovka (text a snímek `build/preview/bbs_*.png`), vyjednané volby telnetu, odpojení; bez přihlášení a bez kláves; čeká ve skutečném čase |
 | `emu.py` | společné: sestava, kontrolní bod CP/M, příkaz CP/M, čtení paměti, symboly, snímek obrazovky |
+| `cgaread.py` | text CGA-1V ze snímku (buňky proti glyfům písma 4×8, ve 40 sloupcích MZ-800 a zdvojeného 4×8, čeština KOI); `term_text(sym)` = text karty terminálu, pro kontrolu menu |
 | `sapimcp.py` | klient MCP (`python tools\emu\sapimcp.py NÁSTROJ "{json}"`) |
 | `sapiemu.cmd [consul\|gui]` | spustí release emulátor s MCP |
 

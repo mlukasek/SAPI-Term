@@ -9,6 +9,7 @@ Needs the emulator with MCP (tools/emu/sapiemu.cmd) and build.cmd. Screenshots t
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -77,7 +78,14 @@ def page(sym, font, key, name):
     keys(key, 100)
     ok = run_until(lambda: screen_matches(sym, model), ms=30000, step=500)
     check(ok, '%s from the BBS: shadow screen equals the model' % name)
-    path = os.path.join(PREVIEW, 'f4_%s.png' % name.lower())
+    diff, ms = picture(sym, font, model, os.path.join(PREVIEW, 'f4_%s.png' % name.lower()))
+    check(diff == 0, '%s: CGA-1V picture equals the model (%d dots differ, after %d ms)' % (name, diff, ms))
+    return model
+
+
+def picture(sym, font, model, path):
+    """Dots of the CGA-1V screenshot (kept in path) that differ from the model, the cursor cell taken as it is;
+    the best of a few tries while the palette follows, and the ms it took."""
     want0 = ansiref.render(model, font)
     for t in range(15):                         # the palette may follow a few frames later
         mcp.call('run_for', ms=200)
@@ -95,8 +103,25 @@ def page(sym, font, key, name):
         diff = sum(1 for i in range(0, len(want), 3) if want[i:i + 3] != got[i:i + 3])
         if diff == 0:
             break
-    check(diff == 0, '%s: CGA-1V picture equals the model (%d dots differ, after %d ms)'
-          % (name, diff, (t + 1) * 200))
+    return diff, (t + 1) * 200
+
+
+def menu_on_terminal(sym, font, model):
+    """Ctrl+]: the menu on the card of the terminal (the CGA-1V), the AND-1V keeps the status with the protocol, the
+    time and the data on line; Esc: the terminal drawn again from the shadow equals the model."""
+    from cgaread import term_text
+    keys('\x1d', 800)
+    text = term_text(sym, os.path.join(PREVIEW, 'f4_menu.png'))
+    check('Menu (Ctrl+])' in text and 'O  odpojit' in text and 'Esc' in text, 'Ctrl+]: the menu on the CGA-1V')
+    status = mcp.call('screen_text')
+    check('Menu' not in status and 'BBS: 127.0.0.1' in status, 'the menu: the status stays on the AND-1V')
+    check(re.search(r'Protokol:\s+telnet', status), 'the status card: the protocol')
+    check(re.search(r'Spojení:\s+0:\d\d:\d\d', status), 'the status card: the time on line')
+    m = re.search(r'Přijato:\s+(\d+) KB, \d+,\d KB/s', status)
+    check(m and int(m.group(1)) >= 10, 'the status card: the data received (%s)' % (m.group(0) if m else None))
+    keys('\x1b', 1500)
+    diff, ms = picture(sym, font, model, os.path.join(PREVIEW, 'f4_after_menu.png'))
+    check(diff == 0, 'Esc: the terminal drawn again equals the model (%d dots differ)' % diff)
 
 
 def main():
@@ -124,7 +149,8 @@ def main():
 
         page(sym, font, '2', 'SUNSET')
         page(sym, font, '4', 'SCROLL')
-        page(sym, font, '1', 'ANSITEST')
+        model = page(sym, font, '1', 'ANSITEST')
+        menu_on_terminal(sym, font, model)
 
         keys('C', 100)
         check(run_until(lambda: log().get('cpr') is not None, ms=5000), 'position report answered')

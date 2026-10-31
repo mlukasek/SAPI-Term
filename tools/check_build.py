@@ -27,7 +27,7 @@ def main():
     # pasmo: an EQU using a symbol defined after it gives the code before it the value of the first pass;
     # the first LD SP,nn of the program must be STACK_TOP
     com = open(os.path.join(ROOT, 'build', 'sapiterm.com'), 'rb').read()
-    i = com.find(b'1')
+    i = com.find(b'1', s['start'] - 0x100)
     if i < 0 or com[i + 1] | com[i + 2] << 8 != s['STACK_TOP']:
         errors.append('LD SP in the code is not STACK_TOP %04Xh (an EQU uses a symbol defined after it)'
                       % s['STACK_TOP'])
@@ -35,6 +35,8 @@ def main():
     for name in ('font_cp437', 'font_koi', 'and_map_cp437', 'col_dist', 'cga_rows', 'att_slot'):
         if name in s and s[name] & 0xFF:
             errors.append(f'{name} at {s[name]:04X}h is not page aligned')
+    if s['font_cp437'] != 0x200:
+        errors.append(f'font_cp437 at {s["font_cp437"]:04X}h, not 0200h: the buffers before it grew too much')
     if errors:
         sys.exit('\n'.join(errors))
     pages = (size + 255) // 256

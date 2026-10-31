@@ -2,7 +2,7 @@
 # One text per line: the asm label, one space, the text. A "\" at the end continues on the next line,
 # "\s" at the end is a space (a plain space at the end of a line gets lost in editors and tools).
 
-t_title SAPI-Term 0.8 - terminál pro BBS (vývojová verze, fáze 8)
+t_title SAPI-Term 0.8 - terminál pro BBS
 t_terminal Terminál na:
 t_cga_size CGA-1V, 80x25 znaků
 t_cga_size40 CGA-1V, 40x25 znaků
@@ -11,8 +11,6 @@ t_cards Karty v sestavě:
 t_yes ano
 t_no není
 t_firmware firmware
-t_pairs Dvojice barev (nejvíc v pásu):
-t_last_key Poslední klávesa:
 t_keys Klávesy:
 t_key1 Tab     výměna obrazovek (CGA-1V a AND-1V)
 t_key2 Ctrl+T  test, Ctrl+L smazat, PgUp historie
@@ -89,6 +87,11 @@ t_menu_back Esc, Ctrl+]  zpět k BBS
 t_kbd_ekl EKL-1
 t_kbd_consul Consul 262.3
 t_bbs BBS:\s
+t_proto Protokol:
+t_conn_time Spojení:
+t_received Přijato:
+t_kb  KB,\s
+t_kbs  KB/s
 t_okey1 Ctrl+]  menu: odpojit, Tab, sada, rychlost, záznam, stáhnout
 t_okey2 Klávesnice:\s
 t_charset Znaková sada:

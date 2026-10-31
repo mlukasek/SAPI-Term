@@ -64,6 +64,9 @@ nenapodobí (`docs/rozhodnuti.md`).
   Adresa buňky = `cga_rows[řádek] + sloupec`, další řádek znaku +80.
 - **Font:**
   - `font_cp437` (2 KB) a `font_koi` (KOI-8čs2 C0–FF, 512 B), 8 bajtů na znak, zarovnané na stránku;
+  - **rozložení programu:** na 0100h `jp start` a úvodní text, do 0200h nulové buffery (`msg_buf`, FCB, `ans_reply`),
+    od 0200h písma 4×8, PETSCII a ATASCII, 72 B výplně, tabulky (`tables.inc`), písmo MZ, teprve pak kód a data.
+    Zarovnání písem tak nezávisí na velikosti kódu;
   - `tools/fontgen.py` je vyrobí z `fonts/sapiterm4x8.txt`, `--preview` uloží náhled PNG.
 - **Dvojice barev po doménách** (doména = 4 textové řádky = 32 řádků obrazu, sedmá jen řádek 24):
   - `att_slot` (7 stránek): slot atributu v doméně (FFh nemá);

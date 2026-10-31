@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.join(HERE, '..'))
 import emu  # noqa: E402
 from emu import mcp  # noqa: E402
 from phase4 import check, failed, keys, log, run_until, row_koi, LOG, PORT  # noqa: E402
+from cgaread import term_text  # noqa: E402
 import tables  # noqa: E402
 import testbbs  # noqa: E402
 
@@ -71,7 +72,7 @@ def charsets(sym):
         keys('\x1d', 500)
         keys('z', 800)
         check(byte(sym, 'cs_type') == cs, 'Z: the set %s' % name)
-        check(name in mcp.call('screen_text'), 'Z: the menu shows %s' % name)
+        check(name in term_text(sym), 'Z: the menu shows %s' % name)
         keys('\x1b', 800)
         want = [expect_glyphs(t, name) for t in testbbs.charset_lines(key)]
         keys(key, 100)
@@ -148,9 +149,10 @@ def main():
         check(byte(sym, 'cs_type') == 1, 'Z further round: UTF-8')
         keys('u', 1500)
         check(run_until(lambda: byte(sym, 'book_n') == 16, ms=5000), 'U: the BBS in the book')
-        check('Uloženo do SAPITERM.CFG.' in mcp.call('screen_text'), 'U: saved (status card)')
+        check(run_until(lambda: 'Uloženo do SAPITERM.CFG.' in term_text(sym), ms=5000, step=500),
+              'U: saved (the menu says so)')
         keys('u', 1500)
-        check(byte(sym, 'book_n') == 16 and 'Uloženo do SAPITERM.CFG.' in mcp.call('screen_text'),
+        check(byte(sym, 'book_n') == 16 and 'Uloženo do SAPITERM.CFG.' in term_text(sym),
               'U again: the same entry saved again')
         keys('t', 1500)
         check(byte(sym, 'kbd_type') == 1, 'T: the Consul keyboard type')

@@ -386,3 +386,21 @@ Autor byl stále pryč, rozhodoval jsem sám.
   výplně.
 - **Na skutečném HW bude příjem pomalejší:** DPI-1L drží Z80 po příkazu TCP ve WAIT až asi 8 ms, na 253 B to je
   kolem 120 taktů na bajt navíc. Emulátor to nemodeluje (`docs/hw-otazky.md`).
+
+## 2026-10-31: menu na obrazovce terminálu, stav spojení
+
+- **Menu Ctrl+] na kartě terminálu** (přání autora): skok ovládání na druhou kartu mátl a terminál během menu stejně
+  stojí. Menu zabere celou kartu terminálu (`om_here` přesměruje výstup `stat_` na `term_dev`, barvy ANSI), Esc
+  nakreslí terminál znovu ze stínu (`om_back`: paleta terminálu, `scr_redraw`, stav). Okno přes terminál by stálo
+  víc kódu a ve 40 sloupcích by se vešlo jen těsně.
+  - Bez druhé karty menu teď funguje také (dřív Ctrl+] spojení rovnou ukončilo).
+  - Po T, U, L, N a R se jen přepíšou řádky menu (hodnoty doplněné mezerami), celé znovu jen po Tab, S, Z a D.
+  - T, R, S a Tab se do `SAPITERM.CFG` zapíšou až při odchodu z menu (`om_flush`): zápis trvá 0,3 s a stisk R
+    se tak zkrátil z 0,6 na 0,2 s. U (adresář) se zapíše hned, jak dřív.
+  - `stat_putc` volá `pal_flush` jen po nové dvojici barev; `scr_redraw` počítá řádek jednou (1,07 → 0,79 s).
+- **Stavová karta při spojení:** protokol (telnet / raw TCP), doba spojení (h:mm:ss) a přijatá data (KB a KB/s za
+  poslední sekundu, `rx_total`, `ol_second`). Čas z čítače 0 MPH-1V (v osminách, sekunda = 6991), bez MPH-1V
+  z tiků v nečinnosti (při zátěži se zpožďuje). Dvojice barev a poslední klávesa byly jen pro vývoj.
+- **Písma a tabulky zarovnané na stránku na začátku programu:** kód rostl přes hranici stránky a výplň před písmy
+  skákala až o 256 B (dvakrát během dne). Teď je od 0200h, před nimi nulové buffery a za `font_ata.inc` pevných
+  72 B výplně; `check_build.py` hlídá, že písmo začíná na 0200h.

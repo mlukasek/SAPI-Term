@@ -881,34 +881,6 @@ pn_next:
         ld a,(pn_slot)
         ret
 
-; pair_used: A = the most slots in use in one domain. Changes BC, DE, HL.
-pair_used:
-        ld hl,slot_ref
-        ld d,DOMAINS
-        ld e,0
-pus_dom:
-        ld b,16
-        ld c,0
-pus_loop:
-        ld a,(hl)
-        inc hl
-        or (hl)
-        inc hl
-        jr z,pus_next
-        inc c
-pus_next:
-        djnz pus_loop
-        ld a,c
-        cp e
-        jr c,pus_less
-        ld e,a
-pus_less:
-        call kbd_scan
-        dec d
-        jr nz,pus_dom
-        ld a,e
-        ret
-
 ; pair_move_row: the cells of row D came from domain A (the row scrolled into another domain). Their counts
 ; move from domain A to the domain of row D, each run of one attribute at once; a run that has to change its
 ; slot number gets the new one in the VRAM. Changes all except D.

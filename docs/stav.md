@@ -5,7 +5,7 @@
 - **Hotové fáze 0–8,** zbývá fáze 9: zkouška na skutečném SAPI-1 s autorem (`docs/hw-otazky.md`).
 - **Terminál ANSI-BBS a VT100:**
   - 80×25 na CGA-1V (vlastní písmo 4×8, dvojice barev po doménách), 64×20 na AND-1V;
-  - stav a menu na druhé kartě.
+  - menu Ctrl+] na kartě terminálu, stav spojení (protokol, doba, přijatá data a rychlost) na druhé kartě.
 - **Spuštění:** `SAPITERM` (úvodní obrazovka s adresářem), `SAPITERM číslo`, `SAPITERM host[:port]`,
   `SAPITERM soubor.ANS` (prohlížeč).
 - **`SAPITERM.CFG` vedle programu:** klávesnice, karta terminálu, rychlost linky, sloupce a adresář až 16 BBS se
@@ -187,6 +187,14 @@
   jako ATASCII s raw TCP (`docs/rozhodnuti.md`). Ověřeno v emulátoru, snímek `build/preview/f8_ata_basement.png`.
 - **telehack.com v adresáři (2026-10-31):** šestnáctá položka, uložil ji autor. Adresář je teď plný; `phase8.py`
   proto na začátku šestnáctku smaže, aby U mohlo uložit testovací BBS.
+- **Menu na obrazovce terminálu (2026-10-31):** Ctrl+] ukáže menu přes celou kartu terminálu (terminál mezitím
+  stojí), Esc ho nakreslí znovu ze stínu (CGA-1V 80×25 asi 0,8 s). Funguje i se sestavou s jedinou kartou.
+  - T, R, S a Tab se do `SAPITERM.CFG` zapíšou až při odchodu z menu (zápis trvá 0,3 s), U hned.
+  - Stavová karta při spojení: protokol, doba spojení, přijato KB a KB/s za poslední sekundu. Řádky „Dvojice
+    barev“ a „Poslední klávesa“ (pro vývoj) jsou pryč, titulek bez „vývojová verze“.
+  - Písma a tabulky zarovnané na stránku jsou na začátku programu (od 0200h), jejich výplň už neroste s kódem.
+    Pod C000h zbývá 597 B.
+  - Testy čtou menu z obrazu CGA-1V (`tools/emu/cgaread.py`), celá sada prochází i s Consulem.
 - **Rychlejší příjem (2026-10-31):** akvárium z telehack.com po síti 4,3 → 6,0 KB/s (telnet rychlou smyčkou,
   parser CSI a SGR bez `add_hl_a`), `docs/rozhodnuti.md`. Testy fází 3–8 procházejí.
 
