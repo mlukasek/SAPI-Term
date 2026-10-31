@@ -29,6 +29,7 @@ import petref  # noqa: E402
 import testbbs  # noqa: E402
 from phase3 import shadow  # noqa: E402
 from phase4 import check, failed, keys, log, run_until, LOG, PORT  # noqa: E402
+from phase5 import at_prompt  # noqa: E402
 
 PREVIEW = os.path.join(emu.REPO, 'build', 'preview')
 CS_PETSCII = 7
@@ -194,7 +195,12 @@ def main():
         emu.use_machine('sapi1v_term')
         emu.checkpoint()
         mcp.call('resume')
-        mcp.call('type_text', text='SAPITERM 127.0.0.1:%d\r' % PORT)
+        mcp.call('type_text', text='SAPITERM\r')
+        check(run_until(lambda: at_prompt(sym), ms=5000), 'the start screen')
+        keys('-16\r', 300)                      # the default book is full: room for the BBS that U saves
+        check(run_until(lambda: emu.read(sym['book_n'], 1)[0] == 15 and at_prompt(sym), ms=5000),
+              '-16: room in the book')
+        keys('127.0.0.1:%d\r' % PORT, 300)
         check(run_until(lambda: log().get('menu', 0) >= 1, ms=15000), 'connected to the test BBS')
         to_petscii(sym, 7)
         check(emu.read(sym['cga_wide'], 1)[0] == 1 and emu.read(sym['term_cols'], 1)[0] == 40, '40 columns')

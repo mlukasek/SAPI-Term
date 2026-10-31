@@ -9,7 +9,7 @@
 - **Spuštění:** `SAPITERM` (úvodní obrazovka s adresářem), `SAPITERM číslo`, `SAPITERM host[:port]`,
   `SAPITERM soubor.ANS` (prohlížeč).
 - **`SAPITERM.CFG` vedle programu:** klávesnice, karta terminálu, rychlost linky, sloupce a adresář až 16 BBS se
-  sadou a volbou RAW. Výchozí adresář má 15 ověřených BBS.
+  sadou a volbou RAW. Výchozí adresář má 16 ověřených BBS (je plný).
 - **Menu Ctrl+] na BBS:**
   - O odpojit, K konec, Tab výměna karet, T klávesnice;
   - Z sada (CP437, UTF-8, LATIN2, CP1250, CP852, KAMENICKY, KOI8, PETSCII, ATASCII, VIEWDATA);
@@ -22,7 +22,7 @@
   - historie 93 řádků ve stránce B CGA-1V;
   - čeština z EKL-1 v sadě BBS.
 - **Testy:** `tools/emu/phase2.py` až `phase8.py` (i `phase2.py --consul`) procházejí všechny,
-  `tools/emu/realbbs.py` připojí všech 15 BBS adresáře.
+  `tools/emu/realbbs.py` připojí všech 16 BBS adresáře.
 - Níže je postup po fázích. Starší údaje tam platí v době fáze, novější je nahrazují.
 
 ## Stav po fázích (2026-10-30)
@@ -185,6 +185,8 @@
   - Buffery a zásobník končí na BCAAh, pod C000h zbývá 853 B. Historie bez CGA-1V má 37 řádků.
 - **The Basement opravená (2026-10-31):** je to BBS pro Atari (BBS Express! Pro), ne C64. V adresáři je teď
   jako ATASCII s raw TCP (`docs/rozhodnuti.md`). Ověřeno v emulátoru, snímek `build/preview/f8_ata_basement.png`.
+- **telehack.com v adresáři (2026-10-31):** šestnáctá položka, uložil ji autor. Adresář je teď plný; `phase8.py`
+  proto na začátku šestnáctku smaže, aby U mohlo uložit testovací BBS.
 
 ## Plán (schválený 2026-10-30, rozhodnutí v `docs/rozhodnuti.md`)
 

@@ -93,7 +93,7 @@ def main():
     keys = opt.get('--keys', '').replace('\\r', '\r')
     sym = emu.symbols()
     emu.use_machine('sapi1v_term')
-    nums = [int(a) if a.isdigit() else a for a in args] or range(1, 16)
+    nums = [int(a) if a.isdigit() else a for a in args] or range(1, 17)
     ok = [n for n in nums if one(sym, n, secs, cs, keys, opt.get('--shot'))]
     print('on line: %d of %d' % (len(ok), len(nums)))
 

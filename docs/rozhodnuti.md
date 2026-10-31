@@ -307,6 +307,7 @@ Autor byl stále pryč, rozhodoval jsem sám.
   mosaics“.
 - **Enter posílá `_`** (5Fh, klávesa # Prestelu, kterou Telstar čeká na potvrzení volby).
 - **Telstar není ve výchozím adresáři:** byl by šestnáctou položkou a uživateli by nezbylo místo. Je v dokumentaci.
+  (2026-10-31: šestnáctou položkou je nakonec telehack.com, přidal ho autor.)
 
 ## 2026-10-30: raw TCP
 
