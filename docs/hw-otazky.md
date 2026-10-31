@@ -43,7 +43,10 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 ## SAPITERM 0.5 (fáze 6)
 
 1. **Rychlost linky:** v menu R nastavit 2400 Bd, pak `SAPITERM SUNSET.ANS`. Obraz se má kreslit plynule asi
-   37 s (8,9 KB). Ověřuje čítač 0 MPH-1V jako hodiny. Na konci R zpět na MAX.
+   37 s (8,9 KB). Ověřuje čítač 0 MPH-1V jako hodiny. Na konci R zpět na MAX. Menu je od 2026-10-31 i na úvodní
+   obrazovce (Ctrl+] na výzvě „BBS:“), spojení k tomu není potřeba.
+   - **2026-10-31, autor na skutečném HW bez MPH-1V** (tiky z VBI CGA-1V): 39 s i se spuštěním programu.
+     Proti výpočtu 37 s tedy nanejvýš asi o 2 s déle. S MPH-1V zatím neměřeno.
 2. **Blikání:** BBS s blikajícím textem bez iCE (třeba výzva „press any key“). Text bliká asi 1,5× za sekundu bez
    sněhu na obrazovce.
 3. **40 sloupců:** na BBS menu S. Písmo Sharp MZ-800 (i čeština podle CP/M pro MZ-800), čitelnost na monitoru.

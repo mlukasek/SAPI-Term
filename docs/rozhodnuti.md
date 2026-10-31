@@ -451,3 +451,14 @@ Autor byl stále pryč, rozhodoval jsem sám.
   odhaduje počítání průchodů, pípnutí pak trvá déle (podle taktů asi 1/4 s, neměřeno).
 - **Klávesnice během pípnutí:** stejný port nese ACK. `kbd_scan` proto bere hodnoty portu z `kb_out` (klid 02h,
   při pípnutí 00h, ACK o 1 víc), klávesa přijatá během pípnutí ho nepřeruší.
+
+## 2026-10-31: menu Ctrl+] i na úvodní obrazovce
+
+- **Přání autora:** nastavení (hlavně rychlost linky pro prohlížeč souborů) šlo změnit jen během spojení, protože
+  Ctrl+] na výzvě „BBS:“ ukončil program.
+- **Ctrl+] je teď všude menu:** na úvodní obrazovce s volbami, které bez BBS dávají smysl: K konec, Tab výměna
+  karet, T klávesnice, R rychlost, S sloupce, Esc zpět. Bez O, Z, U, L, D, H a N: patří ke spojení (Z a N si
+  ukládá každá BBS v adresáři).
+- **Cena:** konec do CP/M z úvodní obrazovky jsou dvě klávesy (Ctrl+] a K), stejně jako na BBS. Na testovací
+  obrazovce Ctrl+] dál vrací na výběr BBS, v prohlížeči souboru dál končí.
+- **S bez spojení jen mění nastavení:** úvodní obrazovka zůstává v 80 sloupcích, 40 sloupců použije až BBS.

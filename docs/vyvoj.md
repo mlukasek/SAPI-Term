@@ -67,7 +67,7 @@ python tools\romfont.py --c64 work\roms\c64\chargen-901225-01.bin --atari work\r
 
 | Skript | Co dělá |
 |---|---|
-| `phase2.py [--consul]` | fáze 2: SAPITERM z disku, stavová obrazovka, stínová obrazovka v paměti (titulek, tabulka CP437), psaní a rolování, Tab na AND-1V a zpět, Ctrl+G (tón MPH-1V 880 Hz, bez ní bzučák klávesnice: frekvence a délka z nahrávky `build/preview/f2_bell.wav`), Ctrl+L, Ctrl+T, Ctrl+] zpět na výběr BBS, Ctrl+] do CP/M a `DIR` po návratu; snímky `build/preview/f2_*.png` |
+| `phase2.py [--consul]` | fáze 2: SAPITERM z disku, stavová obrazovka, stínová obrazovka v paměti (titulek, tabulka CP437), psaní a rolování, Tab na AND-1V a zpět, Ctrl+G (tón MPH-1V 880 Hz, bez ní bzučák klávesnice: frekvence a délka z nahrávky `build/preview/f2_bell.wav`), Ctrl+L, Ctrl+T, Ctrl+] zpět na výběr BBS, menu Ctrl+] na výzvě (text z obrazu, R a S, Esc uloží), Ctrl+] a K do CP/M, `SAPITERM.CFG` a `DIR` po návratu; snímky `build/preview/f2_*.png` |
 | `phase3.py [JMÉNO...]` | fáze 3: každý testovací soubor `SAPITERM JMÉNO.ANS`, stínová obrazovka a kurzor proti `tools/ansiref.py`, snímek CGA-1V proti modelu vykreslenému fontem (bod po bodu), žádný zápis palety mimo VBI; snímky `build/preview/f3_*.png` |
 | `phase4.py` | fáze 4: spustí `tools/testbbs.py` (127.0.0.1:6023), `SAPITERM 127.0.0.1:6023`; vyjednání telnetu, tři stránky po síti proti modelu (stín i obraz), CPR a DA, menu Ctrl+] na CGA-1V (text z obrazu, `cgaread.py`) a stav na AND-1V (protokol, doba, data), po Esc obraz proti modelu, odeslané klávesy, NAWS po Tab, konec spojení od BBS, odmítnutý port, neznámé jméno |
 | `phase5.py` | fáze 5: výchozí `SAPITERM.CFG`, adresář na úvodní obrazovce, mazání, chybné číslo; na testovací BBS všech šest znakových sad (stránka glyf po glyfu proti `tools/tables.py`, odeslaná „čŘ“), U, T; výběr číslem se sadou z adresáře, Tab na výzvě; `TYPE SAPITERM.CFG` po návratu; `SAPITERM 13` s AND-1V a Consulem ze souboru |
@@ -116,6 +116,11 @@ python tools\romfont.py --c64 work\roms\c64\chargen-901225-01.bin --atari work\r
   - Emulátor kreslí CGA-1V s paprskem: paleta zapsaná ve VBI se ve snímku obrazovky projeví až v dalším snímku
     obrazu. Před `screenshot` nechat běžet aspoň 20 ms.
   - `machine_info` u CGA-1V hlásí `palette_writes_visible` (zápisy palety mimo VBI, na monitoru sníh).
+  - **Chyba SAPIemu 0.7.0-beta (nahlásit autorovi):** `screenshot` CGA-1V s paprskem na začátku snímku obrazu
+    (`beam_line` 3 a 15) ukázal pod paprskem starší obsah, než měl poslední snímek. Menu bez spojení bylo
+    dokreslené 50 ms před snímkem a paměť CGA-1V měla celý řádek (přečteno přes `io_write` 63h,C0h), na snímku ale
+    konec řádku 7 chyběl. Po 3 s bez jediného zápisu byl obraz celý. Stalo se to ve 4 z 8 běhů `phase2.py`.
+    `emu.screenshot` proto u CGA-1V nejdřív počká, až je paprsek pod obrazem (`beam_line` od 400, `emu.cga_blank`).
 - **ECMON bez DSM-1V** přepne konzoli na sériovou linku a visí na portu 11h. Sestavy proto DSM-1V mají.
 - **Konce řádků:** soubory v gitu s LF, `.cmd` s CRLF (`.gitattributes`). Python na Windows píše v textovém
   režimu CRLF, proto `newline='\n'`. Cesty s `\` v řetězcích Pythonu psát jako `r'...'`, jinak z `\f` a `\t`

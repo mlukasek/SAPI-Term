@@ -51,6 +51,28 @@ def keys(text, ms=600):
     mcp.call('pause')
 
 
+def prompt_menu(sym, consul):
+    """Ctrl+] at the prompt: the menu without a BBS on the CGA-1V; R and S change the speed and the columns, Esc
+    goes back to the prompt and saves SAPITERM.CFG."""
+    keys('\x1d', 1500)
+    if not consul:              # the menu read from the picture (no screenshots with --consul)
+        from cgaread import term_text
+        mcp.call('run_until', address='%04X' % sym['um_key'], timeout_ms=5000)     # the menu drawn
+        text = term_text(sym, os.path.join(PREVIEW, 'f2_menu.png'))
+        ok = ('K  konec programu' in text and 'R  rychlost linky: bez omezení' in text
+              and 'zpět na výběr BBS' in text and 'O  odpojit' not in text)
+        check(ok, 'Ctrl+] at the prompt: the menu without a BBS')
+        if not ok:
+            print('\n'.join('      |' + t for t in text.split('\n')[:10]))
+    keys('r', 800)
+    keys('s', 800)
+    check(emu.read(sym['speed'], 1)[0] == 1 and emu.read(sym['cols40'], 1)[0] == 1, 'R: 38400 Bd, S: 40 columns')
+    keys('\x1b', 2500)
+    check(Shadow(sym).row(18).startswith('BBS:') and 'Ulo' in Shadow(sym).row(6),
+          'Esc: back at the prompt, saved')
+    check(emu.read(sym['term_cols'], 1)[0] == 80, 'the start screen keeps 80 columns')
+
+
 def main():
     os.makedirs(PREVIEW, exist_ok=True)
     consul = '--consul' in sys.argv
@@ -61,7 +83,7 @@ def main():
     emu.checkpoint()
     mcp.call('resume')
     mcp.call('type_text', text='SAPITERM\r')
-    res = mcp.call('run_until', screen_text='Ctrl+]  konec', timeout_ms=15000)
+    res = mcp.call('run_until', screen_text='Ctrl+]  menu', timeout_ms=15000)
     check(res.get('stopped') != 'timeout', 'SAPITERM started, status on the AND-1V')
     mcp.call('run_for', ms=600)
     mcp.call('type_text', text='\r', run_ms=2500)   # the prompt for a BBS: empty Enter = the test screen
@@ -116,10 +138,15 @@ def main():
     check('Ctrl+]  zpět na výběr BBS' in mcp.call('screen_text'), 'status: Ctrl+] back to the BBS')
     keys('\x1d', 2500)
     check(sh.row(18).startswith('BBS:'), 'Ctrl+] in the test screen: back at the prompt for a BBS')
-    check('Ctrl+]  konec' in mcp.call('screen_text'), 'status at the prompt: Ctrl+] ends')
+    check('Ctrl+]  menu: nastavení, konec' in mcp.call('screen_text'), 'status at the prompt: Ctrl+] the menu')
+    prompt_menu(sh.sym, consul)
     keys('\x1d', 1500)
+    keys('k', 1500)
     res = mcp.call('run_until', screen_text='A>', timeout_ms=5000)
-    check(res.get('stopped') != 'timeout', 'Ctrl+] at the prompt returns to CP/M')
+    check(res.get('stopped') != 'timeout', 'Ctrl+] and K at the prompt return to CP/M')
+    mcp.call('pause')
+    cfg = emu.command_lines('TYPE SAPITERM.CFG')
+    check('SPEED=38400' in cfg and 'COLUMNS=40' in cfg, 'the menu at the prompt saved SPEED=38400, COLUMNS=40')
     mcp.call('pause')
     check('SAPITERM.COM' in emu.command('DIR SAPITERM.COM'), 'CP/M and the RAM disk work after the return')
     mcp.call('pause')

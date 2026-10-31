@@ -185,8 +185,24 @@ class Term:
         return read(self.sym[name], 1)[0]
 
 
+def cga_blank():
+    """When paused: on by 1 ms until the beam of the CGA-1V is below the picture (line 400 on). SAPIemu 0.7.0-beta:
+    a screenshot with the beam at the top of a frame may show rows below it older than the last frame
+    (docs/vyvoj.md). A running emulator is left as it is."""
+    for _ in range(40):
+        info = mcp.call('machine_info')
+        cga = next((c.get('details', {}) for c in info.get('cards', []) if c.get('type') == 'CGA-1V'), None)
+        if info.get('state') != 'paused' or not cga or cga.get('beam_line', 400) >= 400:
+            return
+        mcp.call('run_for', ms=1)
+        mcp.call('pause')
+
+
 def screenshot(path, display='CGA-1V'):
-    """PNG of a display, saved again with zlib (the emulator's PNG is not compressed)."""
+    """PNG of a display, saved again with zlib (the emulator's PNG is not compressed); the CGA-1V with its beam
+    below the picture (cga_blank)."""
+    if display == 'CGA-1V':
+        cga_blank()
     res = mcp.call('screenshot', display=display)
     img = next(c for c in (res if isinstance(res, list) else [res]) if isinstance(c, dict) and c.get('data'))
     data = base64.b64decode(img['data'])

@@ -190,8 +190,9 @@ def main():
         check(run_until(lambda: 'Adresu se nepoda?ilo' in row_koi(sym, 6), ms=20000), 'unknown name: message')
 
         keys('\x1d', 1500)
+        keys('k', 1500)
         res = mcp.call('run_until', screen_text='A>', timeout_ms=5000)
-        check(res.get('stopped') != 'timeout', 'Ctrl+] at the prompt returns to CP/M')
+        check(res.get('stopped') != 'timeout', 'Ctrl+] and K at the prompt return to CP/M')
         mcp.call('pause')
     finally:
         srv.terminate()

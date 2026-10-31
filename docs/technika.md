@@ -249,6 +249,12 @@ nenapodobí (`docs/rozhodnuti.md`).
 - **Menu Ctrl+] (`ol_menu`):** O odpojit, K konec, Tab výměna karet (a NAWS), T typ klávesnice, Z znaková sada,
   R rychlost linky, S 80/40 sloupců, U do adresáře, L záznam relace, D stáhnout, H historie, N telnet / raw TCP,
   Esc zpět. Co volba udělala, ukáže řádek 16 (`om_msg`), průběh stahování řádek 17.
+- **Menu Ctrl+] na úvodní obrazovce (`ui_menu`):** K konec, Tab výměna karet, T typ klávesnice, R rychlost linky,
+  S 80/40 sloupců, Esc zpět. Kreslí se stejně jako `ol_menu` na kartu terminálu. Změny jdou do `SAPITERM.CFG` při
+  Esc (hláška na úvodní obrazovce), při K před koncem. S tu jen mění nastavení: úvodní obrazovka má vždy
+  80 sloupců (`term_size` mimo spojení), 40 dostane až BBS.
+- **Co dělá Ctrl+] mimo spojení (`ctrl_menu`):** 0 konec (po prohlížení souboru), 1 zpět na výběr BBS
+  (testovací obrazovka), 2 menu (úvodní obrazovka). Podle toho je i řádek kláves na stavové kartě.
 
 ## Nastavení a adresář (`src/config.asm`)
 

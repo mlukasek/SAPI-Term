@@ -180,8 +180,9 @@ def main():
         check('BBS:' in text and '127.0.0.1' in text, 'the AND-1V shows the start screen with the book')
 
         keys('\x1d', 1500)
+        keys('k', 1500)
         res = mcp.call('run_until', screen_text='A>', timeout_ms=5000)
-        check(res.get('stopped') != 'timeout', 'Ctrl+] at the prompt returns to CP/M')
+        check(res.get('stopped') != 'timeout', 'Ctrl+] and K at the prompt return to CP/M')
         mcp.call('pause')
         text = emu.command_lines('TYPE SAPITERM.CFG')
         print('      ' + '\n      '.join(ln for ln in text.split('\n') if ln.startswith(('KEY', 'SCR', 'SPE',

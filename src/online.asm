@@ -20,7 +20,8 @@ IDLE_CHECK      equ 30              ; ticks without data between TCPSTATUS check
 
 ; ui_prompt: the start screen: the help, how the last connection ended, the address book (SAPITERM.CFG) and
 ; the input of an address or of a number from the book ("-number" deletes it). Tab moves the terminal to the
-; other card. A = 0 connect to ui_line, 1 test screen, 2 quit. Changes all.
+; other card, Ctrl+] opens ui_menu (K there ends the program). A = 0 connect to ui_line, 1 test screen.
+; Changes all.
 ui_prompt:
         call ansi_reset
         call scr_cls
@@ -67,7 +68,10 @@ up_book:
         call ui_input
         jr z,up_line
         cp 2
-        ret z                   ; Ctrl+]: quit
+        jr nz,up_tab
+        call ui_menu            ; Ctrl+]: the settings without a BBS
+        jp ui_prompt
+up_tab:
         call swap_cards         ; Tab: the terminal to the other card, kept in the file
         call cfg_save_msg
         jp ui_prompt
@@ -525,15 +529,7 @@ om_lines:                       ; its lines over the old ones (after T U L N R: 
         ld de,8*256+2
         ld hl,t_menu_cols
         call ss_text
-        ld a,(cols40)
-        or a
-        ld a,'8'
-        jr z,om_cols
-        ld a,'4'
-om_cols:
-        call stat_putc
-        ld a,'0'
-        call stat_putc
+        call show_cols
         ld de,9*256+2
         ld hl,t_menu_book
         call ss_text
@@ -683,13 +679,7 @@ om_width:                       ; 80 or 40 columns on the CGA-1V, kept in the fi
         call om_dirty
         jp om_show
 om_speed:                       ; the next speed (slower), kept in the file
-        ld a,(speed)
-        inc a
-        cp SPEED_COUNT
-        jr c,om_speed_set
-        xor a
-om_speed_set:
-        ld (speed),a
+        call speed_next
         call js_by_speed
         call pace_reset
         call om_dirty
@@ -771,6 +761,111 @@ om_pad:
 om_leave:
         ld a,(om_stat)
         ld (stat_dev),a
+        ret
+
+; ui_menu: Ctrl+] on the start screen: what is set without a BBS (the keyboard type, the speed of the line, the
+; columns, Tab) and K, on the card of the terminal as ol_menu. Esc or Ctrl+] back: SAPITERM.CFG gets the
+; changes, ui_msg says how it went. Changes all.
+ui_menu:
+        ld a,(stat_dev)
+        ld (om_stat),a
+        call om_here
+        xor a
+        ld (om_save),a
+um_show:
+        call stat_cls
+um_lines:
+        ld de,0*256+0
+        ld hl,t_menu_title
+        call ss_text
+        ld de,2*256+2
+        ld hl,t_menu_end
+        call ss_text
+        ld de,3*256+2
+        ld hl,t_menu_swap
+        call ss_text
+        ld de,4*256+2
+        ld hl,t_menu_kbd
+        call ss_text
+        call show_kbd
+        call om_pad16
+        ld de,5*256+2
+        ld hl,t_menu_speed
+        call ss_text
+        call show_speed
+        call om_pad16
+        ld de,6*256+2
+        ld hl,t_menu_cols
+        call ss_text
+        call show_cols
+        ld de,7*256+2
+        ld hl,t_menu_prompt
+        call ss_text
+um_key:
+        call kbd_get
+        jr nc,um_key
+        and 0DFh                ; letters as capitals
+        cp 'K'
+        jr z,um_quit
+        cp 'T'
+        jr z,um_kbd
+        cp 'R'
+        jr z,um_speed
+        cp 'S'
+        jr z,um_cols
+        cp 09h                  ; Tab
+        jr z,um_swap
+        cp 1Bh
+        jr z,um_back
+        cp K_MENU
+        jr z,um_back
+        jr um_key
+um_kbd:
+        ld a,(kbd_type)
+        xor 1
+        ld (kbd_type),a
+        call om_dirty
+        jr um_lines
+um_speed:
+        call speed_next
+        call om_dirty
+        jp um_lines
+um_cols:                        ; only kept: the start screen has 80 columns, a BBS gets these
+        ld a,(cols40)
+        xor 1
+        ld (cols40),a
+        call om_dirty
+        jp um_lines
+um_swap:                        ; the start screen (and the menu) to the other card
+        call om_leave
+        call swap_cards
+        call om_dirty
+        ld a,(stat_dev)
+        ld (om_stat),a
+        call om_here
+        jp um_show
+um_back:
+        call om_leave
+        ld a,(om_save)
+        or a
+        ret z
+        xor a
+        ld (om_save),a
+        jp cfg_save_msg
+um_quit:
+        call om_leave
+        call om_flush
+        jp quit
+
+; speed_next: the next speed of the line (slower, after the slowest MAX again). Changes A.
+speed_next:
+        ld a,(speed)
+        inc a
+        cp SPEED_COUNT
+        jr c,sn_set
+        xor a
+sn_set:
+        ld (speed),a
         ret
 
 ; ol_clock_reset: the time and the data on line from zero (a new connection): the MPH-1V counter 0, without it
@@ -1094,6 +1189,18 @@ show_kbd:
         ld hl,t_kbd_consul
 sk_put:
         jp stat_puts
+
+; show_cols: the columns on the CGA-1V (80 or 40) after the menu line. Changes all.
+show_cols:
+        ld a,(cols40)
+        or a
+        ld a,'8'
+        jr z,sc_put
+        ld a,'4'
+sc_put:
+        call stat_putc
+        ld a,'0'
+        jp stat_putc
 
 ; show_speed: the speed of the line after the menu line. Changes all.
 show_speed:

@@ -18,6 +18,7 @@ t_key3 Ctrl+P  barva písma, Ctrl+O barva pozadí, Ctrl+G zvonek
 t_key4 šipky   pohyb kurzoru, ostatní klávesy píšou
 t_key5 Ctrl+]  konec, návrat do CP/M
 t_key5_test Ctrl+]  zpět na výběr BBS
+t_key5_prompt Ctrl+]  menu: nastavení, konec
 t_no_and SAPI-Term: chybí karta AND-1V i CGA-1V.
 t_no_tpa SAPI-Term: málo paměti, BDOS (adresa na 0006h) je moc nízko.
 t_file Soubor:
@@ -39,7 +40,7 @@ t_test_help Piš na klávesnici. Tab = druhá obrazovka, Ctrl+] = výběr BBS.
 t_ui_title SAPI-Term 0.8 - terminál pro BBS
 t_ui_help1 Adresa BBS: jméno nebo IP, za dvojtečkou port (bez něj 23).
 t_ui_help2 Číslo = BBS z adresáře, -číslo = smazat ji z adresáře.
-t_ui_help3 Prázdný Enter = test, Tab = druhá obrazovka, Ctrl+] = konec.
+t_ui_help3 Prázdný Enter = test, Tab = druhá obrazovka, Ctrl+] = menu.
 t_book Adresář BBS v\s
 t_book_empty  je prázdný (U v menu na BBS ji přidá).
 t_no_number Takové číslo v adresáři není.
@@ -60,6 +61,7 @@ t_stopped Zastaveno.
 t_menu_title Menu (Ctrl+])
 t_menu_off O  odpojit
 t_menu_quit K  konec programu (odpojí)
+t_menu_end K  konec programu
 t_menu_swap Tab  výměna obrazovek
 t_menu_kbd T  klávesnice:\s
 t_menu_cs Z  znaková sada BBS:\s
@@ -86,6 +88,7 @@ t_xm_cancel BBS stahování zrušila.
 t_xm_timeout Stahování se nepodařilo, BBS neposílá.
 t_xm_disk Soubor se nepodařilo zapsat.
 t_menu_back Esc, Ctrl+]  zpět k BBS
+t_menu_prompt Esc, Ctrl+]  zpět na výběr BBS
 t_kbd_ekl EKL-1
 t_kbd_consul Consul 262.3
 t_bbs BBS:\s

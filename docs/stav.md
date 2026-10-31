@@ -5,7 +5,8 @@
 - **Hotové fáze 0–8,** zbývá fáze 9: zkouška na skutečném SAPI-1 s autorem (`docs/hw-otazky.md`).
 - **Terminál ANSI-BBS a VT100:**
   - 80×25 na CGA-1V (vlastní písmo 4×8, dvojice barev po doménách), 64×20 na AND-1V;
-  - menu Ctrl+] na kartě terminálu, stav spojení (protokol, doba, přijatá data a rychlost) na druhé kartě.
+  - menu Ctrl+] na kartě terminálu, stav spojení (protokol, doba, přijatá data a rychlost) na druhé kartě;
+  - na úvodní obrazovce menu Ctrl+] s volbami bez spojení (K konec, Tab, T, R, S).
 - **Spuštění:** `SAPITERM` (úvodní obrazovka s adresářem), `SAPITERM číslo`, `SAPITERM host[:port]`,
   `SAPITERM soubor.ANS` (prohlížeč).
 - **`SAPITERM.CFG` vedle programu:** klávesnice, karta terminálu, rychlost linky, sloupce a adresář až 16 BBS se
@@ -217,6 +218,9 @@
 - **`vdt_glyph` zarovnaný na 8 (2026-10-31):** po přidání bzučáku vyšel přes hranici stránky a kreslení (`inc e`)
   bralo dva řádky bodů odjinud: obraz Viewdata v `phase8.py` nesouhlasil. Chyba od BSS bez zarovnání, dřív
   náhodou nevadila. `check_build.py` teď zarovnání hlídá.
+- **Menu Ctrl+] i na úvodní obrazovce (2026-10-31, přání autora):** dřív Ctrl+] na výzvě „BBS:“ ukončil program,
+  rychlost linky (pro `SAPITERM SOUBOR.ANS`) šla nastavit jen během spojení. Teď menu s K konec, Tab, T, R a S;
+  konec do CP/M je Ctrl+] a K jako na BBS. Ověřeno v `phase2.py` (R a S, Esc uloží, `TYPE SAPITERM.CFG`).
 - **Skutečný HW (2026-10-31, autor):** SAPI-Term jede perfektně, akvárium na telehack.com stejně rychle jako
   v SAPIemu (WAIT DPI-1L příjem znatelně nezpomaluje). Další body ke zkoušce jsou v `docs/hw-otazky.md`.
 - **Konec TPA za běhu (2026-10-31):** BDOS se bere z adresy na 0006h, ne pevně D600h (jiné buildy CP/M). S CGA-1V
