@@ -418,3 +418,6 @@ Autor byl stále pryč, rozhodoval jsem sám.
 - **`att_slot` a `att_pref` pevně na B800h–BFFFh,** ostatní BSS hned za programem: dřív začínalo BSS na další
   stránce za programem a konec BSS skákal po 256 B (zase se to stalo s kódem RTC). Historie bez CGA-1V je teď od
   C000h (32 řádků), s `att_slot` se nepotká: ten se bez CGA-1V nepoužívá a historie s CGA-1V je ve stránce B.
+- **Rychlost na stavové kartě je klouzavý průměr za 5 s** (přání autora): kruh bajtů po sekundách (`rate_push`),
+  průměr přes sekundy, které už uběhly (nejvýš 5). Z RTC, kde mezi čteními může uběhnout víc sekund, dostane každá
+  z nich stejný díl. Ověřeno s MPH-1V i bez ní (v reálném čase): po stránce SUNSET 1753 B/s a za 5 s nula.

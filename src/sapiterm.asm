@@ -1472,6 +1472,9 @@ ol_ticks:       defb 0          ; without the MPH-1V: the quiet ticks of this se
 rtc_ok:         defb 0          ; without the MPH-1V: the time on line from the RTC of the DPI-1L
 rtc_due:        defb 0          ; read the RTC at the next ol_clock
 rtc_rx:         defw 0          ; rx_total at the last reading of the RTC
+rate_ring:      defs 2*RATE_SECS ; bytes received in each of the last seconds (rate_push)
+rate_pos:       defb 0          ; the next of them
+rate_n:         defb 0          ; seconds in the ring so far
 OL_STATS        equ $-rx_total
 rtc_now:        defs 3          ; the RTC of the DPI-1L: hour, minute, second (dpi_time)
 rtc_t0:         defs 3          ; when the connection began

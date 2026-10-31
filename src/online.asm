@@ -885,16 +885,28 @@ ol_rtc:
         ld (rx_last),hl
         or a
         sbc hl,de
-        call div_hl_c
-        ld (ol_rate),hl
+        call div_hl_c           ; the bytes per second of these seconds, each of them into the ring
+        ld a,c
+        cp RATE_SECS
+        jr c,or_push
+        ld c,RATE_SECS
+or_push:
+        ld b,c
+or_one:
+        push bc
+        push hl
+        call rate_push
+        pop hl
+        pop bc
+        djnz or_one
         jp stat_update
 or_long:
         call or_mark
         ld hl,(rx_total)
         ld (rx_last),hl
         ld hl,0
-        ld (ol_rate),hl
-        jp stat_update
+        ld c,RATE_SECS
+        jr or_push
 
 ; or_mark: rtc_last = rtc_now. Changes BC, DE, HL.
 or_mark:
@@ -1003,8 +1015,58 @@ os_rate:
         ld (rx_last),hl
         or a
         sbc hl,de
-        ld (ol_rate),hl
+        call rate_push
         jp stat_update
+
+; rate_push: HL bytes received in one more second into the ring of the last RATE_SECS seconds; ol_rate = their
+; average (over the seconds on line so far, at most RATE_SECS). Changes A, BC, DE, HL.
+RATE_SECS       equ 5
+rate_push:
+        ex de,hl
+        ld a,(rate_pos)
+        add a,a
+        ld l,a
+        ld h,0
+        ld bc,rate_ring
+        add hl,bc
+        ld (hl),e
+        inc hl
+        ld (hl),d
+        ld a,(rate_pos)
+        inc a
+        cp RATE_SECS
+        jr c,rp_pos
+        xor a
+rp_pos:
+        ld (rate_pos),a
+        ld a,(rate_n)
+        cp RATE_SECS
+        jr nc,rp_sum
+        inc a
+        ld (rate_n),a
+rp_sum:
+        ld hl,rate_ring
+        ld de,0
+        ld b,RATE_SECS
+rp_add:
+        ld a,(hl)
+        inc hl
+        add a,e
+        ld e,a
+        ld a,(hl)
+        inc hl
+        adc a,d
+        ld d,a
+        jr nc,rp_next
+        ld de,0FFFFh            ; more than 64 KB in the ring: as much as there can be
+rp_next:
+        djnz rp_add
+        ex de,hl
+        ld a,(rate_n)
+        ld c,a
+        call div_hl_c
+        ld (ol_rate),hl
+        ret
 
 ; rx_count: HL more bytes of data received (rx_total). Changes A, DE.
 rx_count:
