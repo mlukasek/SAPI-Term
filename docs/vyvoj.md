@@ -45,6 +45,27 @@ MZ otáčí (bit 0 = levý bod).
 python tools\romfont.py --c64 work\roms\c64\chargen-901225-01.bin --atari work\roms\atari\ATARIOSB.ROM --mz work\roms\mz800\CGROM.ROM --cpm work\roms\CPM_gen\Cpm_v41\BIOS.mac
 ```
 
+## Vydání
+
+1. **Verze** v hlavičce `src/sapiterm.asm` (`'SAPI-Term X.Y.Z'`) a v `src/texts.txt` (`t_title`, `t_test_title`,
+   `t_ui_title`). Nadpis testovací obrazovky se musí vejít do 64 znaků AND-1V.
+2. **`CHANGELOG.md`:** `## X.Y.Z (datum)` a stručně, co je nového.
+3. `build.cmd` a všechny testy (`phase2.py` i s `--consul`, `phase3.py` až `phase8.py`).
+4. `python tools\release.py X.Y.Z` → `build\release\SAPI-Term-X.Y.Z.zip` (`SAPITERM.COM`, `sapiterm.hex`,
+   `SAPITERM.CFG`, testovací `*.ANS`, README, CHANGELOG, LICENSE). Skript zkontroluje verzi v programu
+   i v CHANGELOG.
+5. **Text release** česky jako u 1.0.0: co program umí, obsah zipu, spuštění, kde je ověřený, jeden anglický
+   řádek. Autorovi ho ukázat **před zveřejněním**.
+6. Push, pak `gh release create vX.Y.Z build\release\SAPI-Term-X.Y.Z.zip --target main --title "SAPI-Term X.Y.Z"
+   --notes-file SOUBOR` (`--target` chce větev nebo celý hash).
+
+**README a release podle přání autora (2026-10-31):**
+- česky a stručně, detaily patří do `docs/`, krátký anglický odstavec;
+- AI nezakrývat, ale nezdůrazňovat: jen „s pomocí Claude (Anthropic)“ v části Autoři a práva;
+- snímky skutečných BBS smí, s uvedením odkud jsou (pro BBS je to reklama); osobní údaje (IP adresa klienta na
+  úvodní obrazovce Synchronetu) zakrýt;
+- snímky z emulátoru (`realbbs.py --shot`, animace `readme_gif.py`), uložené v `docs/img/`.
+
 ## Emulátor
 
 - **Bez okna pro skripty:** `tools\emu\sapiemu.cmd` (otevře okno se `sapiemu-cli --mcp --mcp-port 8595`). Nebo
