@@ -2,8 +2,8 @@
 ; CGA-1V the ring is its page B, which is never shown (16000 bytes: 93 rows; the CPU reaches it with MAP_CGA
 ; and CONFIG D1). Without one it is the RAM from hist_buf (after the buffers from C000h) up to the BDOS
 ; (tpa_top; with MAP_CPM it is the TPA of CP/M with its CCP, which the warm boot loads again). A row is put
-; together and read back in hv_line. hist_view shows the history on the terminal; the screen itself goes to the end of the ring
-; meanwhile and comes back from it.
+; together and read back in hv_line. hist_view shows the history on the terminal; the screen itself goes to
+; the end of the ring meanwhile and comes back from it.
 
 HIST_REC        equ 2*SCR_COLS+SCR_COLS/8+1 ; a row: characters, attributes, the KOI bits, the flags of its font
                                             ; (EXT_8X8, EXT_ATA of any cell; 171 bytes)
