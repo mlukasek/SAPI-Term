@@ -13,18 +13,23 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
      Ještě 3× zopakováno, pokaždé „ano“.
 2. **Čitelnost fontu 4×8** na skutečném monitoru VGA přes CGA-1V: malá písmena, číslice, rámečky a velká písmena
    s diakritikou, která mají výšku malých (`docs/rozhodnuti.md`).
+   - **2026-10-31, autor na skutečném HW:** ověřeno.
 3. **Barvy:** testovací obrazovka (Ctrl+T) má bílý nadpis, žlutou tabulku, azurové rámečky a zelenou nápovědu.
    Při psaní nesmí na obraze blikat rušení (sníh Bt476).
+   - **2026-10-31, autor na skutečném HW:** ověřeno.
 4. **Klávesnice EKL-1:** psaní, šipky (pohyb kurzoru), Ctrl+P/Ctrl+O barvy, Tab výměna karet. Kurzor bliká asi
    1,5× za sekundu.
 5. **Návrat Ctrl+]:** CGA-1V černá, AND-1V smazaná s `A>` nahoře, `DIR` funguje.
+   - **2026-10-31, autor na skutečném HW:** ověřeno.
 
 ## SAPITERM 0.3 (fáze 3)
 
 1. **Soubory ANSI z RAM disku:** `SAPITERM SUNSET.ANS` (západ slunce z půlbloků, barvy iCE), `MENU.ANS`,
    `ANSITEST.ANS`, `SCROLL.ANS`. Obraz má být stejný jako na snímcích v emulátoru, bez sněhu.
+   - **2026-10-31, autor na skutečném HW:** ověřeno.
 2. **Rychlost:** SCROLL.ANS při 4 MHz asi 4 s, SUNSET.ANS asi 3 s (v emulátoru). Na skutečném HW s čekáním
    CGA-1V by mělo vyjít stejně (čekání je změřené a emulované).
+   - **2026-10-31, autor na skutečném HW:** ověřeno.
 
 ## SAPITERM 0.4 (fáze 4)
 
@@ -124,6 +129,8 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
   - **2026-10-31, autor na skutečném HW:** SAPI-Term jede perfektně, akvárium na telehack.com je stejně rychlé
     jako v SAPIemu. WAIT karty příjem znatelně nezpomaluje.
 - **TCPSEND chyba 5** (plné odesílání lwIP) a odmítnuté spojení (stav 3 hned).
+  - **2026-10-31, autor na skutečném HW:** odmítnuté spojení se chová správně. Chyba 5 neověřena (špatně se
+    vyvolává, v emulátoru ověřená).
 - **RTC DPI-1L (60–63h):** vrací UTC, nebo místní čas? (`repo.c` čte časovač AON, který podle `systime.h` drží UTC.)
 - **Sníh palety Bt476** při 2 MHz: zápis barev jedné dvojice (7 domén) trvá asi 0,4 ms, všech 16 asi 6 ms, víc
   než VBI (4 ms).
