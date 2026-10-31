@@ -81,6 +81,8 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 2. **Bzučák klávesnice bez MPH-1V** (kartu vytáhnout): Ctrl+G na testovací obrazovce má krátce (asi 1/15 s)
    pípnout bzučák EKL-1 a po pípnutí být ticho. Zajímá mě, jestli není moc hlasitý nebo moc krátký, a jestli se při
    rychlém psaní hned za Ctrl+G neztratí znak. U Consulu 262.3 (jestli ho máte): má bzučák na stejném vývodu?
+   - **2026-10-31, autor na skutečném HW:** bez MPH-1V vše funguje výborně, zvonek na bzučáku EKL-1 také. Consul
+     zatím neověřený.
 
 ## Doba spojení bez MPH-1V (RTC DPI-1L)
 

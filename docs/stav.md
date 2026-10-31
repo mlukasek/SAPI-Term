@@ -212,7 +212,8 @@
   nedefinovaný obsah čítače (víc než 932) kartu skrýt. V emulátoru se to neprojevilo.
 - **Zvonek bez MPH-1V na bzučáku klávesnice (2026-10-31, volba autora):** s MPH-1V dál tón 880 Hz z YM3812,
   bez ní bzučák EKL-1 (port 01h bit 1 = 0) na 4 tiky. `phase2.py` pozná zdroj podle frekvence v nahrávce WAV:
-  s MPH-1V 878 Hz (155 ms i s doznětím), na sestavě s Consulem bzučák 2397 Hz, 58 ms.
+  s MPH-1V 878 Hz (155 ms i s doznětím), na sestavě s Consulem bzučák 2397 Hz, 58 ms. Na skutečném HW bez
+  MPH-1V ověřeno (autor): vše funguje výborně.
 - **`vdt_glyph` zarovnaný na 8 (2026-10-31):** po přidání bzučáku vyšel přes hranici stránky a kreslení (`inc e`)
   bralo dva řádky bodů odjinud: obraz Viewdata v `phase8.py` nesouhlasil. Chyba od BSS bez zarovnání, dřív
   náhodou nevadila. `check_build.py` teď zarovnání hlídá.
