@@ -36,7 +36,7 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 
 ## SAPITERM 0.5 (fáze 5)
 
-1. **Adresář na RAM disku:** `SAPITERM` ukáže 13 BBS z `SAPITERM.CFG`. Číslo připojí, např. `1` (Vertrauen).
+1. **Adresář na RAM disku:** `SAPITERM` ukáže 16 BBS z `SAPITERM.CFG`. Číslo připojí, např. `1` (Vertrauen).
    V menu (Ctrl+]) T přepne klávesnici a uloží. Po novém startu musí typ zůstat (zápis na ZRD-1V).
    - **2026-10-31, autor na skutečném HW:** uložení typu klávesnice funguje.
 2. **Jiný disk:** je-li v sestavě další disk, `B:SAPITERM` má číst a psát `B:SAPITERM.CFG`.

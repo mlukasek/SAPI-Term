@@ -1,6 +1,6 @@
 # SAPI-Term – stav a další kroky
 
-## Shrnutí (2026-10-30, `SAPITERM.COM` 0.8, 32,8 KB)
+## Shrnutí (2026-10-31, `SAPITERM.COM` 0.8, 33,7 KB)
 
 - **Hotové fáze 0–8,** zbývá fáze 9: zkouška na skutečném SAPI-1 s autorem (`docs/hw-otazky.md`).
 - **Terminál ANSI-BBS a VT100:**
@@ -272,7 +272,8 @@ Fáze 9: skutečný HW dávkově s autorem (`docs/hw-otazky.md`). Všechny ostat
   na jméno (pod průběhem stahování) a `XMODEM.BIN` přejmenuje. Ptá se až po stažení: XMODEM od YMODEM pozná až
   z prvního bloku a BBS při psaní jména nečeká. Když jsou jméno i jméno s číslicemi 1–9 obsazené, hláška to řekne
   (dřív „Soubor se nepodařilo zapsat.“) a BBS dostane CAN (dřív čekala do vypršení času).
-- **Paměť:** program má 31,2 KB a pod C000h zbývají 2,6 KB. Historie bez CGA-1V (v RAM) se s každým dalším kódem
-  zmenšuje (48 řádků). Víc místa by daly písma PETSCII a ATASCII nahrávaná ze souboru až při potřebě.
+- **Paměť (2026-10-31):** program má 33,7 KB (34 557 B), pod tabulkami dvojic barev (B800h) zbývá 2 880 B.
+  Historie bez CGA-1V je od C000h po BDOS (na sestavě V 12 řádků), další kód ji už nezmenšuje. Víc místa by daly
+  písma PETSCII a ATASCII nahrávaná ze souboru až při potřebě.
 - **Aleco Experience BBS** (Praha, Atari, `bbs.alecoexp.cz`) 2026-10-30 spojení na port 23 odmítala, web běží.
   Zkusit později a případně přidat.
