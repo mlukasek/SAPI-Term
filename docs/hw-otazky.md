@@ -71,8 +71,8 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
      `python tools\testbbs.py --host 0.0.0.0`, na SAPI `SAPITERM IP_PC:6023`. B = blikající text (SGR 5 bez iCE),
      I = totéž s iCE (nebliká, světlá pozadí). Pak Ctrl+], Z na UTF-8, S, Esc a U = „Příliš žluťoučký kůň…“ ve
      40 sloupcích písmem MZ-800 (i rámečky a další znaky Unicode).
-   - **2026-10-31, autor na skutečném HW, testovací BBS z PC** (`testbbs.py --host 0.0.0.0`): blikání (B, I) i čeština
-     ve 40 sloupcích (U) fungují, jak mají.
+   - **2026-10-31, autor na skutečném HW, testovací BBS z PC** (`testbbs.py --host 0.0.0.0`): blikání (B, I)
+     i čeština ve 40 sloupcích (U) fungují, jak mají.
 
 ## SAPITERM 0.7 (fáze 7)
 
