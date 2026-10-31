@@ -10,6 +10,7 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
    - **2026-10-31, autor na skutečném HW, studený start** (zapnout, ECMON 3, `SAPITERM`): MPH-1V „ano“
      s detekcí, která čeká na nahrání dělitele. Na čase od zapnutí nezáleží, jen aby čítač 2 mezitím nepoužil
      jiný program. Obsah čítače po zapnutí je náhodný, takže jedna zkouška nedokazuje, že by stará detekce selhala.
+     Ještě 3× zopakováno, pokaždé „ano“.
 2. **Čitelnost fontu 4×8** na skutečném monitoru VGA přes CGA-1V: malá písmena, číslice, rámečky a velká písmena
    s diakritikou, která mají výšku malých (`docs/rozhodnuti.md`).
 3. **Barvy:** testovací obrazovka (Ctrl+T) má bílý nadpis, žlutou tabulku, azurové rámečky a zelenou nápovědu.
