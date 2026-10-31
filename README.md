@@ -10,7 +10,7 @@ Terminál pro internetové BBS (telnet) pro **Tesla SAPI-1** v sestavě „V“ 
 
 | Úvodní obrazovka | Vertrauen (ANSI) | telehack.com (akvárium) |
 |---|---|---|
-| ![Úvodní obrazovka](docs/img/uvod.png) | ![Vertrauen](docs/img/vertrauen.png) | ![telehack.com](docs/img/telehack.png) |
+| ![Úvodní obrazovka](docs/img/uvod.png) | ![Vertrauen](docs/img/vertrauen.png) | ![telehack.com](docs/img/telehack.gif) |
 | **Retro Campus (PETSCII)** | **Southern Amis (ATASCII)** | **Telstar (Viewdata)** |
 | ![Retro Campus](docs/img/retrocampus.png) | ![Southern Amis](docs/img/southernamis.png) | ![Telstar](docs/img/telstar.png) |
 

@@ -76,6 +76,7 @@ python tools\romfont.py --c64 work\roms\c64\chargen-901225-01.bin --atari work\r
 | `phase8.py` | fáze 8: PETSCII přes menu Z, stránka G testovací BBS proti modelu `tools/petref.py` (stín i obraz s písmem `font_pet` a barvami C64), klávesy, Tab na AND-1V a zpět; ATASCII, stránka A proti `tools/ataref.py`, klávesy; Viewdata, stránka V proti `tools/vdtref.py` (obraz v obou fázích blikání), klávesy; uložení do adresáře a připojení s PETSCII |
 | `profile.py "PŘÍKAZ"` | statistický profil: PC každou emulovanou milisekundu, počty podle návěští z `.sym` |
 | `realbbs.py [ČÍSLO\|ADRESA…]` | skutečné BBS z adresáře nebo podle adresy: připojení, úvodní obrazovka (text a snímek `build/preview/bbs_*.png`), vyjednané volby telnetu, odpojení; bez přihlášení a bez kláves; čeká ve skutečném čase |
+| `readme_gif.py capture [S] \| gif` | animace akvária na telehack.com pro README: `capture` snímá CGA-1V asi po 100 ms do `build/preview/aqua/`, `gif` z nich složí `docs/img/telehack.gif` (vlastní kodér GIF89a s LZW, ukládá jen změněný obdélník; ověřeno dekódováním přes System.Drawing) |
 | `emu.py` | společné: sestava, kontrolní bod CP/M, příkaz CP/M, čtení paměti, symboly, snímek obrazovky |
 | `cgaread.py` | text CGA-1V ze snímku (buňky proti glyfům písma 4×8, ve 40 sloupcích MZ-800 a zdvojeného 4×8, čeština KOI); `term_text(sym)` = text karty terminálu, pro kontrolu menu |
 | `sapimcp.py` | klient MCP (`python tools\emu\sapimcp.py NÁSTROJ "{json}"`) |
