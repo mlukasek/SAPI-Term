@@ -129,8 +129,9 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
   - **2026-10-31, autor na skutečném HW:** SAPI-Term jede perfektně, akvárium na telehack.com je stejně rychlé
     jako v SAPIemu. WAIT karty příjem znatelně nezpomaluje.
 - **TCPSEND chyba 5** (plné odesílání lwIP) a odmítnuté spojení (stav 3 hned).
-  - **2026-10-31, autor na skutečném HW:** odmítnuté spojení se chová správně. Chyba 5 neověřena (špatně se
-    vyvolává, v emulátoru ověřená).
+  - **2026-10-31, autor na skutečném HW:** odmítnuté spojení se chová správně.
+  - **Chyba 5 není ověřená nikde,** ani v emulátoru (test na ni není). `tx_flush` ji po tiku pošle znovu, nejvýš
+    `tx_tries`krát, pak data zahodí. Na skutečné kartě se špatně vyvolává.
 - **RTC DPI-1L (60–63h):** vrací UTC, nebo místní čas? (`repo.c` čte časovač AON, který podle `systime.h` drží UTC.)
 - **Sníh palety Bt476** při 2 MHz: zápis barev jedné dvojice (7 domén) trvá asi 0,4 ms, všech 16 asi 6 ms, víc
   než VBI (4 ms).
