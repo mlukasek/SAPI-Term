@@ -205,7 +205,8 @@
   CGA-1V má 12 řádků (s CGA-1V dál 93 ve stránce B). Testy fází 2–8 procházejí.
 - **Z testovací obrazovky Ctrl+] zpět na výběr BBS (2026-10-31):** dřív ukončil program. Na výběru BBS
   a po prohlížení souboru (`SAPITERM SOUBOR.ANS`) Ctrl+] dál vrací do CP/M.
-- **Ctrl+G zvoní na testovací obrazovce (2026-10-31):** tón MPH-1V bez sítě, ke zkoušce zvonku na HW.
+- **Ctrl+G zvoní na testovací obrazovce (2026-10-31):** tón MPH-1V bez sítě, ke zkoušce zvonku na HW. Na
+  skutečném HW ověřeno (autor): krátce pípne.
 - **Skutečný HW (2026-10-31, autor):** SAPI-Term jede perfektně, akvárium na telehack.com stejně rychle jako
   v SAPIemu (WAIT DPI-1L příjem znatelně nezpomaluje). Další body ke zkoušce jsou v `docs/hw-otazky.md`.
 - **Konec TPA za běhu (2026-10-31):** BDOS se bere z adresy na 0006h, ne pevně D600h (jiné buildy CP/M). S CGA-1V

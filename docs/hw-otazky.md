@@ -76,6 +76,8 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 1. **BEL:** na testovací obrazovce (prázdný Enter na výzvě „BBS:“) Ctrl+G, nebo na BBS, která pípá (třeba při
    chatu). Má zaznít krátký tón z MPH-1V, zajímá mě hlasitost a jestli YM3812 stihne zápisy s pauzami podle
    `ym_regs`.
+   - **2026-10-31, autor na skutečném HW:** Ctrl+G na testovací obrazovce krátce pípne přes MPH-1V. YM3812 zápisy
+     s pauzami podle `ym_regs` stíhá.
 
 ## Doba spojení bez MPH-1V (RTC DPI-1L)
 
