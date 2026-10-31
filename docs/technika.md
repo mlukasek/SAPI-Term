@@ -69,6 +69,9 @@ nenapodobí (`docs/rozhodnuti.md`).
     Zarovnání písem tak nezávisí na velikosti kódu;
   - **BSS** (není v `.COM`) jde hned za program bez zarovnání; `att_slot` a `att_pref` (8 stránek) jsou pevně na
     B800h–BFFFh a BSS (se zásobníkem) musí skončit pod nimi (`check_build.py` vypíše, kolik zbývá);
+  - **C000h–D5FFh** (konec TPA, jen s MAP_CPM; CCP od CE00h nahraje warm boot na konci znovu): adresář BBS
+    (`book`), blok XMODEM/YMODEM s `cfg_rec` a `cfg_line` (`xm_pkt`), kódy Viewdata (`vdt_raw`, `vdt_dh`), pak
+    historie bez CGA-1V (12 řádků). Kreslení na ně nesahá (CGA-1V mapuje jen uvnitř `cga_draw`);
   - `tools/fontgen.py` je vyrobí z `fonts/sapiterm4x8.txt`, `--preview` uloží náhled PNG.
 - **Dvojice barev po doménách** (doména = 4 textové řádky = 32 řádků obrazu, sedmá jen řádek 24):
   - `att_slot` (7 stránek): slot atributu v doméně (FFh nemá);
@@ -275,7 +278,7 @@ nenapodobí (`docs/rozhodnuti.md`).
 ## Historie (`src/history.asm`)
 
 - Kruh: s CGA-1V její stránka B (C000h, `CGA_SIZE` / `HIST_REC` = 93 řádků, `hist_ring_on` / `hist_ring_off`
-  nastaví MAP_CGA a CONFIG D1), bez ní `hist_buf` (C000h, jen s MAP_CPM) až po D5FFh (`HIST_LINES` = 32). `hist_init` při
+  nastaví MAP_CGA a CONFIG D1), bez ní `hist_buf` (za buffery od C000h, jen s MAP_CPM) až po D5FFh (`HIST_LINES` = 12). `hist_init` při
   startu nastaví `hist_vram`, `hist_base`, `hist_cap`. Záznam `HIST_REC` = 171 B se skládá a čte v `hv_line`.
   - `hist_head` je další zapisovaný řádek, `hist_count` počet řádků.
   - Záznam řádku: 80 znaků, 80 atributů, 10 B bitů EXT_KOI (buňka 0 v bitu 0), 1 B příznaků písma (EXT_8X8,

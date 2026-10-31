@@ -199,7 +199,10 @@
   z přírůstku dat za uplynulé sekundy. RTC se čte v klidu 4× za sekundu, při provozu po 2 KB dat. Ověřeno na sestavě
   s Consulem: karta ukázala stejný čas jako hodiny PC. Tabulky dvojic barev jsou pevně na B800h–BFFFh, BSS
   za programem bez výplně (`check_build.py` vypíše, kolik zbývá). Historie bez CGA-1V má 32 řádků od C000h.
-- **KB/s na stavové kartě je průměr za posledních 5 s (2026-10-31).** Pod tabulkami dvojic barev zbývá 272 B.
+- **KB/s na stavové kartě je průměr za posledních 5 s (2026-10-31).**
+- **Buffery nad C000h (2026-10-31):** adresář BBS, blok XMODEM/`SAPITERM.CFG` a kódy Viewdata jsou v RAM
+  C000h–D5FFh (konec TPA), kterou s CGA-1V nic nepoužívalo. Pod tabulkami dvojic barev zbývá 3838 B. Historie bez
+  CGA-1V má 12 řádků (s CGA-1V dál 93 ve stránce B). Testy fází 2–8 procházejí.
 - **Rychlejší příjem (2026-10-31):** akvárium z telehack.com po síti 4,3 → 6,0 KB/s (telnet rychlou smyčkou,
   parser CSI a SGR bez `add_hl_a`), `docs/rozhodnuti.md`. Testy fází 3–8 procházejí.
 

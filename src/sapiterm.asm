@@ -1570,21 +1570,25 @@ rec_buf         equ slot_ref + 32*DOMAINS       ; 128: a record of the file
 in_buf          equ rec_buf + 128               ; IN_RECORDS * 128: input (file, later the BBS)
 sauce_buf       equ in_buf + 128*IN_RECORDS     ; 256: the last two records (SAUCE)
 rx_raw          equ sauce_buf                   ; 253: a TCPRECV (SAUCE is not used on line)
-book            equ sauce_buf + 256             ; BOOK_MAX entries of the address book
+log_buf         equ sauce_buf + 256             ; 128: a record of the session log
+hv_line         equ log_buf + 128               ; HIST_REC: a row of the history put together or read back (the
+                                                ; ring may be the page B of the CGA-1V: below C000h)
+vdt_glyph       equ hv_line + HIST_REC          ; 8: the glyph made by ga_vdt (after font_pet: drawn as it is)
+vdt_dhbuf       equ vdt_glyph + 8               ; 8
+STACK_TOP       equ vdt_dhbuf + 8 + 256
+BSS_END         equ STACK_TOP                   ; at most att_slot
+
+; from C000h to the end of the TPA (D5FFh; the CCP from CE00h is loaded again by the warm boot when SAPI-Term
+; ends): RAM with MAP_CPM only. Buffers the drawing does not touch (it maps the CGA-1V only inside cga_draw),
+; then the history without a CGA-1V (with it the history is in its page B).
+book            equ 0C000h                      ; BOOK_MAX entries of the address book
 xm_pkt          equ book + BOOK_ENTRY*BOOK_MAX  ; 1030: a block of XMODEM / YMODEM; cfg_rec and cfg_line in it too
                                                 ; (SAPITERM.CFG is not read or written while a download runs)
 cfg_rec         equ xm_pkt                      ; 128: a record of SAPITERM.CFG
 cfg_line        equ cfg_rec + 128               ; CFG_LINE + 2: a line of it
-log_buf         equ xm_pkt + 1030               ; 128: a record of the session log
-hv_line         equ log_buf + 128               ; HIST_REC: a row of the history put together or read back
-vdt_raw         equ hv_line + HIST_REC          ; 24 x 40: the codes of Viewdata
+vdt_raw         equ xm_pkt + 1030               ; 24 x 40: the codes of Viewdata
 vdt_dh          equ vdt_raw + 24*40             ; 24: double height in the row
-vdt_glyph       equ vdt_dh + 24                 ; 8: the glyph made by ga_vdt (after font_pet: drawn as it is)
-vdt_dhbuf       equ vdt_glyph + 8               ; 8
-STACK_TOP       equ vdt_dhbuf + 8 + 256
-BSS_END         equ STACK_TOP                   ; at most att_slot
-hist_buf        equ 0C000h                      ; the history without a CGA-1V (and so without att_slot):
-                                                ; C000h-D5FFh, with MAP_CPM only
+hist_buf        equ vdt_dh + 24                 ; the history without a CGA-1V (and so without att_slot)
 HIST_LINES      equ (0D600h - hist_buf) / HIST_REC
 
         end start

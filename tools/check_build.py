@@ -35,6 +35,9 @@ def main():
     for name in ('font_cp437', 'font_koi', 'and_map_cp437', 'col_dist', 'cga_rows', 'att_slot'):
         if name in s and s[name] & 0xFF:
             errors.append(f'{name} at {s[name]:04X}h is not page aligned')
+    if s['hist_buf'] + 8 * s['HIST_REC'] > 0xD600:
+        errors.append(f'the buffers from C000h end at {s["hist_buf"]:04X}h: no room for 8 rows of history '
+                      'below D600h (the end of the TPA)')
     if s['font_cp437'] != 0x200:
         errors.append(f'font_cp437 at {s["font_cp437"]:04X}h, not 0200h: the buffers before it grew too much')
     if errors:

@@ -421,3 +421,16 @@ Autor byl stále pryč, rozhodoval jsem sám.
 - **Rychlost na stavové kartě je klouzavý průměr za 5 s** (přání autora): kruh bajtů po sekundách (`rate_push`),
   průměr přes sekundy, které už uběhly (nejvýš 5). Z RTC, kde mezi čteními může uběhnout víc sekund, dostane každá
   z nich stejný díl. Ověřeno s MPH-1V i bez ní (v reálném čase): po stránce SUNSET 1753 B/s a za 5 s nula.
+
+## 2026-10-31: buffery v RAM C000h–D5FFh
+
+- **S CGA-1V ležela RAM C000h–D5FFh ladem** (historie je ve stránce B karty). Autor navrhl historii od C000h;
+  ta drahou paměť pod C000h už nezabírala, místo ní jdou nahoru velké, zřídka používané buffery: adresář BBS
+  (1552 B), blok XMODEM/YMODEM s `cfg_rec` a `cfg_line` (1030 B) a kódy Viewdata (984 B). Pod C000h se uvolnilo
+  3,5 KB (zbývá 3838 B).
+- **Jen to, na co kreslení nesahá:** CGA-1V se mapuje jen uvnitř `cga_draw` (a při historii a rolování), tyto
+  buffery se čtou a píšou mimo něj, s MAP_CPM. Žádné další přepínání mapy, rychlost stejná. `in_buf`, stín
+  a `hv_line` (historie ve stránce B se skládá při namapované CGA-1V) zůstávají pod C000h.
+- **Konec TPA:** vše končí pod D600h (BDOS od D606h); `check_build.py` hlídá, že na historii bez CGA-1V zbude
+  aspoň 8 řádků. CCP od CE00h se přepíše, SAPI-Term končí warm bootem (`JP 0`), který ho nahraje znovu.
+- **Cena:** historie bez CGA-1V má 12 řádků místo 32.
