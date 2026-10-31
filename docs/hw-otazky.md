@@ -67,6 +67,10 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 2. **Blikání:** BBS s blikajícím textem bez iCE (třeba výzva „press any key“). Text bliká asi 1,5× za sekundu bez
    sněhu na obrazovce.
 3. **40 sloupců:** na BBS menu S. Písmo Sharp MZ-800 (i čeština podle CP/M pro MZ-800), čitelnost na monitoru.
+   - **Obojí na testovací BBS z PC** (`docs/vyvoj.md`, „Testovací BBS pro skutečné SAPI“): na PC
+     `python tools\testbbs.py --host 0.0.0.0`, na SAPI `SAPITERM IP_PC:6023`. B = blikající text (SGR 5 bez iCE),
+     I = totéž s iCE (nebliká, světlá pozadí). Pak Ctrl+], Z na UTF-8, S, Esc a U = „Příliš žluťoučký kůň…“ ve
+     40 sloupcích písmem MZ-800 (i rámečky a další znaky Unicode).
 
 ## SAPITERM 0.7 (fáze 7)
 

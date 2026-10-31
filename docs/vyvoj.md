@@ -81,6 +81,14 @@ python tools\romfont.py --c64 work\roms\c64\chargen-901225-01.bin --atari work\r
 | `sapimcp.py` | klient MCP (`python tools\emu\sapimcp.py NÁSTROJ "{json}"`) |
 | `sapiemu.cmd [consul\|gui]` | spustí release emulátor s MCP |
 
+### Testovací BBS pro skutečné SAPI
+
+`tools\testbbs.py` naslouchá jen na 127.0.0.1 (emulátor). Pro skutečné SAPI přes DPI-1L:
+`python tools\testbbs.py --host 0.0.0.0` (vypíše adresy PC a každého klienta), na SAPI `SAPITERM IP_PC:6023`.
+Windows při prvním spuštění nabídne povolení ve firewallu: stačí soukromá síť. Port je otevřený, jen dokud BBS
+běží. Stránky jsou v hlavičce skriptu (B blikání, U čeština v UTF-8, G PETSCII, A ATASCII, V Viewdata, Y a X
+stahování).
+
 ## Pasti
 
 - **pasmo:**

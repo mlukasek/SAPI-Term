@@ -1,6 +1,6 @@
 """A small local telnet BBS for testing SAPI-Term (standard library only).
 
-Listens on 127.0.0.1 (one client at a time), negotiates like a usual BBS (DO TTYPE, DO NAWS, WILL ECHO,
+Listens on 127.0.0.1 (--host 0.0.0.0: also the local network; one client at a time), negotiates like a usual BBS (DO TTYPE, DO NAWS, WILL ECHO,
 WILL SGA, then TTYPE SEND), and offers pages. Everything the client sends is logged to a JSON file after every
 event, for tools/emu/phase4.py:
   ttype, naws (every size received), client_will / client_do / client_wont / client_dont, keys (data bytes in
@@ -20,7 +20,7 @@ Keys of the menu:
   backgrounds, the British characters, cursor keys and wrapping);
   downloads (binary mode first): Y YMODEM batch of YMODEM_FILES, X XMODEM (128 byte blocks, CRC) of
   XMODEM_FILE; the result goes to the log as xfer ('ok' or what failed).
-  python tools/testbbs.py [--port 6023] [--log build/testbbs.json]
+  python tools/testbbs.py [--host 127.0.0.1] [--port 6023] [--log build/testbbs.json]
 """
 import argparse
 import binascii
@@ -458,6 +458,8 @@ class Session:
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument('--host', default='127.0.0.1',
+                    help='address to listen on: 0.0.0.0 for the local network (a real SAPI through its DPI-1L)')
     ap.add_argument('--port', type=int, default=6023)
     ap.add_argument('--log', default=os.path.join(ROOT, 'build', 'testbbs.json'))
     ap.add_argument('--once', action='store_true', help='end after the first client')
@@ -466,11 +468,18 @@ def main():
         os.remove(a.log)
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    srv.bind(('127.0.0.1', a.port))
+    srv.bind((a.host, a.port))
     srv.listen(1)
-    print('test BBS on 127.0.0.1:%d, log %s' % (a.port, a.log), flush=True)
+    print('test BBS on %s:%d, log %s' % (a.host, a.port, a.log), flush=True)
+    if a.host == '0.0.0.0':
+        try:
+            ips = [ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith('127.')]
+        except OSError:
+            ips = []
+        print('addresses of this PC: %s' % (', '.join(ips) or 'unknown'), flush=True)
     while True:
         conn, addr = srv.accept()
+        print('client %s:%d' % addr, flush=True)
         s = Session(conn, a.log)
         try:
             s.run()
