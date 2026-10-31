@@ -90,6 +90,9 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
    z hodin RTC DPI-1L (RTCGETT). Má jít stejně jako hodinky, i při stahování dlouhé stránky. Zajímá mě, jestli RTC
    karty po zapnutí běží (bez nastavení času) a jestli čtení asi 4× za sekundu nebo po 2 KB dat znatelně
    nezpomalí příjem (WAIT karty).
+   - **2026-10-31, autor:** RTC DPI-1L se nastaví z NTP pár sekund po zapnutí. Doba spojení je rozdíl dvou
+     čtení RTC, proti stopkám se tedy nerozejde. Stačí kontrola za běhu: asi 5 minut stopkami od změny sekundy
+     na stavové kartě a pohled, jestli sekundy při velkém toku dat (akvárium) neskáčou.
 
 ## Na později
 
