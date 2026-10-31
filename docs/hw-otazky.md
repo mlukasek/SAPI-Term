@@ -93,13 +93,13 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 1. **PETSCII:** Retro Campus (`SAPITERM 5`), v menu Z až na PETSCII, Esc, pak volba 1 (CBM PETSCII). Grafika C64
    a barvy na monitoru, čitelnost písma 8×8.
    - **2026-10-31, autor na skutečném HW, testovací BBS z PC** (`testbbs.py --host 0.0.0.0`): stránka G funguje.
-     Na Retro Campus neověřeno.
+   - **2026-10-31, autor na skutečném HW:** PETSCII na skutečných BBS funguje.
 
 ## SAPITERM 0.8 (fáze 8, ATASCII)
 
 1. **ATASCII:** `SAPITERM 15` (Southern Amis), Return. Kresba Atari 800XL a inverzní text, barvy Atari.
    - **2026-10-31, autor na skutečném HW, testovací BBS z PC** (`testbbs.py --host 0.0.0.0`): stránka A funguje.
-     Na Southern Amis a The Basement neověřeno.
+   - **2026-10-31, autor na skutečném HW:** ATASCII na skutečných BBS funguje.
 2. **ATASCII s raw TCP:** `SAPITERM 14` (The Basement, jednolinková, bývá obsazená), na „press <return>“ Return.
    Text „Are you ready to do things tonight…“ se skládá vkládáním znaků (FFh) a má vyjít celý.
 
@@ -108,7 +108,8 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 1. **Viewdata:** připojit `glasstty.com:6502` (Telstar), v menu Z zvolit VIEWDATA. Barvy teletextu, dvojitá výška,
    mozaiky. Enter = # (pokračovat).
    - **2026-10-31, autor na skutečném HW, testovací BBS z PC** (`testbbs.py --host 0.0.0.0`): stránka V funguje.
-     Na Telstar neověřeno.
+     Na Telstar neověřeno. Telstar 2026-10-31 18:46 UTC odpovídal (z PC: úvodní stránka „GOOD EVENING“). Adresář
+     je plný (16 BBS), U ji neuloží: připojit adresou, Ctrl+], Z až na VIEWDATA, Esc.
 
 ## Zvonek
 
@@ -145,8 +146,10 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
     jako v SAPIemu. WAIT karty příjem znatelně nezpomaluje.
 - **TCPSEND chyba 5** (plné odesílání lwIP) a odmítnuté spojení (stav 3 hned).
   - **2026-10-31, autor na skutečném HW:** odmítnuté spojení se chová správně.
-  - **Chyba 5 není ověřená nikde,** ani v emulátoru (test na ni není). `tx_flush` ji po tiku pošle znovu, nejvýš
-    `tx_tries`krát, pak data zahodí. Na skutečné kartě se špatně vyvolává.
+  - **Chyba 5 není ověřená nikde,** ani v emulátoru (test na ni není). `tx_flush` posílá znovu po každém tiku, nejvýš
+    2 s (120 tiků), pak data zahodí. Na skutečné kartě se ručně vyvolat nedá: firmware má `TCP_SND_BUF` = 8 × 1460 B
+    (`SAPI_DPI-firmware/firmware/lwipopts.h`), chyba přijde, až když protistrana nečte a zaplní se její okno
+    i těchto 11,7 KB. Terminál posílá jen to, co se napíše, takže by to chtělo desítky KB psaní.
 - **RTC DPI-1L (60–63h):** vrací UTC, nebo místní čas? (`repo.c` čte časovač AON, který podle `systime.h` drží UTC.)
 - **Sníh palety Bt476** při 2 MHz: zápis barev jedné dvojice (7 domén) trvá asi 0,4 ms, všech 16 asi 6 ms, víc
   než VBI (4 ms).
