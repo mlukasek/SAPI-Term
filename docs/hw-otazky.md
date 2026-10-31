@@ -57,12 +57,14 @@ Ověřuje autor dávkově. Před zkouškou říct, co se stane.
 
 ## SAPITERM 0.8 (fáze 8, PETSCII)
 
-1. **PETSCII:** `SAPITERM 14` (The Basement, C64), nebo Retro Campus (číslo 5) a tam volba 1 a v menu Z až na
-   PETSCII. Grafika C64 a barvy na monitoru, čitelnost písma 8×8.
+1. **PETSCII:** Retro Campus (`SAPITERM 5`), v menu Z až na PETSCII, Esc, pak volba 1 (CBM PETSCII). Grafika C64
+   a barvy na monitoru, čitelnost písma 8×8.
 
 ## SAPITERM 0.8 (fáze 8, ATASCII)
 
 1. **ATASCII:** `SAPITERM 15` (Southern Amis), Return. Kresba Atari 800XL a inverzní text, barvy Atari.
+2. **ATASCII s raw TCP:** `SAPITERM 14` (The Basement, jednolinková, bývá obsazená), na „press <return>“ Return.
+   Text „Are you ready to do things tonight…“ se skládá vkládáním znaků (FFh) a má vyjít celý.
 
 ## SAPITERM 0.8 (fáze 8, Viewdata)
 

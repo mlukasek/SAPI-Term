@@ -314,10 +314,10 @@ Autor byl stále pryč, rozhodoval jsem sám.
   běží bez telnetu. FFh (π v PETSCII, vložení znaku v ATASCII) by se jinak bralo jako IAC a další bajt jako
   příkaz telnetu. Telnet je výchozí, protože ho používá většina BBS.
 - **PETSCII začíná v sadě malých písmen** (jako terminálové programy C64, např. CCGMS), ne ve velkých jako C64 po
-  zapnutí. The Basement posílá text malými písmeny PETSCII bez přepnutí a ve velké sadě se ukázal jako grafika.
-  Retro Campus si sadu přepíná sám, výsledek je stejný.
-- **The Basement je jednolinkový C64:** po opakovaných spojeních hlásí obsazeno („Please try again in a few
-  minutes“). V adresáři zůstává, zkoušet ho jen občas.
+  zapnutí. Retro Campus si sadu přepíná sám, výsledek je stejný. (Důvod „The Basement posílá malá písmena
+  PETSCII“ byl omyl, viz 2026-10-31.)
+- **The Basement je jednolinková:** po opakovaných spojeních hlásí obsazeno („Please try again in a few
+  minutes“). V adresáři zůstává, zkoušet ji jen občas.
 
 ## 2026-10-30: písma 8×8 z původních strojů
 
@@ -352,3 +352,18 @@ Autor byl stále pryč, rozhodoval jsem sám.
 - **Paměť:** písma C64 a Atari mají stejnou velikost jako vlastní. MZ-800 přidalo 165 glyfů a tabulky (1,4 KB):
   program má 32 840 B, buffery a zásobník končí na BCAAh, do C000h zbývá 853 B. Historie bez CGA-1V má 37
   řádků.
+
+## 2026-10-31: The Basement je BBS pro Atari
+
+- **The Basement není C64, ale Atari** (BBS Express! Professional od Orion Micro Systems, „ExpressNET“). Autor ji
+  na SAPI viděl s prohozenými malými a velkými písmeny a sekvencemi `[1;34m` jako text.
+  - Po připojení se ptá „Go ASCII/ATASCII, press <return>“. Na 9Bh (Return z Atari) jede v ATASCII, na CR nabídne
+    převod: ASCII, ANSI (IBM), VT52.
+  - V sadě PETSCII posílal SAPI-Term na Enter CR, BBS přešla na ASCII s ANSI. ASCII ve znakové sadě C64 má
+    prohozená velká a malá písmena, ESC PETSCII nezná.
+  - Běží bez telnetu a uvítací text skládá znaky „kurzor vlevo“ (1Eh) a „vlož znak“ (FFh). S telnetem se FFh bralo
+    jako IAC a horní řádky se rozpadly.
+- **V adresáři je teď `The Basement (Atari),…,ATASCII,RAW`.** Ověřeno v emulátoru, obrazovka je celá a správně.
+  Kdo ji má v `SAPITERM.CFG` jako PETSCII, opraví ji v menu: Z až na ATASCII, N na raw TCP, U uloží.
+- **Pro PETSCII zůstává Retro Campus** (číslo 5): v menu Z až na PETSCII, pak volba 1. Adresář jinou ověřenou
+  BBS pro C64 nemá.

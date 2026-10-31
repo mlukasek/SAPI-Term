@@ -117,7 +117,10 @@ def main():
         name, addr, rest = entry.split(b'\0', 2)
         check(addr == b'bbs.vslib.cz' and rest[0] == 0, 'entry 2: address %r, set %d' % (addr, rest[0]))
         check(scr[BOOK_ROW + 5][40:].startswith('13 Clutch'), 'entry 13 in the second column')
-        check(scr[BOOK_ROW + 6][40:].startswith('14 The Basement (C64)'), 'entry 14: the PETSCII BBS')
+        check(scr[BOOK_ROW + 6][40:].startswith('14 The Basement (Atari)'), 'entry 14: the Atari BBS')
+        entry = emu.read(sym['book'] + 13 * sym['BOOK_ENTRY'], sym['BOOK_ENTRY'])
+        name, addr, rest = entry.split(b'\0', 2)
+        check(rest[0] == 0x88, 'entry 14: ATASCII and raw TCP (the set byte %02X)' % rest[0])
         check(scr[BOOK_ROW + 7][40:].startswith('15 Southern Amis (Atari)'), 'entry 15: the ATASCII BBS')
         mcp.call('run_for', ms=300)             # the colours go to the palette in the next VBI
         mcp.call('pause')

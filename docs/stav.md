@@ -183,6 +183,8 @@
       na CGA-1V bod po bodu proti obrazu ze stínu (`build/preview/f6_utf8_40.png`);
     - `phase3` až `phase8` procházejí, modely berou písma ze stejných předloh.
   - Buffery a zásobník končí na BCAAh, pod C000h zbývá 853 B. Historie bez CGA-1V má 37 řádků.
+- **The Basement opravená (2026-10-31):** je to BBS pro Atari (BBS Express! Pro), ne C64. V adresáři je teď
+  jako ATASCII s raw TCP (`docs/rozhodnuti.md`). Ověřeno v emulátoru, snímek `build/preview/f8_ata_basement.png`.
 
 ## Plán (schválený 2026-10-30, rozhodnutí v `docs/rozhodnuti.md`)
 
